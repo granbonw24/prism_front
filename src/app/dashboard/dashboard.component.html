@@ -1,147 +1,109 @@
- <!-- Content Wrapper -->
-    <div id="content-wrapper" class="d-flex flex-column">
+<div class="container-fluid">
+  <div class="d-sm-flex align-items-center justify-content-between mb-3">
+    <h1 class="h4 mb-0 text-gray-800">Tableau de bord</h1>
+    <span class="small text-muted">PRISM · MENA Côte d’Ivoire</span>
+  </div>
 
-      <!-- Main Content -->
-      <div id="content">
+  <div
+    class="alert mb-4 border-0 shadow-sm mena-dashboard-banner"
+    role="alert"
+  >
+    <strong>Dashboard (v1).</strong>
+    Synthèse opérationnelle (centres, personnels, utilisateurs) et accès rapides.
+  </div>
 
-        <!-- Topbar -->
-        
-        <!-- End of Topbar -->
-
-        <!-- Begin Page Content -->
-        <div class="container-fluid">
-
-          <div class="alert mb-4 border-0 shadow-sm" role="alert" style="background: linear-gradient(90deg, rgba(255,245,237,0.95) 0%, rgba(255,255,255,0.98) 45%, rgba(238,248,241,0.9) 100%); color: #2a2520; border: 1px solid rgba(214,111,30,0.12) !important;">
-            <strong>Tableau de bord (v1).</strong> Graphiques du thème (données illustratives). Les indicateurs métier PRISM seront branchés lorsque les endpoints d’agrégation seront disponibles.
-          </div>
-
-          <div class="row mena-mini-dash mb-4">
-            <div class="col-md-4 mb-3">
-              <div class="card mena-mini-card h-100 border-0 shadow-sm">
-                <div class="card-body py-3 d-flex align-items-center">
-                  <div class="mena-mini-icon mr-3"><i class="fas fa-list-alt"></i></div>
-                  <div>
-                    <div class="text-muted small mb-0">Référentiels</div>
-                    <div class="font-weight-bold text-dark">Listes &amp; ajout</div>
-                    <div class="small text-muted mb-0">
-                      {{ referentielRoutes.length }} tables · menu
-                      <strong>Paramétrage</strong>
-                    </div>
-                  </div>
-                </div>
-              </div>
+  <div class="row mena-mini-dash mb-4">
+    <div class="col-lg-4 mb-3">
+      <div class="card mena-mini-card h-100 border-0 shadow-sm">
+        <div class="card-body py-3 d-flex align-items-center">
+          <div class="mena-mini-icon mr-3"><i class="fas fa-user-circle"></i></div>
+          <div class="w-100">
+            <div class="text-muted small mb-0">Session</div>
+            <div class="font-weight-bold text-dark" *ngIf="session$ | async as s; else sessionAnon">
+              {{ s.username }}
+              <span class="small text-muted" *ngIf="s.email">· {{ s.email }}</span>
             </div>
-            <div class="col-md-4 mb-3">
-              <div class="card mena-mini-card h-100 border-0 shadow-sm">
-                <div class="card-body py-3 d-flex align-items-center">
-                  <div class="mena-mini-icon mena-mini-icon--mint mr-3"><i class="fas fa-chart-line"></i></div>
-                  <div>
-                    <div class="text-muted small mb-0">Indicateurs</div>
-                    <div class="font-weight-bold text-dark">À venir</div>
-                    <div class="small text-muted mb-0">Agrégations API métier</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div class="col-md-4 mb-3">
-              <div class="card mena-mini-card h-100 border-0 shadow-sm">
-                <div class="card-body py-3 d-flex align-items-center">
-                  <div class="mena-mini-icon mena-mini-icon--soft mr-3"><i class="fas fa-user-shield"></i></div>
-                  <div>
-                    <div class="text-muted small mb-0">Accès</div>
-                    <div class="font-weight-bold text-dark">Sécurisé JWT</div>
-                    <div class="small text-muted mb-0">Session &amp; permissions</div>
-                  </div>
-                </div>
-              </div>
+            <ng-template #sessionAnon>
+              <div class="font-weight-bold text-dark">Non connecté</div>
+            </ng-template>
+            <div class="small text-muted mb-0" *ngIf="session$ | async as s">
+              {{ s.roles?.length ?? 0 }} rôle(s) · {{ s.permissions?.length ?? 0 }} permission(s)
             </div>
           </div>
-
-          <div class="card border-0 shadow-sm mb-4">
-            <div class="card-header py-3 bg-white border-bottom-0">
-              <h6 class="m-0 font-weight-bold text-primary">Référentiels (API intégrée)</h6>
-            </div>
-            <div class="card-body pt-0">
-              <p class="small text-muted mb-2">
-                Liens générés depuis la même config que les routes Angular et les
-                <code>apiPath</code> Spring.
-              </p>
-              <div class="d-flex flex-wrap mena-ref-quicklinks">
-                <a
-                  *ngFor="let r of referentielRoutes"
-                  class="badge badge-light border text-dark font-weight-normal mr-1 mb-1 px-2 py-1"
-                  [routerLink]="r.path"
-                  >{{ r.title }}</a
-                >
-              </div>
-            </div>
-          </div>
-
-          <!-- Page Heading -->
-          <h1 class="h3 mb-2 mena-page-title">Graphiques (démo)</h1>
-          <p class="mb-4">Chart.js is a third party plugin that is used to generate the charts in this theme. The charts below have been customized - for further customization options, please visit the <a target="_blank" href="https://www.chartjs.org/docs/latest/">official Chart.js documentation</a>.</p>
-
-          <!-- Content Row -->
-          <div class="row">
-
-            <div class="col-xl-8 col-lg-7">
-
-              <!-- Area Chart -->
-              <div class="card shadow mb-4">
-                <div class="card-header py-3">
-                  <h6 class="m-0 font-weight-bold text-primary">Area Chart</h6>
-                </div>
-                <div class="card-body">
-                  <div class="chart-area">
-                    <canvas id="myAreaChart"></canvas>
-                  </div>
-                  <hr>
-                  Styling for the area chart can be found in the <code>/js/demo/chart-area-demo.js</code> file.
-                </div>
-              </div>
-
-              <!-- Bar Chart -->
-              <!-- <div class="card shadow mb-4">
-                <div class="card-header py-3">
-                  <h6 class="m-0 font-weight-bold text-primary">Bar Chart</h6>
-                </div>
-                <div class="card-body">
-                  <div class="chart-bar">
-                    <canvas id="myBarChart"></canvas>
-                  </div>
-                  <hr>
-                  Styling for the bar chart can be found in the <code>/js/demo/chart-bar-demo.js</code> file.
-                </div>
-              </div> -->
-
-            </div>
-
-            <!-- Donut Chart -->
-            <div class="col-xl-4 col-lg-5">
-              <div class="card shadow mb-4">
-                <!-- Card Header - Dropdown -->
-                <div class="card-header py-3">
-                  <h6 class="m-0 font-weight-bold text-primary">Donut Chart</h6>
-                </div>
-                <!-- Card Body -->
-                <div class="card-body">
-                  <div class="chart-pie pt-4">
-                    <canvas id="myPieChart"></canvas>
-                  </div>
-                  <hr>
-                  Styling for the donut chart can be found in the <code>/js/demo/chart-pie-demo.js</code> file.
-                </div>
-              </div>
-            </div>
-          </div>
-
         </div>
-        <!-- /.container-fluid -->
-
       </div>
-      <!-- End of Main Content -->
-
-     
-      <!-- End of Footer -->
-
     </div>
+
+    <div class="col-lg-4 mb-3">
+      <div class="card mena-mini-card h-100 border-0 shadow-sm">
+        <div class="card-body py-3 d-flex align-items-center">
+          <div class="mena-mini-icon mena-mini-icon--soft mr-3"><i class="fas fa-layer-group"></i></div>
+          <div>
+            <div class="text-muted small mb-0">Centres (par type)</div>
+            <div class="font-weight-bold text-dark" *ngIf="summary$ | async as sum; else sumLoading1">
+              Alpha {{ sum.alphaTotal }} · CEC {{ sum.cecTotal }} · CP {{ sum.cpTotal }} · SIE {{ sum.sieTotal }}
+            </div>
+            <ng-template #sumLoading1>
+              <div class="font-weight-bold text-dark">Chargement…</div>
+            </ng-template>
+            <div class="small text-muted mb-0" *ngIf="summary$ | async as sum">
+              Total centres: {{ sum.centresTotal }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-4 mb-3">
+      <div class="card mena-mini-card h-100 border-0 shadow-sm">
+        <div class="card-body py-3 d-flex align-items-center">
+          <div class="mena-mini-icon mena-mini-icon--mint mr-3"><i class="fas fa-tools"></i></div>
+          <div>
+            <div class="text-muted small mb-0">Administration</div>
+            <div class="font-weight-bold text-dark" *ngIf="summary$ | async as sum; else sumLoading2">
+              {{ sum.personnelTotal }} personnel · {{ sum.usersTotal }} utilisateurs
+            </div>
+            <ng-template #sumLoading2>
+              <div class="font-weight-bold text-dark">Chargement…</div>
+            </ng-template>
+            <div class="small text-muted mb-0" *ngIf="summary$ | async as sum">
+              {{ sum.rolesTotal }} rôles configurés
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-header py-3 bg-white border-bottom-0">
+      <h6 class="m-0 font-weight-bold text-primary">Accès rapides (Administration)</h6>
+    </div>
+    <div class="card-body pt-0">
+      <div class="row">
+        <div class="col-md-6 col-lg-3 mb-2" *ngFor="let l of adminLinks">
+          <a class="mena-quickcard" [routerLink]="l.path">
+            <i class="{{ l.icon }} mr-2" aria-hidden="true"></i>
+            <span>{{ l.title }}</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-header py-3 bg-white border-bottom-0">
+      <h6 class="m-0 font-weight-bold text-primary">Accès rapides (Paramétrage)</h6>
+    </div>
+    <div class="card-body pt-0">
+      <div class="d-flex flex-wrap mena-ref-quicklinks">
+        <a
+          *ngFor="let r of referentielRoutes"
+          class="badge badge-light border text-dark font-weight-normal mr-1 mb-1 px-2 py-1"
+          [routerLink]="r.path"
+          >{{ r.title }}</a
+        >
+      </div>
+    </div>
+  </div>
+</div>
