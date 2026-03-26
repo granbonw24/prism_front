@@ -1,0 +1,68 @@
+.mena-list-card-header {
+  row-gap: 0.5rem;
+}
+
+.mena-list-filter-wrap {
+  min-width: 12rem;
+  max-width: 22rem;
+}
+
+.mena-list-filter-input:focus {
+  box-shadow: none;
+  border-color: #ced4da;
+}
+
+.mena-toolbar .btn {
+  border-radius: 8px;
+}
+
+.mena-btn-add {
+  border-radius: 8px;
+}
+
+.mena-flash-success {
+  border-radius: 10px;
+}
+
+.mena-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1040;
+  background: rgba(42, 37, 32, 0.45);
+}
+
+.mena-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1050;
+  overflow-y: auto;
+  padding: 1rem;
+}
+
+.mena-modal-content {
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.mena-modal-header {
+  background: linear-gradient(
+    90deg,
+    var(--mena-orange-100, #fff5ed) 0%,
+    var(--mena-white, #fff) 50%,
+    var(--mena-mint-100, #eef8f1) 100%
+  );
+}
+
+.gap-2 {
+  gap: 0.5rem;
+}
+
+.mena-col-actions {
+  width: 1%;
+  vertical-align: middle;
+}
+
+.mena-btn-action {
+  border-radius: 8px;
+  padding: 0.2rem 0.45rem;
+}

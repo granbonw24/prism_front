@@ -1,0 +1,31 @@
+import {
+  HttpErrorResponse,
+  HttpInterceptorFn,
+} from '@angular/common/http';
+import { inject } from '@angular/core';
+import { Router } from '@angular/router';
+import { catchError, throwError } from 'rxjs';
+import { SessionStore } from '../../services/session-store.service';
+import { TokenStorageService } from '../../services/token-storage.service';
+
+/**
+ * Session expirée ou refusée : nettoie le stockage et renvoie vers la page de connexion.
+ * Ne s'applique pas à POST /api/auth/login (identifiants invalides).
+ */
+export const unauthorizedInterceptor: HttpInterceptorFn = (req, next) => {
+  const tokens = inject(TokenStorageService);
+  const sessionStore = inject(SessionStore);
+  const router = inject(Router);
+
+  return next(req).pipe(
+    catchError((err: HttpErrorResponse) => {
+      const isLoginAttempt = req.url.includes('/api/auth/login');
+      if (err.status === 401 && !isLoginAttempt) {
+        tokens.clear();
+        sessionStore.clear();
+        void router.navigateByUrl('/login', { replaceUrl: true });
+      }
+      return throwError(() => err);
+    }),
+  );
+};

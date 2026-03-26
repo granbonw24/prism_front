@@ -6,6 +6,7 @@ import {
   Validators,
 } from '@angular/forms';
 import { Router } from '@angular/router';
+import { BRAND_CONFIG } from '../core/config/brand.config';
 import { AuthService } from '../services/auth.service';
 
 @Component({
@@ -16,6 +17,10 @@ import { AuthService } from '../services/auth.service';
   styleUrl: './login.component.css',
 })
 export class LoginComponent {
+  readonly brandPanelSrc = BRAND_CONFIG.loginPanelSrc;
+  readonly brandMarkSrc = BRAND_CONFIG.markSrc;
+  readonly brandAlt = BRAND_CONFIG.alt;
+
   readonly form = this.fb.nonNullable.group({
     username: ['', [Validators.required]],
     password: ['', [Validators.required]],

@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
-import { Ministere } from '../core/models/ministere.model';
-import { MinistereService } from '../services/ministere.service';
+import { Ministere } from '../../core/models/ministere.model';
+import { MinistereService } from '../../services/ministere.service';
 
 @Component({
   selector: 'app-ministere',
@@ -20,7 +20,7 @@ export class MinistereComponent implements OnInit {
   ngOnInit(): void {
     this.loading = true;
     this.ministereService.findAll().subscribe({
-      next: (list) => {
+      next: (list: Ministere[]) => {
         this.ministeres = list;
         this.loading = false;
       },

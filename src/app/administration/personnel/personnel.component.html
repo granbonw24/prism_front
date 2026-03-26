@@ -1,0 +1,203 @@
+<div class="container-fluid">
+  <div class="d-sm-flex align-items-center justify-content-between mb-3">
+    <h1 class="h4 mb-0 text-gray-800">Personnel (par centre)</h1>
+    <button class="btn btn-sm btn-outline-primary" (click)="reload()" [disabled]="loading || saving || centreId == null">
+      Rafraîchir
+    </button>
+  </div>
+
+  <div *ngIf="errorMessage" class="alert alert-danger py-2">
+    {{ errorMessage }}
+  </div>
+
+  <div class="card border-0 shadow-sm mb-3">
+    <div class="card-body">
+      <div class="form-row align-items-end">
+        <div class="form-group col-md-6">
+          <label class="small text-muted" for="centreSelect">Centre</label>
+          <select
+            id="centreSelect"
+            class="form-control"
+            [(ngModel)]="centreId"
+            (ngModelChange)="onCentreChange()"
+            [disabled]="loading || saving"
+          >
+            <option [ngValue]="null">-- Sélectionner un centre --</option>
+            <option *ngFor="let c of centres" [ngValue]="c.id">
+              {{ c.codeCentre ?? ('Centre #' + c.id) }}
+            </option>
+          </select>
+        </div>
+
+        <div class="form-group col-md-6 text-right" *ngIf="dashboard && centreId != null">
+          <div class="small text-muted">Total personnel</div>
+          <div class="h4 mb-0">{{ dashboard.total }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card border-0 shadow-sm mb-4" *ngIf="centreId != null">
+    <div id="createPersonnelCard"></div>
+    <div class="card-header py-3 bg-white border-bottom-0">
+      <h6 class="m-0 font-weight-bold text-primary">Créer un personnel</h6>
+    </div>
+    <div class="card-body pt-2">
+      <div class="form-row">
+        <div class="form-group col-md-3">
+          <label class="small text-muted">Niveau</label>
+          <select class="form-control" [(ngModel)]="creating.idNiveauPersonnelId" [disabled]="saving">
+            <option [ngValue]="null">--</option>
+            <option *ngFor="let n of niveaux" [ngValue]="n.id">{{ n.libelleNiveauPersonnel ?? n.codeNiveauPersonnel ?? n.id }}</option>
+          </select>
+        </div>
+        <div class="form-group col-md-3">
+          <label class="small text-muted">Fonction</label>
+          <select class="form-control" [(ngModel)]="creating.idFonctionId" [disabled]="saving">
+            <option [ngValue]="null">--</option>
+            <option *ngFor="let f of fonctions" [ngValue]="f.id">{{ f.libelleFonction ?? f.codeFonction ?? f.id }}</option>
+          </select>
+        </div>
+        <div class="form-group col-md-2">
+          <label class="small text-muted">Civilité</label>
+          <select class="form-control" [(ngModel)]="creating.idCiviliteId" [disabled]="saving">
+            <option [ngValue]="null">--</option>
+            <option *ngFor="let c of civilites" [ngValue]="c.id">{{ c.libelleCivilite ?? c.codeCivilite ?? c.id }}</option>
+          </select>
+        </div>
+        <div class="form-group col-md-2">
+          <label class="small text-muted">Statut</label>
+          <select class="form-control" [(ngModel)]="creating.idStatutPersonnelId" [disabled]="saving">
+            <option [ngValue]="null">--</option>
+            <option *ngFor="let s of statuts" [ngValue]="s.id">{{ s.libelleStatutPersonnel ?? s.codeStatutPersonnel ?? s.id }}</option>
+          </select>
+        </div>
+        <div class="form-group col-md-2">
+          <label class="small text-muted">Sexe</label>
+          <select class="form-control" [(ngModel)]="creating.sexePersonnel" [disabled]="saving">
+            <option value="">--</option>
+            <option value="M">M</option>
+            <option value="F">F</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group col-md-3">
+          <label class="small text-muted">Nom</label>
+          <input class="form-control" [(ngModel)]="creating.nomPersonnel" [disabled]="saving" />
+        </div>
+        <div class="form-group col-md-5">
+          <label class="small text-muted">Prénoms</label>
+          <input class="form-control" [(ngModel)]="creating.prenomsPersonnel" [disabled]="saving" />
+        </div>
+        <div class="form-group col-md-2">
+          <label class="small text-muted">Contact</label>
+          <input class="form-control" [(ngModel)]="creating.contactPersonnel" [disabled]="saving" />
+        </div>
+        <div class="form-group col-md-2">
+          <label class="small text-muted">Email</label>
+          <input class="form-control" [(ngModel)]="creating.emailPersonnel" [disabled]="saving" />
+        </div>
+      </div>
+
+      <button class="btn btn-primary" (click)="create()" [disabled]="!canCreate()">
+        <span *ngIf="saving">Enregistrement…</span>
+        <span *ngIf="!saving">Créer</span>
+      </button>
+    </div>
+  </div>
+
+  <div class="card border-0 shadow-sm" *ngIf="centreId != null">
+    <div class="card-header py-3 bg-white border-bottom-0">
+      <div class="d-flex align-items-center justify-content-between">
+        <h6 class="m-0 font-weight-bold text-primary">Liste du personnel</h6>
+        <button
+          class="btn btn-sm btn-primary"
+          type="button"
+          (click)="scrollToCreate()"
+          [disabled]="loading || saving"
+        >
+          <i class="fas fa-plus mr-1" aria-hidden="true"></i>
+          Ajouter
+        </button>
+      </div>
+    </div>
+    <div class="card-body pt-3">
+      <div *ngIf="loading" class="small text-muted">Chargement…</div>
+      <div *ngIf="!loading" class="table-responsive">
+        <table class="table table-bordered align-middle">
+          <thead class="thead-light">
+            <tr>
+              <th style="min-width: 200px">Nom & prénoms</th>
+              <th>Contact</th>
+              <th>Email</th>
+              <th style="width: 190px" class="text-center">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let r of rows">
+              <td>
+                <div *ngIf="editingId !== r.id" class="font-weight-bold">
+                  {{ (r.nomPersonnel ?? '') + ' ' + (r.prenomsPersonnel ?? '') }}
+                </div>
+                <div *ngIf="editingId === r.id" class="form-row">
+                  <div class="col">
+                    <input class="form-control form-control-sm" [(ngModel)]="edit.nomPersonnel" [disabled]="saving" placeholder="Nom" />
+                  </div>
+                  <div class="col">
+                    <input class="form-control form-control-sm" [(ngModel)]="edit.prenomsPersonnel" [disabled]="saving" placeholder="Prénoms" />
+                  </div>
+                </div>
+              </td>
+              <td>
+                <span *ngIf="editingId !== r.id">{{ r.contactPersonnel ?? '—' }}</span>
+                <input *ngIf="editingId === r.id" class="form-control form-control-sm" [(ngModel)]="edit.contactPersonnel" [disabled]="saving" />
+              </td>
+              <td>
+                <span *ngIf="editingId !== r.id">{{ r.emailPersonnel ?? '—' }}</span>
+                <input *ngIf="editingId === r.id" class="form-control form-control-sm" [(ngModel)]="edit.emailPersonnel" [disabled]="saving" />
+              </td>
+              <td class="text-center">
+                <ng-container *ngIf="editingId !== r.id; else editActions">
+                  <button
+                    class="btn btn-sm btn-outline-secondary mr-1"
+                    type="button"
+                    (click)="startEdit(r)"
+                    [disabled]="saving"
+                    title="Modifier"
+                    aria-label="Modifier"
+                  >
+                    <i class="fas fa-pen" aria-hidden="true"></i>
+                  </button>
+                  <button
+                    class="btn btn-sm btn-outline-danger"
+                    type="button"
+                    (click)="deleteRow(r)"
+                    [disabled]="saving"
+                    title="Supprimer"
+                    aria-label="Supprimer"
+                  >
+                    <i class="fas fa-trash" aria-hidden="true"></i>
+                  </button>
+                </ng-container>
+                <ng-template #editActions>
+                  <button class="btn btn-sm btn-primary mr-1" (click)="saveEdit()" [disabled]="!canSaveEdit()">
+                    Enregistrer
+                  </button>
+                  <button class="btn btn-sm btn-outline-secondary" (click)="cancelEdit()" [disabled]="saving">
+                    Annuler
+                  </button>
+                </ng-template>
+              </td>
+            </tr>
+            <tr *ngIf="rows.length === 0">
+              <td colspan="4" class="text-center text-muted py-4">Aucun personnel pour ce centre.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+

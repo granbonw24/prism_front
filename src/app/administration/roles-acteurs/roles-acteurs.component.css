@@ -1,0 +1,9 @@
+/* Page admin : petite mise en page sobre, dépend du thème bootstrap */
+.container-fluid {
+  padding-bottom: 2rem;
+}
+
+table input[type='checkbox'] {
+  transform: scale(1.05);
+}
+

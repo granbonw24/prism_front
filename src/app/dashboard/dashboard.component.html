@@ -11,8 +11,74 @@
         <!-- Begin Page Content -->
         <div class="container-fluid">
 
+          <div class="alert mb-4 border-0 shadow-sm" role="alert" style="background: linear-gradient(90deg, rgba(255,245,237,0.95) 0%, rgba(255,255,255,0.98) 45%, rgba(238,248,241,0.9) 100%); color: #2a2520; border: 1px solid rgba(214,111,30,0.12) !important;">
+            <strong>Tableau de bord (v1).</strong> Graphiques du thème (données illustratives). Les indicateurs métier PRISM seront branchés lorsque les endpoints d’agrégation seront disponibles.
+          </div>
+
+          <div class="row mena-mini-dash mb-4">
+            <div class="col-md-4 mb-3">
+              <div class="card mena-mini-card h-100 border-0 shadow-sm">
+                <div class="card-body py-3 d-flex align-items-center">
+                  <div class="mena-mini-icon mr-3"><i class="fas fa-list-alt"></i></div>
+                  <div>
+                    <div class="text-muted small mb-0">Référentiels</div>
+                    <div class="font-weight-bold text-dark">Listes &amp; ajout</div>
+                    <div class="small text-muted mb-0">
+                      {{ referentielRoutes.length }} tables · menu
+                      <strong>Paramétrage</strong>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-4 mb-3">
+              <div class="card mena-mini-card h-100 border-0 shadow-sm">
+                <div class="card-body py-3 d-flex align-items-center">
+                  <div class="mena-mini-icon mena-mini-icon--mint mr-3"><i class="fas fa-chart-line"></i></div>
+                  <div>
+                    <div class="text-muted small mb-0">Indicateurs</div>
+                    <div class="font-weight-bold text-dark">À venir</div>
+                    <div class="small text-muted mb-0">Agrégations API métier</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-4 mb-3">
+              <div class="card mena-mini-card h-100 border-0 shadow-sm">
+                <div class="card-body py-3 d-flex align-items-center">
+                  <div class="mena-mini-icon mena-mini-icon--soft mr-3"><i class="fas fa-user-shield"></i></div>
+                  <div>
+                    <div class="text-muted small mb-0">Accès</div>
+                    <div class="font-weight-bold text-dark">Sécurisé JWT</div>
+                    <div class="small text-muted mb-0">Session &amp; permissions</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header py-3 bg-white border-bottom-0">
+              <h6 class="m-0 font-weight-bold text-primary">Référentiels (API intégrée)</h6>
+            </div>
+            <div class="card-body pt-0">
+              <p class="small text-muted mb-2">
+                Liens générés depuis la même config que les routes Angular et les
+                <code>apiPath</code> Spring.
+              </p>
+              <div class="d-flex flex-wrap mena-ref-quicklinks">
+                <a
+                  *ngFor="let r of referentielRoutes"
+                  class="badge badge-light border text-dark font-weight-normal mr-1 mb-1 px-2 py-1"
+                  [routerLink]="r.path"
+                  >{{ r.title }}</a
+                >
+              </div>
+            </div>
+          </div>
+
           <!-- Page Heading -->
-          <h1 class="h3 mb-2 text-gray-800">Charts</h1>
+          <h1 class="h3 mb-2 mena-page-title">Graphiques (démo)</h1>
           <p class="mb-4">Chart.js is a third party plugin that is used to generate the charts in this theme. The charts below have been customized - for further customization options, please visit the <a target="_blank" href="https://www.chartjs.org/docs/latest/">official Chart.js documentation</a>.</p>
 
           <!-- Content Row -->

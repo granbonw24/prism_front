@@ -1,0 +1,84 @@
+<div class="container-fluid px-2 px-sm-3">
+  <div class="card border-0 shadow-sm">
+    <div class="card-header py-3 bg-white border-bottom-0">
+      <h6 class="m-0 font-weight-bold text-primary">Rôle permission</h6>
+      <div class="small text-muted mt-1">
+        Choisir un rôle (acteur) puis activer/désactiver les permissions par fonctionnalité.
+      </div>
+    </div>
+
+    <div class="card-body pt-3">
+      <div class="row mb-3">
+        <div class="col-md-6">
+          <label class="small text-muted" for="roleSelect">
+            Acteur (rôle)
+          </label>
+          <select
+            id="roleSelect"
+            class="form-control"
+            [(ngModel)]="selectedRoleId"
+            (ngModelChange)="onRoleChange()"
+            [disabled]="loading || saving"
+          >
+            <option [ngValue]="null">-- Sélectionner --</option>
+            <option *ngFor="let r of roles" [ngValue]="r.id">
+              {{ r.libelleRole ?? r.codeRole ?? r.id }}
+            </option>
+          </select>
+        </div>
+      </div>
+
+      <div *ngIf="loading" class="text-muted">Chargement…</div>
+      <div *ngIf="!loading && errorMessage" class="alert alert-danger">
+        {{ errorMessage }}
+      </div>
+
+      <div
+        *ngIf="!loading && !errorMessage && selectedRoleId != null"
+        class="table-responsive"
+      >
+        <table class="table table-bordered align-middle">
+          <thead class="thead-light">
+            <tr>
+              <th style="min-width: 260px;">Fonctionnalité</th>
+              <th *ngFor="let p of permissions" class="text-center">
+                {{ p.codePermission ?? p.libellePermission ?? p.id }}
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let f of fonctionnalites">
+              <td>
+                <div class="font-weight-bold">
+                  {{ f.libelleFonctionnalite ?? f.codeFonctionnalite ?? f.id }}
+                </div>
+                <div class="small text-muted" *ngIf="f.module">
+                  {{ f.module }}
+                </div>
+              </td>
+              <td
+                *ngFor="let p of permissions"
+                class="text-center"
+                style="white-space: nowrap;"
+              >
+                <input
+                  class="form-check-input"
+                  type="checkbox"
+                  [checked]="isChecked(f.id, p.id)"
+                  (change)="toggle(f.id, p.id, $event)"
+                  [disabled]="saving"
+                  aria-label="Toggle permission"
+                />
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div *ngIf="saving" class="small text-muted">
+          Mise à jour des droits en cours…
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+

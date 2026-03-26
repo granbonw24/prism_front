@@ -18,3 +18,11 @@ export interface AuthMeResponse {
   username: string;
   permissions: string[];
 }
+
+export interface AuthSession {
+  userId: number;
+  username: string;
+  email?: string | null;
+  roles: string[];
+  permissions: string[];
+}

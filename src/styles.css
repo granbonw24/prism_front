@@ -1,1 +1,362 @@
-/* You can add global styles to this file, and also import other style files */
+/* Thème PRISM : orange dominant, vert très léger et blanc (inspiration CI) */
+:root {
+  /* Orange — tons principaux */
+  --mena-orange-950: #6b3410;
+  --mena-orange-800: #b54e10;
+  --mena-orange-700: #d66f1e;
+  --mena-orange-600: #e8883a;
+  --mena-orange-400: #f0a862;
+  --mena-orange-200: #fde7d4;
+  --mena-orange-100: #fff5ed;
+  /* Vert — accents légers uniquement */
+  --mena-mint-300: #b8e0c8;
+  --mena-mint-200: #d8f0e4;
+  --mena-mint-100: #eef8f1;
+  /* Neutres */
+  --mena-white: #ffffff;
+  --mena-surface: #fffdfb;
+  --mena-ink: #2a2520;
+  --mena-muted: #6b6560;
+  --mena-card-border: rgba(214, 111, 30, 0.14);
+  --mena-radius: 10px;
+}
+
+html,
+body {
+  font-family: "Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  color: var(--mena-ink);
+  /* Blanc cassé très légèrement orangé */
+  background-color: var(--mena-surface);
+  background-image: linear-gradient(
+    180deg,
+    var(--mena-white) 0%,
+    var(--mena-orange-100) 55%,
+    var(--mena-mint-100) 100%
+  );
+  background-attachment: fixed;
+  min-height: 100vh;
+}
+
+/* Sidebar : orange chaleureux, touche de vert léger en bas */
+.sidebar.mena-sidebar {
+  background: linear-gradient(
+      0deg,
+      rgba(232, 248, 241, 0.45) 0%,
+      transparent 28%
+    ),
+    linear-gradient(
+      195deg,
+      var(--mena-orange-800) 0%,
+      var(--mena-orange-700) 38%,
+      var(--mena-orange-600) 100%
+    ) !important;
+  background-color: var(--mena-orange-800) !important;
+}
+
+.sidebar.mena-sidebar .sidebar-brand {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  padding-bottom: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+/* Logo marque (même ressource que le visuel login par défaut) */
+.mena-brand-mark {
+  width: 44px;
+  height: 44px;
+  object-fit: cover;
+  object-position: center top;
+  border-radius: 10px;
+  border: 2px solid rgba(255, 255, 255, 0.55);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+  flex-shrink: 0;
+}
+
+.mena-sidebar-brand .sidebar-brand-text {
+  line-height: 1.15;
+}
+
+.topbar .img-profile.mena-topbar-brand {
+  object-fit: cover;
+  object-position: center top;
+  border: 2px solid rgba(214, 111, 30, 0.25);
+}
+
+.sidebar.mena-sidebar .nav-item .nav-link {
+  border-radius: 8px;
+  margin: 2px 0.5rem;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.sidebar.mena-sidebar .nav-item .nav-link:hover {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.sidebar.mena-sidebar .nav-item.active .nav-link {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.22) 0%,
+    rgba(232, 248, 241, 0.2) 100%
+  );
+  border-left: 3px solid var(--mena-mint-300);
+  padding-left: calc(1rem - 3px);
+}
+
+/* Sous-menu (collapse-item) actif : doit être très visible */
+.sidebar.mena-sidebar .collapse-inner .collapse-item.active {
+  /* Le sous-menu est sur fond blanc (collapse-inner), donc actif = fond orangé + texte foncé lisible */
+  background: var(--mena-orange-100);
+  color: var(--mena-orange-950) !important;
+  font-weight: 700;
+  border-left: 3px solid var(--mena-orange-400);
+  padding-left: calc(1rem - 3px);
+}
+
+.sidebar.mena-sidebar .collapse-inner .collapse-item.active:hover {
+  background: var(--mena-orange-200);
+}
+
+.sidebar.mena-sidebar .sidebar-heading {
+  color: rgba(255, 255, 255, 0.5) !important;
+  font-size: 0.65rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* Boutons primaires : orange */
+.btn-primary {
+  background-color: var(--mena-orange-700) !important;
+  border-color: var(--mena-orange-700) !important;
+}
+
+.btn-primary:hover,
+.btn-primary:focus {
+  background-color: var(--mena-orange-600) !important;
+  border-color: var(--mena-orange-600) !important;
+}
+
+.btn-success.mena-btn-login,
+.mena-btn-login {
+  background: linear-gradient(
+    135deg,
+    var(--mena-orange-800) 0%,
+    var(--mena-orange-600) 55%,
+    #f5c9a0 100%
+  ) !important;
+  border: none !important;
+  color: #fff !important;
+  box-shadow: 0 4px 18px rgba(181, 78, 16, 0.35);
+}
+
+.btn-success.mena-btn-login:hover,
+.mena-btn-login:hover {
+  background: linear-gradient(
+    135deg,
+    var(--mena-orange-700) 0%,
+    var(--mena-orange-400) 50%,
+    var(--mena-mint-200) 100%
+  ) !important;
+  color: var(--mena-orange-950) !important;
+}
+
+.text-primary {
+  color: var(--mena-orange-800) !important;
+}
+
+/* Topbar : blanc + filet orange léger */
+.mena-topbar {
+  background-color: var(--mena-white) !important;
+  border-bottom: 3px solid var(--mena-orange-400);
+  box-shadow: 0 2px 14px rgba(214, 111, 30, 0.08) !important;
+}
+
+.mena-global-toast {
+  border-radius: var(--mena-radius);
+}
+
+/* Layout shell : sidebar SB Admin + zone contenu sans débordement horizontal */
+.mena-layout-wrapper {
+  min-height: 100vh;
+  overflow-x: hidden;
+  align-items: stretch;
+}
+
+.mena-content-wrapper {
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+.mena-main-inner {
+  min-height: 0;
+}
+
+/* Petits écrans : tableaux et modales utilisables au doigt */
+@media (max-width: 767.98px) {
+  .table-responsive {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .mena-topbar .form-inline.navbar-search {
+    max-width: 100%;
+  }
+
+  .mena-modal .modal-dialog {
+    margin: 0.5rem auto;
+    max-width: calc(100% - 1rem);
+  }
+
+  .mena-btn-action {
+    padding: 0.35rem 0.5rem;
+  }
+}
+
+/* Cartes : fond blanc, en-tête mélange orange pâle / vert pâle */
+.mena-card {
+  border-radius: var(--mena-radius);
+  border: 1px solid var(--mena-card-border);
+  overflow: hidden;
+  background: var(--mena-white);
+  box-shadow: 0 4px 20px rgba(181, 78, 16, 0.06) !important;
+}
+
+.mena-card .card-header {
+  background: linear-gradient(
+    90deg,
+    var(--mena-orange-100) 0%,
+    var(--mena-white) 42%,
+    var(--mena-mint-100) 100%
+  );
+  border-bottom: 1px solid var(--mena-card-border);
+}
+
+.mena-card .card-header h6 {
+  color: var(--mena-orange-950) !important;
+  font-weight: 700;
+}
+
+.mena-badge-count {
+  background: linear-gradient(
+    135deg,
+    var(--mena-orange-700) 0%,
+    var(--mena-orange-500) 100%
+  ) !important;
+  color: #fff !important;
+  font-weight: 600;
+  padding: 0.35em 0.65em;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+}
+
+.mena-page-title {
+  color: var(--mena-orange-950);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.mena-table thead th {
+  background: linear-gradient(
+    180deg,
+    var(--mena-orange-100) 0%,
+    var(--mena-mint-100) 100%
+  );
+  color: var(--mena-orange-950);
+  font-weight: 600;
+  font-size: 0.8rem;
+  border-color: var(--mena-card-border) !important;
+  white-space: nowrap;
+}
+
+.mena-table td {
+  border-color: var(--mena-card-border) !important;
+  vertical-align: middle;
+  background: var(--mena-white);
+}
+
+/* Page login : orange doux + blanc + soupçon de vert */
+.mena-login-panel {
+  background: linear-gradient(
+    145deg,
+    var(--mena-orange-800) 0%,
+    var(--mena-orange-600) 42%,
+    var(--mena-orange-200) 78%,
+    var(--mena-mint-200) 100%
+  );
+  min-height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+}
+
+.mena-login-panel img {
+  border-radius: var(--mena-radius);
+  box-shadow: 0 12px 40px rgba(107, 52, 16, 0.28);
+  border: 3px solid rgba(255, 255, 255, 0.65);
+  max-width: 100%;
+  height: auto;
+}
+
+.mena-login-tagline {
+  color: var(--mena-muted);
+  font-size: 0.9rem;
+}
+
+/* En-tête formulaire login : logo institutionnel puis titre (toutes largeurs) */
+.mena-login-form-header {
+  margin-bottom: 0.25rem;
+}
+
+.mena-login-brand-logo {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  margin-bottom: 1.25rem;
+  max-height: 80px;
+  width: auto;
+  max-width: min(220px, 100%);
+  object-fit: contain;
+  object-position: center center;
+  border-radius: var(--mena-radius);
+  box-shadow: 0 6px 22px rgba(107, 52, 16, 0.12);
+}
+
+/* Mini-cartes (accueil + pages référentiels) */
+.mena-mini-dash .mena-mini-card {
+  border-radius: 12px;
+  background: var(--mena-white);
+  border: 1px solid var(--mena-card-border) !important;
+}
+
+.mena-mini-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(
+    135deg,
+    rgba(214, 111, 30, 0.2) 0%,
+    rgba(255, 245, 237, 0.9) 100%
+  );
+  color: var(--mena-orange-800);
+  font-size: 1.15rem;
+  flex-shrink: 0;
+}
+
+.mena-mini-icon--mint {
+  background: linear-gradient(
+    135deg,
+    rgba(184, 224, 200, 0.45) 0%,
+    rgba(255, 255, 255, 0.95) 100%
+  );
+  color: var(--mena-orange-950);
+}
+
+.mena-mini-icon--soft {
+  background: linear-gradient(
+    135deg,
+    rgba(214, 111, 30, 0.12) 0%,
+    rgba(238, 248, 241, 0.6) 100%
+  );
+  color: var(--mena-orange-800);
+}

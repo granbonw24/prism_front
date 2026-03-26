@@ -1,42 +1,35 @@
 import { HttpClient } from '@angular/common/http';
 import { Inject, Injectable } from '@angular/core';
 import { Router } from '@angular/router';
-import { BehaviorSubject, Observable, tap } from 'rxjs';
-import { API_BASE_URL } from '../core/tokens/api-base-url.token';
+import { Observable, tap } from 'rxjs';
 import {
   AuthMeResponse,
+  AuthSession,
   LoginRequest,
   LoginResponse,
 } from '../core/models/auth.models';
+import { API_BASE_URL } from '../core/tokens/api-base-url.token';
+import { SessionStore } from './session-store.service';
 import { TokenStorageService } from './token-storage.service';
-
-export interface AuthSession {
-  userId: number;
-  username: string;
-  email?: string | null;
-  roles: string[];
-  permissions: string[];
-}
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
-  private readonly session$ = new BehaviorSubject<AuthSession | null>(null);
-
   constructor(
     private readonly http: HttpClient,
     @Inject(API_BASE_URL) private readonly apiBaseUrl: string,
     private readonly tokens: TokenStorageService,
+    private readonly sessionStore: SessionStore,
     private readonly router: Router,
   ) {
     this.hydrateFromStorage();
   }
 
   get session(): Observable<AuthSession | null> {
-    return this.session$.asObservable();
+    return this.sessionStore.stream;
   }
 
   get currentSession(): AuthSession | null {
-    return this.session$.value;
+    return this.sessionStore.current;
   }
 
   isAuthenticated(): boolean {
@@ -48,7 +41,7 @@ export class AuthService {
     return this.http.post<LoginResponse>(url, body).pipe(
       tap((res) => {
         this.tokens.setAccessToken(res.token);
-        this.session$.next({
+        this.sessionStore.setSession({
           userId: res.userId,
           username: res.username,
           email: res.email,
@@ -63,8 +56,8 @@ export class AuthService {
     const url = `${this.apiBaseUrl}/api/auth/me`;
     return this.http.get<AuthMeResponse>(url).pipe(
       tap((me) => {
-        const prev = this.session$.value;
-        this.session$.next({
+        const prev = this.sessionStore.current;
+        this.sessionStore.setSession({
           userId: me.userId,
           username: me.username,
           email: prev?.email,
@@ -77,7 +70,7 @@ export class AuthService {
 
   logout(): void {
     this.tokens.clear();
-    this.session$.next(null);
+    this.sessionStore.clear();
     void this.router.navigate(['/login']);
   }
 

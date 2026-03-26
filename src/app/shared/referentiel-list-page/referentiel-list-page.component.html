@@ -1,0 +1,407 @@
+<div class="container-fluid">
+  <div
+    class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3"
+  >
+    <h1 class="h3 mb-0 mena-page-title">{{ title }}</h1>
+    <div class="d-flex flex-wrap gap-2 mena-toolbar">
+      <button
+        type="button"
+        class="btn btn-outline-secondary btn-sm shadow-sm"
+        (click)="refresh()"
+        [disabled]="loading"
+      >
+        <i class="fas fa-sync-alt mr-1" [class.fa-spin]="loading"></i>
+        Actualiser
+      </button>
+      <button
+        type="button"
+        class="btn btn-primary btn-sm shadow-sm mena-btn-add"
+        (click)="openCreateModal()"
+      >
+        <i class="fas fa-plus mr-1"></i>
+        Ajouter
+      </button>
+    </div>
+  </div>
+
+  <!-- Mini tableau de bord (carte actif/inactif seulement si colonne booléenne pertinente) -->
+  <div class="row mena-mini-dash mb-4">
+    <div
+      class="mb-3 mb-lg-0"
+      [ngClass]="hasEtatStats ? 'col-sm-6 col-lg-4' : 'col-sm-6 col-lg-6'"
+    >
+      <div class="card mena-mini-card h-100 border-0 shadow-sm">
+        <div class="card-body py-3 d-flex align-items-center">
+          <div class="mena-mini-icon mr-3">
+            <i class="fas fa-database"></i>
+          </div>
+          <div>
+            <div class="text-muted small mb-0">Enregistrements</div>
+            <div class="h4 mb-0 font-weight-bold text-dark">
+              {{ loading ? '…' : rows.length }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div
+      *ngIf="hasEtatStats"
+      class="col-sm-6 col-lg-4 mb-3 mb-lg-0"
+    >
+      <div class="card mena-mini-card h-100 border-0 shadow-sm">
+        <div class="card-body py-3">
+          <div class="d-flex align-items-start">
+            <div class="mena-mini-icon mena-mini-icon--mint mr-3">
+              <i class="fas fa-toggle-on"></i>
+            </div>
+            <div class="min-w-0 flex-grow-1">
+              <div class="text-muted small mb-1">Actifs / inactifs</div>
+              <div class="d-flex flex-wrap justify-content-between gap-2">
+                <span class="font-weight-bold text-success">
+                  {{ countEtatActif }} actif<span *ngIf="countEtatActif !== 1">s</span>
+                </span>
+                <span class="font-weight-bold text-secondary">
+                  {{ countEtatInactif }} inactif<span *ngIf="countEtatInactif !== 1">s</span>
+                </span>
+              </div>
+              <div class="text-muted small mt-2 mb-0 text-truncate" [title]="etatStatsColumn ?? ''">
+                {{ etatColumnShortLabel }}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div
+      class="mb-3 mb-lg-0"
+      [ngClass]="hasEtatStats ? 'col-sm-12 col-lg-4' : 'col-sm-6 col-lg-6'"
+    >
+      <div class="card mena-mini-card h-100 border-0 shadow-sm">
+        <div class="card-body py-3 d-flex align-items-center">
+          <div class="mena-mini-icon mena-mini-icon--soft mr-3">
+            <i class="fas fa-clock"></i>
+          </div>
+          <div>
+            <div class="text-muted small mb-0">Dernière synchro</div>
+            <div class="mb-0 font-weight-bold text-dark small">
+              {{ formatSyncTime() }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div
+    *ngIf="successMessage"
+    class="alert alert-success border-0 shadow-sm py-2 mena-flash-success"
+  >
+    {{ successMessage }}
+    <button
+      type="button"
+      class="close ml-2"
+      aria-label="Fermer"
+      (click)="successMessage = null"
+    >
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </div>
+
+  <div *ngIf="loading" class="text-muted mb-3">Chargement…</div>
+  <div *ngIf="errorMessage" class="alert alert-warning border-0 shadow-sm">
+    {{ errorMessage }}
+  </div>
+
+  <div *ngIf="!loading && !errorMessage" class="card shadow-sm mb-4 mena-card">
+    <div
+      class="card-header py-3 d-flex flex-wrap align-items-center gap-2 mena-list-card-header"
+    >
+      <h6 class="m-0 font-weight-bold text-primary flex-shrink-0">
+        Liste des enregistrements
+      </h6>
+      <div
+        class="d-flex flex-wrap align-items-center flex-grow-1 justify-content-end gap-2 mena-list-toolbar"
+      >
+        <div class="input-group input-group-sm mena-list-filter-wrap">
+          <div class="input-group-prepend">
+            <span class="input-group-text bg-light border-right-0" aria-hidden="true">
+              <i class="fas fa-search text-muted"></i>
+            </span>
+          </div>
+          <input
+            type="search"
+            class="form-control border-left-0 mena-list-filter-input"
+            placeholder="Filtrer la liste…"
+            [(ngModel)]="listFilter"
+            [disabled]="loading || !rows.length"
+            autocomplete="off"
+            aria-label="Filtrer la liste"
+          />
+          <div class="input-group-append" *ngIf="hasActiveFilter">
+            <button
+              type="button"
+              class="btn btn-outline-secondary"
+              (click)="clearListFilter()"
+              title="Effacer le filtre"
+            >
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+        </div>
+        <span class="badge mena-badge-count flex-shrink-0">
+          <ng-container *ngIf="hasActiveFilter; else totalLines">
+            {{ filteredRows.length }} / {{ rows.length }} ligne(s)
+          </ng-container>
+          <ng-template #totalLines>{{ rows.length }} ligne(s)</ng-template>
+        </span>
+      </div>
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive" *ngIf="rows.length; else empty">
+        <ng-container *ngIf="filteredRows.length; else noFilterHits">
+          <table class="table table-sm mb-0 mena-table" style="font-size: 0.85rem">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th *ngFor="let col of columns">{{ col }}</th>
+              <th *ngIf="canUseRowActions" class="text-right mena-col-actions">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let row of filteredRows; let i = index">
+              <td>{{ i + 1 }}</td>
+              <td *ngFor="let col of columns">{{ formatCell(row[col]) }}</td>
+              <td *ngIf="canUseRowActions" class="text-right text-nowrap mena-col-actions">
+                <button
+                  type="button"
+                  class="btn btn-outline-primary btn-sm mena-btn-action mr-1"
+                  *ngIf="hasCreateForm && resolveRowId(row) != null"
+                  (click)="openEditModal(row)"
+                  title="Modifier"
+                >
+                  <i class="fas fa-pen"></i>
+                </button>
+                <button
+                  type="button"
+                  class="btn btn-outline-danger btn-sm mena-btn-action"
+                  *ngIf="resolveRowId(row) != null"
+                  (click)="openDeleteModal(row)"
+                  title="Supprimer"
+                >
+                  <i class="fas fa-trash-alt"></i>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        </ng-container>
+        <ng-template #noFilterHits>
+          <p class="p-4 text-muted mb-0">
+            Aucun enregistrement ne correspond au filtre « {{ listFilter.trim() }} ».
+            <button
+              type="button"
+              class="btn btn-link btn-sm p-0 align-baseline"
+              (click)="clearListFilter()"
+            >
+              Effacer
+            </button>
+          </p>
+        </ng-template>
+      </div>
+      <ng-template #empty>
+        <p class="p-4 text-muted mb-0">
+          Aucun enregistrement. Utilisez « Ajouter » pour en créer (si
+          disponible pour cette ressource).
+        </p>
+      </ng-template>
+    </div>
+  </div>
+</div>
+
+<!-- Modal création / édition -->
+<div
+  class="modal-backdrop fade mena-modal-backdrop"
+  *ngIf="formModalOpen"
+  (click)="closeFormModal()"
+></div>
+<div
+  class="modal fade mena-modal"
+  role="dialog"
+  aria-modal="true"
+  [class.show]="formModalOpen"
+  [style.display]="formModalOpen ? 'block' : 'none'"
+  *ngIf="formModalOpen"
+>
+  <div class="modal-dialog modal-dialog-centered modal-lg" (click)="$event.stopPropagation()">
+    <div class="modal-content mena-modal-content border-0 shadow">
+      <div class="modal-header border-0 mena-modal-header">
+        <h5 class="modal-title font-weight-bold">{{ formModalTitle }}</h5>
+        <button
+          type="button"
+          class="close"
+          aria-label="Fermer"
+          (click)="closeFormModal()"
+        >
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <ng-container *ngIf="hasCreateForm && recordForm as fg; else noFormTpl">
+          <p class="text-muted small">
+            Les champs correspondent au modèle attendu par l’API pour un
+            {{ formMode === 'edit' ? 'PUT' : 'POST' }} sur cette ressource. Les
+            <strong>codes</strong> techniques sont générés côté serveur s’ils ne sont pas fournis.
+          </p>
+          <div *ngIf="formError" class="alert alert-danger small">
+            {{ formError }}
+          </div>
+          <form [formGroup]="fg" (ngSubmit)="submitRecord()">
+            <div class="form-row">
+              <div
+                *ngFor="let field of createFields"
+                class="form-group col-md-6"
+              >
+                <label [attr.for]="'cf-' + field.key" class="small font-weight-bold">{{
+                  field.label
+                }}</label>
+                <input
+                  *ngIf="field.type === 'text'"
+                  type="text"
+                  class="form-control form-control-sm"
+                  [id]="'cf-' + field.key"
+                  [formControlName]="field.key"
+                  [attr.maxlength]="field.maxLength ?? null"
+                />
+                <input
+                  *ngIf="field.type === 'number'"
+                  type="number"
+                  class="form-control form-control-sm"
+                  [id]="'cf-' + field.key"
+                  [formControlName]="field.key"
+                />
+                <input
+                  *ngIf="field.type === 'date'"
+                  type="date"
+                  class="form-control form-control-sm"
+                  [id]="'cf-' + field.key"
+                  [formControlName]="field.key"
+                />
+                <div *ngIf="field.type === 'checkbox'" class="custom-control custom-checkbox mt-1">
+                  <input
+                    type="checkbox"
+                    class="custom-control-input"
+                    [id]="'cf-' + field.key"
+                    [formControlName]="field.key"
+                  />
+                  <label class="custom-control-label small" [attr.for]="'cf-' + field.key">
+                    Oui
+                  </label>
+                </div>
+                <div
+                  *ngIf="
+                    fg.get(field.key)?.invalid && fg.get(field.key)?.touched
+                  "
+                  class="text-danger small"
+                >
+                  Champ requis ou trop long.
+                </div>
+              </div>
+            </div>
+            <div class="d-flex justify-content-end gap-2 mt-3">
+              <button
+                type="button"
+                class="btn btn-light btn-sm"
+                (click)="closeFormModal()"
+              >
+                Annuler
+              </button>
+              <button
+                type="submit"
+                class="btn btn-primary btn-sm mena-btn-add"
+                [disabled]="formSubmitting"
+              >
+                {{
+                  formSubmitting
+                    ? 'Enregistrement…'
+                    : formMode === 'edit'
+                      ? 'Mettre à jour'
+                      : 'Enregistrer'
+                }}
+              </button>
+            </div>
+          </form>
+        </ng-container>
+        <ng-template #noFormTpl>
+          <p class="mb-2">
+            Pour cette ressource, le formulaire guidé n’est pas encore configuré
+            (données liées à d’autres modules, DTO spécifique, etc.).
+          </p>
+          <p class="text-muted small mb-0">
+            Vous pouvez compléter <code>createFields</code> dans
+            <code>referentiel-routes.data.ts</code> ou utiliser l’API directement
+            (Swagger). La suppression reste disponible si la ligne expose un
+            <code>id</code>.
+          </p>
+          <div class="d-flex justify-content-end mt-3">
+            <button
+              type="button"
+              class="btn btn-primary btn-sm"
+              (click)="closeFormModal()"
+            >
+              Fermer
+            </button>
+          </div>
+        </ng-template>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal confirmation suppression -->
+<div
+  class="modal-backdrop fade mena-modal-backdrop"
+  *ngIf="deleteModalOpen"
+  (click)="cancelDelete()"
+></div>
+<div
+  class="modal fade mena-modal"
+  role="dialog"
+  aria-modal="true"
+  [class.show]="deleteModalOpen"
+  [style.display]="deleteModalOpen ? 'block' : 'none'"
+  *ngIf="deleteModalOpen"
+>
+  <div class="modal-dialog modal-dialog-centered" (click)="$event.stopPropagation()">
+    <div class="modal-content mena-modal-content border-0 shadow">
+      <div class="modal-header border-0 mena-modal-header">
+        <h5 class="modal-title font-weight-bold text-danger">Supprimer ?</h5>
+        <button type="button" class="close" aria-label="Fermer" (click)="cancelDelete()">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p class="mb-2">
+          Cette action est définitive pour l’enregistrement
+          <strong>#{{ deleteTargetId }}</strong>
+          <span *ngIf="deleteTargetLabel"> — {{ deleteTargetLabel }}</span>.
+        </p>
+        <div *ngIf="deleteError" class="alert alert-danger small mb-0">
+          {{ deleteError }}
+        </div>
+      </div>
+      <div class="modal-footer border-0">
+        <button type="button" class="btn btn-light btn-sm" (click)="cancelDelete()">
+          Annuler
+        </button>
+        <button
+          type="button"
+          class="btn btn-danger btn-sm"
+          [disabled]="deleteSubmitting"
+          (click)="confirmDelete()"
+        >
+          {{ deleteSubmitting ? 'Suppression…' : 'Supprimer' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
