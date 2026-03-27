@@ -11,6 +11,11 @@ import { ActeursComponent } from './administration/acteurs/acteurs.component';
 import { RolesActeursComponent } from './administration/roles-acteurs/roles-acteurs.component';
 import { PersonnelComponent } from './administration/personnel/personnel.component';
 import { UtilisateursComponent } from './administration/utilisateurs/utilisateurs.component';
+import { AlphaCentresComponent } from './centres/alpha/alpha-centres.component';
+import { SimpleCentreTypePageComponent } from './centres/simple-centre-type-page.component';
+import { PromoteursComponent } from './promoteurs/promoteurs.component';
+import { SectionPlaceholderComponent } from './sections/section-placeholder.component';
+import { EffectifCentreUnifieComponent } from './apprenant/effectif/effectif-centre-unifie.component';
 
 const referentielRoutes: Routes = REFERENTIEL_ROUTE_DATA.map((r) => ({
   path: r.path,
@@ -26,12 +31,30 @@ const referentielRoutes: Routes = REFERENTIEL_ROUTE_DATA.map((r) => ({
 const mainChildRoutes: Routes = [
   { path: '', component: DashboardComponent },
   ...referentielRoutes,
+  { path: 'centres/alpha', component: AlphaCentresComponent },
+  { path: 'centres/cec', component: SimpleCentreTypePageComponent, data: { title: 'Centres CEC', apiPath: '/api/cec' } },
+  { path: 'centres/cp', component: SimpleCentreTypePageComponent, data: { title: 'Centres CP', apiPath: '/api/cp' } },
+  { path: 'centres/sie', component: SimpleCentreTypePageComponent, data: { title: 'Centres SIE', apiPath: '/api/sie' } },
+  { path: 'promoteurs', component: PromoteursComponent },
   /** Acteur = gestion des rôles (CRUD rôles). */
   { path: 'administration/acteurs', component: ActeursComponent },
   { path: 'administration/personnel', component: PersonnelComponent },
   /** Rôle permission = droits (rôle ↔ fonctionnalité ↔ permission). */
   { path: 'administration/role-permissions', component: RolesActeursComponent },
   { path: 'administration/utilisateurs', component: UtilisateursComponent },
+  { path: 'partenaire/partenariat', component: SectionPlaceholderComponent, data: { title: 'Partenaire - Partenariat' } },
+  { path: 'apprenant/effectif', component: EffectifCentreUnifieComponent },
+  { path: 'apprenant/abandon', component: ReferentielListPageComponent, data: { title: 'Apprenant - Abandon', apiPath: '/api/effectif-abandon-alpha', createFields: [] } },
+  { path: 'apprenant/passage', component: ReferentielListPageComponent, data: { title: 'Apprenant - Passage', apiPath: '/api/effectif-passage-alpha', createFields: [] } },
+  { path: 'apprenant/handicap', component: ReferentielListPageComponent, data: { title: 'Apprenant - Handicap', apiPath: '/api/effectif-situation-handicap-alpha', createFields: [] } },
+  { path: 'apprenant/competences', component: ReferentielListPageComponent, data: { title: 'Apprenant - Compétences acquises', apiPath: '/api/competence-centre', createFields: [] } },
+  { path: 'performance', component: SectionPlaceholderComponent, data: { title: 'Performance' } },
+  { path: 'control', component: SectionPlaceholderComponent, data: { title: 'Control' } },
+  { path: 'visites/pointage', component: SectionPlaceholderComponent, data: { title: 'Visites - Point des visites' } },
+  { path: 'visites/conseiller', component: SectionPlaceholderComponent, data: { title: 'Visites - Suivi du conseiller' } },
+  { path: 'visites/superviseur', component: SectionPlaceholderComponent, data: { title: 'Visites - Suivi du superviseur' } },
+  { path: 'visites/iepp', component: SectionPlaceholderComponent, data: { title: 'Visites - Suivi par l’IEPP' } },
+  { path: 'evaluation-periodique', component: SectionPlaceholderComponent, data: { title: 'Évaluation périodique' } },
 ];
 
 export const routes: Routes = [

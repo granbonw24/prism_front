@@ -27,7 +27,7 @@
               <div class="font-weight-bold text-dark">Non connecté</div>
             </ng-template>
             <div class="small text-muted mb-0" *ngIf="session$ | async as s">
-              {{ s.roles?.length ?? 0 }} rôle(s) · {{ s.permissions?.length ?? 0 }} permission(s)
+              {{ s.roles.length }} rôle(s) · {{ s.permissions.length }} permission(s)
             </div>
           </div>
         </div>

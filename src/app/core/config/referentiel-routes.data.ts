@@ -17,13 +17,22 @@ const F = (
   key: string,
   label: string,
   type: ReferentielFormField['type'],
-  opts?: { required?: boolean; maxLength?: number },
+  opts?: {
+    required?: boolean;
+    maxLength?: number;
+    optionsApiPath?: string;
+    optionValueKey?: string;
+    optionLabelKeys?: string[];
+  },
 ): ReferentielFormField => ({
   key,
   label,
   type,
   required: opts?.required ?? false,
   maxLength: opts?.maxLength,
+  optionsApiPath: opts?.optionsApiPath,
+  optionValueKey: opts?.optionValueKey,
+  optionLabelKeys: opts?.optionLabelKeys,
 });
 
 export const REFERENTIEL_ROUTE_DATA: ReferentielRouteData[] = [
@@ -393,6 +402,32 @@ export const REFERENTIEL_ROUTE_DATA: ReferentielRouteData[] = [
         required: true,
         maxLength: 100,
       }),
+    ],
+  },
+  {
+    path: 'localite-d-implantation',
+    title: 'Localités d’implantation',
+    apiPath: '/api/localite-d-implantation',
+    createFields: [
+      F('idSousPrefecture', 'Sous-préfecture', 'select', {
+        required: true,
+        optionsApiPath: '/api/sous-prefecture',
+        optionValueKey: 'id',
+        optionLabelKeys: ['codeSousPrefecture', 'nomSousPrefecture'],
+      }),
+      F('idMilieuImplentation', 'Milieu d’implantation', 'select', {
+        required: true,
+        optionsApiPath: '/api/milieu-implantation',
+        optionValueKey: 'id',
+        optionLabelKeys: ['codeMilieuImplentation', 'libelleTypeImplentation'],
+      }),
+      F('idCommune', 'Commune (optionnel)', 'select', {
+        optionsApiPath: '/api/commune',
+        optionValueKey: 'id',
+        optionLabelKeys: ['codeCommune', 'nomCommune'],
+      }),
+      F('codeLocalite', 'Code localité (optionnel)', 'text', { maxLength: 10 }),
+      F('nomLocalite', 'Nom localité', 'text', { required: true, maxLength: 30 }),
     ],
   },
 ];

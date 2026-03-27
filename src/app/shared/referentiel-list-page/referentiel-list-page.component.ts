@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { Component, Inject, OnDestroy, OnInit } from '@angular/core';
+import { Component, EventEmitter, Inject, Input, OnChanges, OnDestroy, OnInit, Output, SimpleChanges } from '@angular/core';
 import {
   FormBuilder,
   FormGroup,
@@ -21,7 +21,15 @@ import { formatHttpError } from '../../core/utils/http-error.util';
   templateUrl: './referentiel-list-page.component.html',
   styleUrl: './referentiel-list-page.component.css',
 })
-export class ReferentielListPageComponent implements OnInit, OnDestroy {
+export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChanges {
+  @Input() inputTitle?: string;
+  @Input() inputApiPath?: string;
+  @Input() inputCreateFields?: ReferentielFormField[];
+  @Input() addFormContextLabel?: string;
+  @Input() addFormContextOptions?: Array<{ value: string; label: string }>;
+  @Input() addFormContextValue?: string;
+  @Output() addFormContextValueChange = new EventEmitter<string>();
+
   title = '';
   apiPath = '';
   createFields: ReferentielFormField[] = [];
@@ -56,9 +64,11 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy {
   deleteTargetLabel = '';
   deleteSubmitting = false;
   deleteError: string | null = null;
+  fieldOptions: Record<string, Array<{ value: string | number; label: string }>> = {};
 
   private dataSub?: Subscription;
   private loadSub?: Subscription;
+  private optionSubs: Subscription[] = [];
 
   constructor(
     private readonly route: ActivatedRoute,
@@ -69,16 +79,43 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.dataSub = this.route.data.subscribe((data) => {
-      this.title = (data['title'] as string) ?? 'Référentiel';
-      this.apiPath = (data['apiPath'] as string) ?? '';
-      this.createFields = (data['createFields'] as ReferentielFormField[]) ?? [];
+      const routeTitle = (data['title'] as string) ?? 'Référentiel';
+      const routeApiPath = (data['apiPath'] as string) ?? '';
+      const routeCreateFields = (data['createFields'] as ReferentielFormField[]) ?? [];
+      this.title = this.inputTitle ?? routeTitle;
+      this.apiPath = this.inputApiPath ?? routeApiPath;
+      this.createFields = this.inputCreateFields ?? routeCreateFields;
       this.fetch();
     });
+  }
+
+  ngOnChanges(_changes: SimpleChanges): void {
+    // Supporte une utilisation en composant imbriqué avec config dynamique.
+    if (!this.dataSub) {
+      return;
+    }
+    if (this.inputTitle != null) this.title = this.inputTitle;
+    if (this.inputApiPath != null) this.apiPath = this.inputApiPath;
+    if (this.inputCreateFields != null) this.createFields = this.inputCreateFields;
+    if (this.formModalOpen && this.formMode === 'create' && this.hasCreateForm) {
+      this.recordForm = this.buildRecordForm();
+      // Si le contexte (ex: type de centre) change dans la modal, recharge les listes liées.
+      this.loadFieldOptions();
+    }
+    this.fetch();
+  }
+
+  onAddFormContextChange(ev: Event): void {
+    const target = ev.target as HTMLSelectElement | null;
+    const v = String(target?.value ?? '').trim();
+    if (!v) return;
+    this.addFormContextValueChange.emit(v);
   }
 
   ngOnDestroy(): void {
     this.dataSub?.unsubscribe();
     this.loadSub?.unsubscribe();
+    for (const s of this.optionSubs) s.unsubscribe();
   }
 
   get hasCreateForm(): boolean {
@@ -151,6 +188,10 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy {
     return String(value);
   }
 
+  getFieldOptions(field: ReferentielFormField): Array<{ value: string | number; label: string }> {
+    return this.fieldOptions[this.optionsCacheKey(field)] ?? [];
+  }
+
   clearListFilter(): void {
     this.listFilter = '';
   }
@@ -191,6 +232,7 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy {
       this.formModalOpen = true;
       return;
     }
+    this.loadFieldOptions();
     this.recordForm = this.buildRecordForm();
     this.formModalOpen = true;
   }
@@ -206,6 +248,7 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy {
     this.formError = null;
     this.formMode = 'edit';
     this.editingId = id;
+    this.loadFieldOptions();
     this.recordForm = this.buildRecordForm(this.rowToFormValues(row));
     this.formModalOpen = true;
   }
@@ -341,7 +384,7 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy {
       if (initial && f.key in initial) {
         val = initial[f.key];
       } else {
-        val = f.type === 'checkbox' ? false : f.type === 'number' ? null : '';
+        val = f.type === 'checkbox' ? false : (f.type === 'number' || f.type === 'select') ? null : '';
       }
       controls[f.key] = [val, validators];
     }
@@ -360,7 +403,7 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy {
       }
       if (f.type === 'checkbox') {
         out[f.key] = !!v;
-      } else if (f.type === 'number') {
+      } else if (f.type === 'number' || f.type === 'select') {
         if (v === null || v === undefined || v === '') {
           out[f.key] = null;
         } else {
@@ -390,7 +433,7 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy {
         }
         continue;
       }
-      if (f.type === 'number') {
+      if (f.type === 'number' || f.type === 'select') {
         if (v === '' || v === null || v === undefined) {
           if (f.required) {
             out[f.key] = null;
@@ -399,7 +442,7 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy {
         }
         const n = typeof v === 'number' ? v : Number(v);
         if (!Number.isNaN(n)) {
-          out[f.key] = n;
+          out[f.key] = f.type === 'select' && f.payloadAsObjectId ? { id: n } : n;
         }
       } else {
         out[f.key] = v;
@@ -540,10 +583,59 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy {
       this.columns = [];
       return;
     }
-    const keys = Object.keys(this.rows[0]).filter(
+    const first = this.rows[0];
+    const keys = Object.keys(first).filter(
       (k) => !k.startsWith('_') && k !== 'hibernateLazyInitializer',
     );
-    keys.sort();
-    this.columns = keys.slice(0, 18);
+    const hiddenIds = new Set<string>();
+    for (const k of keys) {
+      if (!k.startsWith('id') || k.length <= 2) continue;
+      const suffix = k.slice(2);
+      const labelCandidates = [`nom${suffix}`, `libelle${suffix}`, `label${suffix}`];
+      if (labelCandidates.some((c) => c in first)) hiddenIds.add(k);
+    }
+    const visibleKeys = keys.filter((k) => !hiddenIds.has(k));
+    visibleKeys.sort();
+    this.columns = visibleKeys.slice(0, 18);
+  }
+
+  private loadFieldOptions(): void {
+    for (const field of this.createFields) {
+      if (field.type !== 'select' || !field.optionsApiPath) continue;
+      const cacheKey = this.optionsCacheKey(field);
+      if ((this.fieldOptions[cacheKey]?.length ?? 0) > 0) continue;
+      const sub = this.http.get<unknown[]>(`${this.apiBaseUrl}${field.optionsApiPath}`).subscribe({
+        next: (rows) => {
+          const list = Array.isArray(rows) ? rows : [];
+          this.fieldOptions[cacheKey] = list
+            .map((row) => this.toOption(field, row as Record<string, unknown>))
+            .filter((x): x is { value: string | number; label: string } => x != null);
+        },
+        error: () => {
+          this.fieldOptions[cacheKey] = [];
+        },
+      });
+      this.optionSubs.push(sub);
+    }
+  }
+
+  private optionsCacheKey(field: ReferentielFormField): string {
+    return `${field.key}::${field.optionsApiPath ?? ''}`;
+  }
+
+  private toOption(field: ReferentielFormField, row: Record<string, unknown>): { value: string | number; label: string } | null {
+    const valueKey = field.optionValueKey ?? 'id';
+    const valueRaw = row[valueKey];
+    if (typeof valueRaw !== 'string' && typeof valueRaw !== 'number') return null;
+
+    const labelKeys = field.optionLabelKeys ?? ['libelle', 'nom', 'label', 'code', 'id'];
+    const parts: string[] = [];
+    for (const k of labelKeys) {
+      const v = row[k];
+      if (v == null) continue;
+      const s = String(v).trim();
+      if (s) parts.push(s);
+    }
+    return { value: valueRaw, label: parts.length ? parts.join(' - ') : String(valueRaw) };
   }
 }

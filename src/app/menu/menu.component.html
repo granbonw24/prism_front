@@ -46,17 +46,17 @@
         <div id="collapseTwo" class="collapse" aria-labelledby="headingTwo" data-parent="#accordionSidebar">
           <div class="bg-white py-2 collapse-inner rounded">
             <!-- <h6 class="collapse-header">alpha</h6> -->
-            <a class="collapse-item" routerLink="buttons.html">alpha</a>
-            <a class="collapse-item" routerLink="cards.html">cec</a>
-            <a class="collapse-item" routerLink="cards.html">sie</a>
-            <a class="collapse-item" routerLink="cards.html">cp</a>
+            <a class="collapse-item" routerLink="/centres/alpha" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Alpha</a>
+            <a class="collapse-item" routerLink="/centres/cec" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">CEC</a>
+            <a class="collapse-item" routerLink="/centres/cp" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">CP</a>
+            <a class="collapse-item" routerLink="/centres/sie" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">SIE</a>
 
           </div>
         </div>
       </li>
 
       <li class="nav-item">
-        <a class="nav-link" routerLink="charts.html">
+        <a class="nav-link" routerLink="/promoteurs" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
           <i class="fas fa-fw fa-chart-area"></i>
           <span>PROMOTEUR</span></a>
       </li>
@@ -70,7 +70,7 @@
         <div id="collapseUtilities1" class="collapse" aria-labelledby="headingUtilities" data-parent="#accordionSidebar">
           <div class="bg-white py-2 collapse-inner rounded">
             <!-- <h6 class="collapse-header">Custom Utilities:</h6> -->
-            <a class="collapse-item" routerLink="utilities-color.html">Partenariat</a>
+            <a class="collapse-item" routerLink="/partenaire" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Partenariat</a>
           </div>
         </div>
       </li>
@@ -83,23 +83,23 @@
         <div id="collapseUtilities2" class="collapse" aria-labelledby="headingUtilities" data-parent="#accordionSidebar">
           <div class="bg-white py-2 collapse-inner rounded">
             <!-- <h6 class="collapse-header">Custom Utilities:</h6> -->
-            <a class="collapse-item" routerLink="utilities-color.html">Effectif apprenant</a>
-            <a class="collapse-item" routerLink="utilities-color.html">Effectif abandon</a>
-            <a class="collapse-item" routerLink="utilities-color.html">Effectif passage</a>
-            <a class="collapse-item" routerLink="utilities-color.html">Effectif handicap</a>
-            <a class="collapse-item" routerLink="utilities-color.html">Effectif competence aquise </a>
+            <a class="collapse-item" routerLink="/apprenant/effectif" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Effectif apprenant</a>
+            <a class="collapse-item" routerLink="/apprenant/abandon" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Effectif abandon</a>
+            <a class="collapse-item" routerLink="/apprenant/passage" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Effectif passage</a>
+            <a class="collapse-item" routerLink="/apprenant/handicap" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Effectif handicap</a>
+            <a class="collapse-item" routerLink="/apprenant/competences" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Effectif competence aquise </a>
 
           </div>
         </div>
       </li>
 
      <li class="nav-item">
-        <a class="nav-link" routerLink="charts.html">
+        <a class="nav-link" routerLink="/performance" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
           <i class="fas fa-fw fa-chart-area"></i>
           <span>PERFORMANCE</span></a>
       </li>
        <li class="nav-item">
-        <a class="nav-link" routerLink="charts.html">
+        <a class="nav-link" routerLink="/control" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
           <i class="fas fa-fw fa-chart-area"></i>
           <span>CONTROL</span></a>
       </li>
@@ -112,10 +112,10 @@
         <div id="collapseUtilities3" class="collapse" aria-labelledby="headingUtilities" data-parent="#accordionSidebar">
           <div class="bg-white py-2 collapse-inner rounded">
             <!-- <h6 class="collapse-header">Custom Utilities:</h6> -->
-            <a class="collapse-item" routerLink="utilities-color.html">point des visites </a>
-            <a class="collapse-item" routerLink="utilities-color.html">suivi du conseiller </a>
-            <a class="collapse-item" routerLink="utilities-color.html">Suivi par le superviseur</a>
-            <a class="collapse-item" routerLink="utilities-color.html">suivi par l'iepp</a>
+            <a class="collapse-item" routerLink="/visites/pointage" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">point des visites </a>
+            <a class="collapse-item" routerLink="/visites/conseiller" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">suivi du conseiller </a>
+            <a class="collapse-item" routerLink="/visites/superviseur" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Suivi par le superviseur</a>
+            <a class="collapse-item" routerLink="/visites/iepp" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">suivi par l'iepp</a>
 
           </div>
         </div>
@@ -134,7 +134,7 @@
 
       <!-- Nav Item - Charts -->
       <li class="nav-item">
-        <a class="nav-link" routerLink="charts.html">
+        <a class="nav-link" routerLink="/evaluation-periodique" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
           <i class="fas fa-fw fa-chart-area"></i>
           <span>EVALUATION PERIODIQUE </span></a>
       </li>
@@ -163,10 +163,47 @@
           data-parent="#accordionSidebar"
         >
           <div class="bg-white py-2 collapse-inner rounded">
-            <a class="collapse-item" routerLink="/administration/personnel" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Personnel</a>
-            <a class="collapse-item" routerLink="/administration/acteurs" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Acteurs (rôles)</a>
-            <a class="collapse-item" routerLink="/administration/role-permissions" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Rôle permission</a>
-            <a class="collapse-item" routerLink="/administration/utilisateurs" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">utilisateurs</a>
+            <a
+              class="collapse-item mena-submenu-toggle collapsed"
+              routerLink="#"
+              data-toggle="collapse"
+              data-target="#admin-gestion"
+              aria-expanded="false"
+              aria-controls="admin-gestion"
+              >Gestion</a
+            >
+            <div id="admin-gestion" class="collapse">
+              <a class="collapse-item pl-4" routerLink="/administration/personnel" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }"
+                >Personnel</a
+              >
+              <a class="collapse-item pl-4" routerLink="/administration/utilisateurs" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }"
+                >Utilisateurs</a
+              >
+            </div>
+
+            <div class="dropdown-divider"></div>
+
+            <a
+              class="collapse-item mena-submenu-toggle collapsed"
+              routerLink="#"
+              data-toggle="collapse"
+              data-target="#admin-securite"
+              aria-expanded="false"
+              aria-controls="admin-securite"
+              >Sécurité</a
+            >
+            <div id="admin-securite" class="collapse">
+              <a class="collapse-item pl-4" routerLink="/administration/acteurs" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }"
+                >Acteurs (rôles)</a
+              >
+              <a
+                class="collapse-item pl-4"
+                routerLink="/administration/role-permissions"
+                routerLinkActive="active"
+                [routerLinkActiveOptions]="{ exact: true }"
+                >Rôle permission</a
+              >
+            </div>
           </div>
         </div>
       </li>
@@ -178,12 +215,28 @@
         </a>
         <div id="collapseUtilities5" class="collapse" aria-labelledby="headingUtilities" data-parent="#accordionSidebar">
           <div class="bg-white py-2 collapse-inner rounded">
-            <a
-              *ngFor="let r of referentielRoutes"
-              class="collapse-item"
-              [routerLink]="r.path"
-              >{{ r.title }}</a
-            >
+            <ng-container *ngFor="let g of referentielGroups">
+              <a
+                class="collapse-item mena-submenu-toggle collapsed"
+                routerLink="#"
+                data-toggle="collapse"
+                [attr.data-target]="'#' + groupCollapseId('ref', g.title)"
+                aria-expanded="false"
+                [attr.aria-controls]="groupCollapseId('ref', g.title)"
+                >{{ g.title }}</a
+              >
+              <div [id]="groupCollapseId('ref', g.title)" class="collapse">
+                <a
+                  *ngFor="let r of g.items"
+                  class="collapse-item pl-4"
+                  [routerLink]="r.path"
+                  routerLinkActive="active"
+                  [routerLinkActiveOptions]="{ exact: true }"
+                  >{{ r.title }}</a
+                >
+              </div>
+              <div class="dropdown-divider"></div>
+            </ng-container>
           </div>
         </div>
       </li>

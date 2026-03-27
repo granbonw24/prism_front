@@ -271,6 +271,29 @@ body {
   background: var(--mena-white);
 }
 
+/* Sous-menus repliables dans la sidebar */
+.mena-submenu-toggle {
+  position: relative;
+  font-weight: 700;
+}
+
+.mena-submenu-toggle::after {
+  content: '\f107'; /* fa-chevron-down */
+  font-family: 'Font Awesome 5 Free';
+  font-weight: 900;
+  position: absolute;
+  right: 0.85rem;
+  top: 50%;
+  transform: translateY(-50%);
+  opacity: 0.55;
+  transition: transform 180ms ease, opacity 180ms ease;
+}
+
+.mena-submenu-toggle.collapsed::after {
+  transform: translateY(-50%) rotate(-90deg);
+  opacity: 0.35;
+}
+
 /* Page login : orange doux + blanc + soupçon de vert */
 .mena-login-panel {
   background: linear-gradient(
@@ -359,4 +382,59 @@ body {
     rgba(238, 248, 241, 0.6) 100%
   );
   color: var(--mena-orange-800);
+}
+
+/* Wizard soft (liens plutôt que boutons) */
+.mena-wizard-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 0.75rem;
+}
+
+.mena-wizard-step {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.6rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(214, 111, 30, 0.18);
+  color: var(--mena-orange-950);
+  font-size: 0.82rem;
+  text-decoration: none;
+  cursor: pointer;
+  user-select: none;
+}
+
+.mena-wizard-step.is-active {
+  background: linear-gradient(90deg, var(--mena-orange-100) 0%, rgba(238, 248, 241, 0.8) 100%);
+  border-color: rgba(214, 111, 30, 0.28);
+  font-weight: 700;
+}
+
+.mena-wizard-step.is-disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.mena-wizard-link.is-disabled {
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.mena-wizard-actions {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 0.75rem;
+}
+
+.mena-wizard-link {
+  color: var(--mena-orange-800);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.mena-wizard-link:hover {
+  text-decoration: underline;
 }

@@ -247,11 +247,21 @@
       </div>
       <div class="modal-body">
         <ng-container *ngIf="hasCreateForm && recordForm as fg; else noFormTpl">
-          <p class="text-muted small">
-            Les champs correspondent au modèle attendu par l’API pour un
-            {{ formMode === 'edit' ? 'PUT' : 'POST' }} sur cette ressource. Les
-            <strong>codes</strong> techniques sont générés côté serveur s’ils ne sont pas fournis.
-          </p>
+          <div
+            *ngIf="formMode === 'create' && addFormContextLabel && (addFormContextOptions?.length ?? 0) > 0"
+            class="form-group"
+          >
+            <label class="small font-weight-bold">{{ addFormContextLabel }}</label>
+            <select
+              class="form-control form-control-sm"
+              [value]="addFormContextValue ?? ''"
+              (change)="onAddFormContextChange($event)"
+            >
+              <option *ngFor="let opt of addFormContextOptions" [value]="opt.value">
+                {{ opt.label }}
+              </option>
+            </select>
+          </div>
           <div *ngIf="formError" class="alert alert-danger small">
             {{ formError }}
           </div>
@@ -286,6 +296,17 @@
                   [id]="'cf-' + field.key"
                   [formControlName]="field.key"
                 />
+                <select
+                  *ngIf="field.type === 'select'"
+                  class="form-control form-control-sm"
+                  [id]="'cf-' + field.key"
+                  [formControlName]="field.key"
+                >
+                  <option [ngValue]="null">-- Sélectionner --</option>
+                  <option *ngFor="let opt of getFieldOptions(field)" [ngValue]="opt.value">
+                    {{ opt.label }}
+                  </option>
+                </select>
                 <div *ngIf="field.type === 'checkbox'" class="custom-control custom-checkbox mt-1">
                   <input
                     type="checkbox"

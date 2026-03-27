@@ -38,6 +38,14 @@ export interface AppUserAdmin {
   roleIds: number[];
 }
 
+export interface AppUserAdminUpsertRequest {
+  username: string;
+  email?: string | null;
+  actif?: boolean | null;
+  password?: string | null;
+  roleIds?: number[] | null;
+}
+
 export interface PersonnelAdmin {
   id: number;
   niveauPersonnelId: number | null;
@@ -125,6 +133,18 @@ export class AdministrationService {
 
   getUsers(): Observable<AppUserAdmin[]> {
     return this.http.get<AppUserAdmin[]>(`${this.apiBaseUrl}/api/app-users`);
+  }
+
+  createUser(payload: AppUserAdminUpsertRequest): Observable<AppUserAdmin> {
+    return this.http.post<AppUserAdmin>(`${this.apiBaseUrl}/api/app-users`, payload);
+  }
+
+  updateUser(userId: number, payload: AppUserAdminUpsertRequest): Observable<AppUserAdmin> {
+    return this.http.put<AppUserAdmin>(`${this.apiBaseUrl}/api/app-users/${userId}`, payload);
+  }
+
+  deleteUser(userId: number): Observable<void> {
+    return this.http.delete<void>(`${this.apiBaseUrl}/api/app-users/${userId}`);
   }
 
   updateUserRoles(userId: number, roleIds: number[]): Observable<void> {
