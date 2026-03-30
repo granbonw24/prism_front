@@ -59,10 +59,18 @@
 
 .mena-col-actions {
   width: 1%;
+  min-width: 6.5rem;
   vertical-align: middle;
 }
 
 .mena-btn-action {
   border-radius: 8px;
   padding: 0.2rem 0.45rem;
+}
+
+.mena-row-actions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.35rem;
 }

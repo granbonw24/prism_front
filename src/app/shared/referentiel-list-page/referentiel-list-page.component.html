@@ -172,24 +172,26 @@
               <td>{{ i + 1 }}</td>
               <td *ngFor="let col of columns">{{ formatCell(row[col]) }}</td>
               <td *ngIf="canUseRowActions" class="text-right text-nowrap mena-col-actions">
-                <button
-                  type="button"
-                  class="btn btn-outline-primary btn-sm mena-btn-action mr-1"
-                  *ngIf="hasCreateForm && resolveRowId(row) != null"
-                  (click)="openEditModal(row)"
-                  title="Modifier"
-                >
-                  <i class="fas fa-pen"></i>
-                </button>
-                <button
-                  type="button"
-                  class="btn btn-outline-danger btn-sm mena-btn-action"
-                  *ngIf="resolveRowId(row) != null"
-                  (click)="openDeleteModal(row)"
-                  title="Supprimer"
-                >
-                  <i class="fas fa-trash-alt"></i>
-                </button>
+                <div class="mena-row-actions">
+                  <button
+                    type="button"
+                    class="btn btn-outline-primary btn-sm mena-btn-action"
+                    *ngIf="hasCreateForm && resolveRowId(row) != null"
+                    (click)="openEditModal(row)"
+                    title="Modifier"
+                  >
+                    <i class="fas fa-pen"></i>
+                  </button>
+                  <button
+                    type="button"
+                    class="btn btn-outline-danger btn-sm mena-btn-action"
+                    *ngIf="resolveRowId(row) != null"
+                    (click)="openDeleteModal(row)"
+                    title="Supprimer"
+                  >
+                    <i class="fas fa-trash-alt"></i>
+                  </button>
+                </div>
               </td>
             </tr>
           </tbody>

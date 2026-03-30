@@ -293,37 +293,39 @@
               <td class="text-center">{{ r.aDeLeau === true ? 'Oui' : r.aDeLeau === false ? 'Non' : '—' }}</td>
               <td class="text-center">{{ r.estElectrifie === true ? 'Oui' : r.estElectrifie === false ? 'Non' : '—' }}</td>
               <td class="text-center">{{ r.nombreVisite ?? '—' }}</td>
-              <td class="text-center">
-                <button
-                  class="btn btn-sm btn-outline-primary mr-1"
-                  type="button"
-                  (click)="openDetails(r)"
-                  [disabled]="saving"
-                  title="Détails"
-                  aria-label="Détails"
-                >
-                  <i class="fas fa-eye" aria-hidden="true"></i>
-                </button>
-                <button
-                  class="btn btn-sm btn-outline-secondary mr-1"
-                  type="button"
-                  (click)="openEdit(r)"
-                  [disabled]="saving"
-                  title="Modifier"
-                  aria-label="Modifier"
-                >
-                  <i class="fas fa-pen" aria-hidden="true"></i>
-                </button>
-                <button
-                  class="btn btn-sm btn-outline-danger"
-                  type="button"
-                  (click)="deleteRow(r)"
-                  [disabled]="saving"
-                  title="Supprimer"
-                  aria-label="Supprimer"
-                >
-                  <i class="fas fa-trash" aria-hidden="true"></i>
-                </button>
+              <td class="text-center mena-col-actions">
+                <div class="mena-row-actions">
+                  <button
+                    class="btn btn-sm btn-outline-primary"
+                    type="button"
+                    (click)="openDetails(r)"
+                    [disabled]="saving"
+                    title="Détails"
+                    aria-label="Détails"
+                  >
+                    <i class="fas fa-eye" aria-hidden="true"></i>
+                  </button>
+                  <button
+                    class="btn btn-sm btn-outline-secondary"
+                    type="button"
+                    (click)="openEdit(r)"
+                    [disabled]="saving"
+                    title="Modifier"
+                    aria-label="Modifier"
+                  >
+                    <i class="fas fa-pen" aria-hidden="true"></i>
+                  </button>
+                  <button
+                    class="btn btn-sm btn-outline-danger"
+                    type="button"
+                    (click)="deleteRow(r)"
+                    [disabled]="saving"
+                    title="Supprimer"
+                    aria-label="Supprimer"
+                  >
+                    <i class="fas fa-trash" aria-hidden="true"></i>
+                  </button>
+                </div>
               </td>
             </tr>
             <tr *ngIf="rows.length === 0">
