@@ -1,2 +1,3 @@
-export class Periodicite {
-}
+import type { ReferentielModel } from '@models/referentiel.model';
+
+export type Periodicite = ReferentielModel;

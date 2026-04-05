@@ -1,8 +1,8 @@
 import { HttpClient } from '@angular/common/http';
 import { Inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
-import { Ministere } from '../core/models/ministere.model';
-import { API_BASE_URL } from '../core/tokens/api-base-url.token';
+import type { Ministere } from '@models/ministere';
+import { API_BASE_URL } from '@core/tokens/api-base-url.token';
 
 @Injectable({ providedIn: 'root' })
 export class MinistereService {
@@ -20,17 +20,11 @@ export class MinistereService {
   }
 
   create(entity: Partial<Ministere>): Observable<Ministere> {
-    return this.http.post<Ministere>(
-      `${this.apiBaseUrl}/api/ministeres`,
-      entity,
-    );
+    return this.http.post<Ministere>(`${this.apiBaseUrl}/api/ministeres`, entity);
   }
 
   update(id: number, entity: Partial<Ministere>): Observable<Ministere> {
-    return this.http.put<Ministere>(
-      `${this.apiBaseUrl}/api/ministeres/${id}`,
-      entity,
-    );
+    return this.http.put<Ministere>(`${this.apiBaseUrl}/api/ministeres/${id}`, entity);
   }
 
   delete(id: number): Observable<void> {

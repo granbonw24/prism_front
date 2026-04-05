@@ -4,8 +4,8 @@ import {
 } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { catchError, throwError } from 'rxjs';
-import { NotificationService } from '../services/notification.service';
-import { summarizeHttpErrorForToast } from '../utils/http-error.util';
+import { NotificationService } from '@core/services/notification.service';
+import { summarizeHttpErrorForToast } from '@core/utils/http-error.util';
 
 /**
  * Feedback global pour erreurs « transverses » : évite le silence sur 5xx / réseau / 403.

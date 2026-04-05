@@ -1,4 +1,4 @@
-import type { ReferentielFormField } from './referentiel-form.types';
+import type { ReferentielFormField } from '@core/config/referentiel-form.types';
 
 /**
  * Correspondance routes Angular ↔ chemins API Spring (`@RequestMapping`).

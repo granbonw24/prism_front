@@ -1,0 +1,84 @@
+<div class="container-fluid px-2 px-sm-3">
+  <h1 class="h3 mb-2 text-gray-800">Gestion des années scolaires</h1>
+  <p class="mb-4 text-muted">
+    Nombre d’années : <strong>{{ rows.length }}</strong>
+  </p>
+
+  <div *ngIf="errorMessage" class="alert alert-danger" role="alert">
+    {{ errorMessage }}
+  </div>
+
+  <div class="card shadow mb-4 border-0">
+    <div class="card-header py-3 d-flex flex-wrap align-items-center justify-content-between gap-2 bg-white border-bottom-0">
+      <a routerLink="add" class="btn btn-success btn-icon-split">
+        <span class="icon text-white-50">
+          <i class="fas fa-plus"></i>
+        </span>
+        <span class="text">Ajouter année</span>
+      </a>
+      <h6 class="m-0 font-weight-bold text-primary">Liste des années</h6>
+    </div>
+    <div class="card-body">
+      <div *ngIf="loading" class="text-muted py-4 text-center">Chargement…</div>
+      <div *ngIf="!loading" class="table-responsive">
+        <table class="table table-bordered" width="100%" cellspacing="0">
+          <thead>
+            <tr>
+              <th>Code</th>
+              <th>Date début</th>
+              <th>Date fin</th>
+              <th>Thème</th>
+              <th>Statut</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngIf="rows.length === 0">
+              <td colspan="6" class="text-center text-muted">Aucune année scolaire.</td>
+            </tr>
+            <tr *ngFor="let row of rows">
+              <td>{{ row.codeAnneeScolaire || '—' }}</td>
+              <td>{{ row.debutAnneeScolaire || '—' }}</td>
+              <td>{{ row.finAnneeScolaire || '—' }}</td>
+              <td class="text-muted">—</td>
+              <td>
+                <span *ngIf="row.etatAnneeScolaire" class="badge badge-success">En cours</span>
+                <span *ngIf="!row.etatAnneeScolaire" class="badge badge-secondary">—</span>
+              </td>
+              <td class="text-nowrap">
+                <a [routerLink]="['edit', row.id]" class="btn btn-info btn-sm btn-icon-split mr-1 mb-1">
+                  <span class="icon text-white-50"><i class="fas fa-pen"></i></span>
+                  <span class="text">Modifier</span>
+                </a>
+                <button
+                  type="button"
+                  class="btn btn-danger btn-sm btn-icon-split mr-1 mb-1"
+                  (click)="openDelete(row)"
+                >
+                  <span class="icon text-white-50"><i class="fas fa-trash"></i></span>
+                  <span class="text">Supprimer</span>
+                </button>
+                <button
+                  type="button"
+                  class="btn btn-secondary btn-sm btn-icon-split mb-1"
+                  [disabled]="row.etatAnneeScolaire || savingEtatId === row.id"
+                  (click)="setCourante(row)"
+                >
+                  <span class="icon text-white-50"><i class="fas fa-lock"></i></span>
+                  <span class="text">{{ savingEtatId === row.id ? '…' : 'Activer' }}</span>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<app-anneescolaire-delete
+  *ngIf="deleteTarget"
+  [annee]="deleteTarget"
+  (cancelled)="closeDelete()"
+  (deleted)="onDeleted()"
+/>

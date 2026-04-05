@@ -1,7 +1,9 @@
-import { Regimealpha } from './regimealpha';
+import { Regimealpha } from '@models/regimealpha';
 
 describe('Regimealpha', () => {
   it('should create an instance', () => {
-    expect(new Regimealpha()).toBeTruthy();
+    const model: Regimealpha = { id: 1, libelle: 'Regime alpha test' };
+    expect(model.id).toBe(1);
+    expect(model.libelle).toBe('Regime alpha test');
   });
 });

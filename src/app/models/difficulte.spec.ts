@@ -1,7 +1,9 @@
-import { Difficulte } from './difficulte';
+import { Difficulte } from '@models/difficulte';
 
 describe('Difficulte', () => {
   it('should create an instance', () => {
-    expect(new Difficulte()).toBeTruthy();
+    const model: Difficulte = { id: 1, libelle: 'Difficulte test' };
+    expect(model.id).toBe(1);
+    expect(model.libelle).toBe('Difficulte test');
   });
 });

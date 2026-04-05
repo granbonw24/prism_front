@@ -1,7 +1,9 @@
-import { Niveaucp } from './niveaucp';
+import { Niveaucp } from '@models/niveaucp';
 
 describe('Niveaucp', () => {
   it('should create an instance', () => {
-    expect(new Niveaucp()).toBeTruthy();
+    const model: Niveaucp = { id: 1, libelle: 'Niveau cp test' };
+    expect(model.id).toBe(1);
+    expect(model.libelle).toBe('Niveau cp test');
   });
 });

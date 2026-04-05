@@ -1,2 +1,3 @@
-export class Autoriteautorisation {
-}
+import type { ReferentielModel } from '@models/referentiel.model';
+
+export type Autoriteautorisation = ReferentielModel;

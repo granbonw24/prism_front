@@ -7,10 +7,10 @@ import {
   AuthSession,
   LoginRequest,
   LoginResponse,
-} from '../core/models/auth.models';
-import { API_BASE_URL } from '../core/tokens/api-base-url.token';
-import { SessionStore } from './session-store.service';
-import { TokenStorageService } from './token-storage.service';
+} from '@core/models/auth.models';
+import { API_BASE_URL } from '@core/tokens/api-base-url.token';
+import { SessionStore } from '@services/session-store.service';
+import { TokenStorageService } from '@services/token-storage.service';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {

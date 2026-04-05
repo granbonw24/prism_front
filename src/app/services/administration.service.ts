@@ -1,7 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
-import { API_BASE_URL } from '../core/tokens/api-base-url.token';
+import { API_BASE_URL } from '@core/tokens/api-base-url.token';
 
 export interface AppRole {
   id: number;
@@ -99,15 +99,11 @@ export class AdministrationService {
   }
 
   getFonctionnalites(): Observable<Fonctionnalite[]> {
-    return this.http.get<Fonctionnalite[]>(
-      `${this.apiBaseUrl}/api/fonctionnalite`,
-    );
+    return this.http.get<Fonctionnalite[]>(`${this.apiBaseUrl}/api/fonctionnalite`);
   }
 
   getPermissions(): Observable<Permission[]> {
-    return this.http.get<Permission[]>(
-      `${this.apiBaseUrl}/api/permission`,
-    );
+    return this.http.get<Permission[]>(`${this.apiBaseUrl}/api/permission`);
   }
 
   getRoleFonctionnalitePermissions(): Observable<RoleFonctionnalitePermission[]> {
@@ -148,17 +144,15 @@ export class AdministrationService {
   }
 
   updateUserRoles(userId: number, roleIds: number[]): Observable<void> {
-    return this.http.put<void>(
-      `${this.apiBaseUrl}/api/app-users/${userId}/roles`,
-      { roleIds },
-    );
+    return this.http.put<void>(`${this.apiBaseUrl}/api/app-users/${userId}/roles`, {
+      roleIds,
+    });
   }
 
   listPersonnelByCentre(centreId: number): Observable<PersonnelAdmin[]> {
-    return this.http.get<PersonnelAdmin[]>(
-      `${this.apiBaseUrl}/api/admin/personnel`,
-      { params: { centreId } },
-    );
+    return this.http.get<PersonnelAdmin[]>(`${this.apiBaseUrl}/api/admin/personnel`, {
+      params: { centreId },
+    });
   }
 
   getPersonnelDashboard(centreId: number): Observable<PersonnelAdminDashboard> {
@@ -180,4 +174,3 @@ export class AdministrationService {
     return this.http.delete<void>(`${this.apiBaseUrl}/api/admin/personnel/${id}`);
   }
 }
-

@@ -1,2 +1,3 @@
-export class Partenaire {
-}
+import type { ReferentielModel } from '@models/referentiel.model';
+
+export type Partenaire = ReferentielModel;

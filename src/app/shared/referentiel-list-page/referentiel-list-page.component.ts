@@ -10,9 +10,9 @@ import {
 } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { Subscription } from 'rxjs';
-import type { ReferentielFormField } from '../../core/config/referentiel-form.types';
-import { API_BASE_URL } from '../../core/tokens/api-base-url.token';
-import { formatHttpError } from '../../core/utils/http-error.util';
+import type { ReferentielFormField } from '@core/config/referentiel-form.types';
+import { API_BASE_URL } from '@core/tokens/api-base-url.token';
+import { formatHttpError } from '@core/utils/http-error.util';
 
 @Component({
   selector: 'app-referentiel-list-page',

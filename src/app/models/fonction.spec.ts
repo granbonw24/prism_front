@@ -1,7 +1,9 @@
-import { Fonction } from './fonction';
+import { Fonction } from '@models/fonction';
 
 describe('Fonction', () => {
   it('should create an instance', () => {
-    expect(new Fonction()).toBeTruthy();
+    const model: Fonction = { id: 1, libelle: 'Fonction test' };
+    expect(model.id).toBe(1);
+    expect(model.libelle).toBe('Fonction test');
   });
 });

@@ -1,2 +1,3 @@
-export class Difficulte {
-}
+import type { ReferentielModel } from '@models/referentiel.model';
+
+export type Difficulte = ReferentielModel;

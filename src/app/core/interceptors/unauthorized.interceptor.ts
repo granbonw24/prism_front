@@ -5,9 +5,9 @@ import {
 import { inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { catchError, throwError } from 'rxjs';
-import { NotificationService } from '../services/notification.service';
-import { SessionStore } from '../../services/session-store.service';
-import { TokenStorageService } from '../../services/token-storage.service';
+import { NotificationService } from '@core/services/notification.service';
+import { SessionStore } from '@services/session-store.service';
+import { TokenStorageService } from '@services/token-storage.service';
 
 /**
  * Session expirée ou refusée : nettoie le stockage et renvoie vers la page de connexion.

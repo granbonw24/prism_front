@@ -1,7 +1,7 @@
 import { AsyncPipe, NgClass, NgIf } from '@angular/common';
 import { Component, inject } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
-import { NotificationService } from '../core/services/notification.service';
+import { NotificationService } from '@core/services/notification.service';
 import { MenuComponent } from '../menu/menu.component';
 
 @Component({

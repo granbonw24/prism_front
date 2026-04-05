@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
-import { AuthSession } from '../core/models/auth.models';
+import { AuthSession } from '@core/models/auth.models';
 
 /** État session utilisateur sans dépendre de HttpClient (évite les cycles avec les intercepteurs). */
 @Injectable({ providedIn: 'root' })

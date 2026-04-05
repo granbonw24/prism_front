@@ -1,2 +1,3 @@
-export class Categorieappui {
-}
+import type { ReferentielModel } from '@models/referentiel.model';
+
+export type Categorieappui = ReferentielModel;

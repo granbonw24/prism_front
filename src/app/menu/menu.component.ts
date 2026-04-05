@@ -1,8 +1,8 @@
 import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
-import { BRAND_CONFIG } from '../core/config/brand.config';
-import { REFERENTIEL_ROUTE_DATA, type ReferentielRouteData } from '../core/config/referentiel-routes.data';
+import { BRAND_CONFIG } from '@core/config/brand.config';
+import { REFERENTIEL_ROUTE_DATA, type ReferentielRouteData } from '@core/config/referentiel-routes.data';
 
 @Component({
   selector: 'app-menu',

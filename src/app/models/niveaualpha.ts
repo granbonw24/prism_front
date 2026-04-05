@@ -1,2 +1,3 @@
-export class Niveaualpha {
-}
+import type { ReferentielModel } from '@models/referentiel.model';
+
+export type Niveaualpha = ReferentielModel;

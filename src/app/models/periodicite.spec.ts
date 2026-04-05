@@ -1,7 +1,9 @@
-import { Periodicite } from './periodicite';
+import { Periodicite } from '@models/periodicite';
 
 describe('Periodicite', () => {
   it('should create an instance', () => {
-    expect(new Periodicite()).toBeTruthy();
+    const model: Periodicite = { id: 1, libelle: 'Periodicite test' };
+    expect(model.id).toBe(1);
+    expect(model.libelle).toBe('Periodicite test');
   });
 });

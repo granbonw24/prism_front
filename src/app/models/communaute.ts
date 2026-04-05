@@ -1,2 +1,3 @@
-export class Communaute {
-}
+import type { ReferentielModel } from '@models/referentiel.model';
+
+export type Communaute = ReferentielModel;

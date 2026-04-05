@@ -1,8 +1,8 @@
 import { AsyncPipe } from '@angular/common';
 import { Component } from '@angular/core';
 import { RouterLink, RouterOutlet } from '@angular/router';
-import { BRAND_CONFIG } from '../core/config/brand.config';
-import { AuthService } from '../services/auth.service';
+import { BRAND_CONFIG } from '@core/config/brand.config';
+import { AuthService } from '@services/auth.service';
 
 @Component({
   selector: 'app-main',

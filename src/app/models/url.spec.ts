@@ -1,7 +1,7 @@
-import { Url } from './url';
+import { Url } from '@models/url';
 
 describe('Url', () => {
   it('should create an instance', () => {
-    expect(new Url()).toBeTruthy();
+    expect(Url.lienServer).toContain('http');
   });
 });

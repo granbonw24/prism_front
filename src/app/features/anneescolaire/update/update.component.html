@@ -1,0 +1,40 @@
+<div class="container-fluid px-2 px-sm-3">
+  <div class="d-flex align-items-center mb-3">
+    <a routerLink="/anneescolaire" class="btn btn-sm btn-outline-secondary mr-2">&larr; Retour</a>
+    <h1 class="h4 mb-0 text-gray-800">Modifier l’année scolaire</h1>
+  </div>
+
+  <div *ngIf="errorMessage" class="alert alert-danger">{{ errorMessage }}</div>
+
+  <div *ngIf="loading" class="text-muted py-4">Chargement…</div>
+
+  <div *ngIf="!loading" class="card shadow border-0" style="max-width: 32rem">
+    <div class="card-body">
+      <div class="form-group">
+        <label>Code</label>
+        <input type="text" class="form-control" [value]="form.codeAnneeScolaire || '—'" disabled />
+      </div>
+      <div class="form-group">
+        <label for="debut">Date début</label>
+        <input id="debut" type="date" class="form-control" name="debut" [(ngModel)]="form.debutAnneeScolaire" />
+      </div>
+      <div class="form-group">
+        <label for="fin">Date fin</label>
+        <input id="fin" type="date" class="form-control" name="fin" [(ngModel)]="form.finAnneeScolaire" />
+      </div>
+      <div class="form-group form-check">
+        <input
+          id="etat"
+          type="checkbox"
+          class="form-check-input"
+          name="etat"
+          [(ngModel)]="form.etatAnneeScolaire"
+        />
+        <label class="form-check-label" for="etat">Année en cours</label>
+      </div>
+      <button type="button" class="btn btn-primary" (click)="submit()" [disabled]="saving">
+        {{ saving ? 'Enregistrement…' : 'Enregistrer' }}
+      </button>
+    </div>
+  </div>
+</div>

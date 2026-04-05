@@ -1,2 +1,3 @@
-export class Typedocument {
-}
+import type { ReferentielModel } from '@models/referentiel.model';
+
+export type Typedocument = ReferentielModel;
