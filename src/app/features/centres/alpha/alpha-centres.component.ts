@@ -23,6 +23,8 @@ type AlphaRow = {
   nombreVisite?: number | null;
   localisationCentre?: string | null;
   nomMilieuImplentation?: string | null;
+  encadreurNonMena?: string | null;
+  encadrerParMena?: boolean | null;
 };
 
 type LocaliteOption = { id: number; codeLocalite?: string | null; nomLocalite?: string | null };
@@ -124,6 +126,8 @@ export class AlphaCentresComponent {
     nombreVisite: number | null;
     localisationCentre: string | null;
     nomMilieuImplentation: string | null;
+    encadreurNonMena: string | null;
+    encadrerParMena: boolean | null;
   } = {
     libelle: '',
     idLocalite: null,
@@ -137,6 +141,8 @@ export class AlphaCentresComponent {
     nombreVisite: null,
     localisationCentre: null,
     nomMilieuImplentation: null,
+    encadreurNonMena: null,
+    encadrerParMena: null,
   };
 
   constructor(
@@ -346,6 +352,8 @@ export class AlphaCentresComponent {
       nombreVisite: row.nombreVisite ?? null,
       localisationCentre: row.localisationCentre ?? null,
       nomMilieuImplentation: row.nomMilieuImplentation ?? null,
+      encadreurNonMena: row.encadreurNonMena ?? null,
+      encadrerParMena: row.encadrerParMena ?? null,
     };
   }
 

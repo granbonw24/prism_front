@@ -1,27 +1,16 @@
 import { Routes } from '@angular/router';
+import { EffectifAbandonUnifieComponent } from '@features/apprenant/effectif/effectif-abandon-unifie.component';
 import { EffectifCentreUnifieComponent } from '@features/apprenant/effectif/effectif-centre-unifie.component';
-import { ReferentielListPageComponent } from '@shared/referentiel-list-page/referentiel-list-page.component';
+import { EffectifCompetenceCentrePageComponent } from '@features/apprenant/effectif/effectif-competence-centre-page.component';
+import { EffectifHandicapUnifieComponent } from '@features/apprenant/effectif/effectif-handicap-unifie.component';
+import { EffectifIntegrationUnifieComponent } from '@features/apprenant/effectif/effectif-integration-unifie.component';
+import { EffectifPassageAlphaPageComponent } from '@features/apprenant/effectif/effectif-passage-alpha-page.component';
 
 export const apprenantFeatureRoutes: Routes = [
   { path: 'apprenant/effectif', component: EffectifCentreUnifieComponent },
-  {
-    path: 'apprenant/abandon',
-    component: ReferentielListPageComponent,
-    data: { title: 'Apprenant - Abandon', apiPath: '/api/effectif-abandon-alpha', createFields: [] },
-  },
-  {
-    path: 'apprenant/passage',
-    component: ReferentielListPageComponent,
-    data: { title: 'Apprenant - Passage', apiPath: '/api/effectif-passage-alpha', createFields: [] },
-  },
-  {
-    path: 'apprenant/handicap',
-    component: ReferentielListPageComponent,
-    data: { title: 'Apprenant - Handicap', apiPath: '/api/effectif-situation-handicap-alpha', createFields: [] },
-  },
-  {
-    path: 'apprenant/competences',
-    component: ReferentielListPageComponent,
-    data: { title: 'Apprenant - Compétences acquises', apiPath: '/api/competence-centre', createFields: [] },
-  },
+  { path: 'apprenant/abandon', component: EffectifAbandonUnifieComponent },
+  { path: 'apprenant/passage', component: EffectifPassageAlphaPageComponent },
+  { path: 'apprenant/handicap', component: EffectifHandicapUnifieComponent },
+  { path: 'apprenant/competences', component: EffectifCompetenceCentrePageComponent },
+  { path: 'apprenant/integrations', component: EffectifIntegrationUnifieComponent },
 ];

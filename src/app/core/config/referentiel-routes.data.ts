@@ -11,6 +11,8 @@ export interface ReferentielRouteData {
   /** Chemin relatif depuis l’origine API (ex. `/api/anneescolaire`). */
   apiPath: string;
   createFields?: ReferentielFormField[];
+  /** Surcharges de libellés de colonnes (clé JSON → libellé affiché). */
+  columnLabels?: Record<string, string>;
 }
 
 const F = (
@@ -91,8 +93,11 @@ export const REFERENTIEL_ROUTE_DATA: ReferentielRouteData[] = [
     title: 'Communautés',
     apiPath: '/api/communautes',
     createFields: [
-      F('idPromoteur', 'ID promoteur (personne morale)', 'number', {
+      F('idPromoteur', 'Personne morale (promoteur)', 'select', {
         required: true,
+        optionsApiPath: '/api/personnemorale',
+        optionValueKey: 'id',
+        optionLabelKeys: ['codePromoteur', 'libellePromoteur', 'denomination'],
       }),
       F('libelleCommunaute', 'Libellé communauté', 'text', { maxLength: 100 }),
       F('libellePromoteur', 'Libellé promoteur', 'text', { maxLength: 100 }),
@@ -146,9 +151,24 @@ export const REFERENTIEL_ROUTE_DATA: ReferentielRouteData[] = [
     title: 'Documents',
     apiPath: '/api/documents',
     createFields: [
-      F('idNatureDocument', 'ID nature document', 'number', { required: true }),
-      F('idTypeDocument', 'ID type document', 'number', { required: true }),
-      F('idCentre', 'ID centre alpha', 'number', { required: true }),
+      F('idNatureDocument', 'Nature du document', 'select', {
+        required: true,
+        optionsApiPath: '/api/naturedocument',
+        optionValueKey: 'id',
+        optionLabelKeys: ['libelleNatureDocument'],
+      }),
+      F('idTypeDocument', 'Type de document', 'select', {
+        required: true,
+        optionsApiPath: '/api/v1/TypeDocuments',
+        optionValueKey: 'id',
+        optionLabelKeys: ['codeTypeDocument', 'libelleTypeDocument'],
+      }),
+      F('idCentre', 'Centre alpha', 'select', {
+        required: true,
+        optionsApiPath: '/api/v1/alpha',
+        optionValueKey: 'idCentre',
+        optionLabelKeys: ['codeType', 'libelle', 'codeCentre'],
+      }),
       F('existe', 'Existe', 'text', { maxLength: 30 }),
       F('ajour', 'À jour', 'text', { maxLength: 30 }),
       F('bientenu', 'Bien tenu', 'text', { maxLength: 30 }),
@@ -199,7 +219,12 @@ export const REFERENTIEL_ROUTE_DATA: ReferentielRouteData[] = [
     title: 'Langues d’apprentissage',
     apiPath: '/api/v1/LangueApprentissages',
     createFields: [
-      F('idCentre', 'ID centre (table Centre)', 'number', { required: true }),
+      F('idCentre', 'Centre', 'select', {
+        required: true,
+        optionsApiPath: '/api/v1/centres',
+        optionValueKey: 'id',
+        optionLabelKeys: ['codeCentre'],
+      }),
       F('libelleLangue', 'Libellé langue', 'text', {
         required: true,
         maxLength: 100,
@@ -211,9 +236,17 @@ export const REFERENTIEL_ROUTE_DATA: ReferentielRouteData[] = [
     title: 'Matériel alpha',
     apiPath: '/api/materielalpha',
     createFields: [
-      F('idCentre', 'ID centre alpha', 'number', { required: true }),
-      F('idMaterielPedagogique', 'ID matériel pédagogique', 'number', {
+      F('idCentre', 'Centre alpha', 'select', {
         required: true,
+        optionsApiPath: '/api/v1/alpha',
+        optionValueKey: 'idCentre',
+        optionLabelKeys: ['codeType', 'libelle', 'codeCentre'],
+      }),
+      F('idMaterielPedagogique', 'Matériel pédagogique', 'select', {
+        required: true,
+        optionsApiPath: '/api/materielpedagogiques',
+        optionValueKey: 'id',
+        optionLabelKeys: ['libelleMaterielPedagogique'],
       }),
       F('libelleAutreMateriel', 'Libellé autre matériel', 'text', {
         maxLength: 100,
@@ -236,8 +269,11 @@ export const REFERENTIEL_ROUTE_DATA: ReferentielRouteData[] = [
     title: 'Ministères',
     apiPath: '/api/ministeres',
     createFields: [
-      F('idPromoteur', 'ID promoteur (personne morale)', 'number', {
+      F('idPromoteur', 'Personne morale (promoteur)', 'select', {
         required: true,
+        optionsApiPath: '/api/personnemorale',
+        optionValueKey: 'id',
+        optionLabelKeys: ['codePromoteur', 'libellePromoteur', 'denomination'],
       }),
       F('libelleMinistere', 'Libellé ministère', 'text', { maxLength: 100 }),
       F('libellePromoteur', 'Libellé promoteur', 'text', { maxLength: 100 }),
@@ -259,7 +295,12 @@ export const REFERENTIEL_ROUTE_DATA: ReferentielRouteData[] = [
     title: 'Modes alpha',
     apiPath: '/api/modealpha',
     createFields: [
-      F('idCentre', 'ID centre alpha', 'number', { required: true }),
+      F('idCentre', 'Centre alpha', 'select', {
+        required: true,
+        optionsApiPath: '/api/v1/alpha',
+        optionValueKey: 'idCentre',
+        optionLabelKeys: ['codeType', 'libelle', 'codeCentre'],
+      }),
       F('libelleModealpha', 'Libellé mode', 'text', {
         required: true,
         maxLength: 100,
@@ -293,7 +334,12 @@ export const REFERENTIEL_ROUTE_DATA: ReferentielRouteData[] = [
     title: 'Niveaux alpha',
     apiPath: '/api/niveaualpha',
     createFields: [
-      F('idCentre', 'ID centre alpha', 'number', { required: true }),
+      F('idCentre', 'Centre alpha', 'select', {
+        required: true,
+        optionsApiPath: '/api/v1/alpha',
+        optionValueKey: 'idCentre',
+        optionLabelKeys: ['codeType', 'libelle', 'codeCentre'],
+      }),
       F('libelleNiveauAlpha', 'Libellé niveau', 'text', {
         required: true,
         maxLength: 100,

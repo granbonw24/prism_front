@@ -14,6 +14,7 @@ export const referentielFeatureRoutes: Routes = REFERENTIEL_ROUTE_DATA.filter((r
       title: r.title,
       apiPath: r.apiPath,
       createFields: r.createFields ?? [],
+      columnLabels: r.columnLabels ?? {},
     },
   }),
 );

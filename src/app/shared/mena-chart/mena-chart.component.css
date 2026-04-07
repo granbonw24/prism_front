@@ -1,0 +1,9 @@
+.mena-chart__canvas-wrap {
+  position: relative;
+  height: 220px;
+  max-width: 100%;
+}
+
+.mena-chart__title {
+  letter-spacing: 0.02em;
+}

@@ -1,13 +1,22 @@
 import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
 import type { ReferentielFormField } from '@core/config/referentiel-form.types';
+import type { ListStatsContext } from '@core/config/list-stats-context.types';
 import { ReferentielListPageComponent } from '@shared/referentiel-list-page/referentiel-list-page.component';
+import { effectifStatsByCentreType } from './effectif-list-stats-context';
 
 type CentreType = 'alpha' | 'cec' | 'cp' | 'sie';
 type EffectifTypeConfig = {
   title: string;
   apiPath: string;
   createFields: ReferentielFormField[];
+};
+
+const EFFECTIF_CENTRE_STATS: Record<CentreType, ListStatsContext> = {
+  alpha: effectifStatsByCentreType('alpha'),
+  cec: effectifStatsByCentreType('cec'),
+  cp: effectifStatsByCentreType('cp'),
+  sie: effectifStatsByCentreType('sie'),
 };
 
 @Component({
@@ -19,6 +28,7 @@ type EffectifTypeConfig = {
       [inputTitle]="activeConfig.title"
       [inputApiPath]="activeConfig.apiPath"
       [inputCreateFields]="activeConfig.createFields"
+      [inputStatsContext]="listStatsContext"
       [addFormContextLabel]="'Type de centre'"
       [addFormContextValue]="selectedType"
       [addFormContextOptions]="centreTypeOptions"
@@ -43,6 +53,10 @@ export class EffectifCentreUnifieComponent {
 
   get activeConfig(): EffectifTypeConfig {
     return EFFECTIF_TYPE_CONFIG[this.selectedType];
+  }
+
+  get listStatsContext(): ListStatsContext {
+    return EFFECTIF_CENTRE_STATS[this.selectedType];
   }
 }
 

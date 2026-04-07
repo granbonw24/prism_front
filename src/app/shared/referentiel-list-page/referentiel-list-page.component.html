@@ -2,7 +2,10 @@
   <div
     class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3"
   >
-    <h1 class="h3 mb-0 mena-page-title">{{ title }}</h1>
+    <div>
+      <h1 class="h3 mb-0 mena-page-title">{{ title }}</h1>
+      <p *ngIf="subtitle" class="text-muted small mb-0 mt-1">{{ subtitle }}</p>
+    </div>
     <div class="d-flex flex-wrap gap-2 mena-toolbar">
       <button
         type="button"
@@ -92,6 +95,34 @@
     </div>
   </div>
 
+  <!-- Graphiques (contexte effectif / centres) -->
+  <div
+    *ngIf="hasStatsContext && !loading && !errorMessage && rows.length && contextChartPanels.length"
+    class="card shadow-sm mb-4 mena-card mena-charts-card"
+  >
+    <div class="card-header py-3 mena-list-card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+      <h6 class="m-0 font-weight-bold text-primary">Visualisations</h6>
+      <span class="text-muted small" *ngIf="inputStatsContext as sc">
+        Périmètre : <strong>{{ sc.scopeLabel }}</strong> — données = lignes actuellement filtrées
+      </span>
+    </div>
+    <div class="card-body">
+      <div class="row">
+        <div
+          class="col-xl-4 col-lg-6 mb-4"
+          *ngFor="let p of contextChartPanels"
+        >
+          <app-mena-chart
+            [chartTitle]="p.title"
+            [chartKind]="p.kind"
+            [labels]="p.labels"
+            [data]="p.data"
+          />
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div
     *ngIf="successMessage"
     class="alert alert-success border-0 shadow-sm py-2 mena-flash-success"
@@ -122,6 +153,87 @@
       <div
         class="d-flex flex-wrap align-items-center flex-grow-1 justify-content-end gap-2 mena-list-toolbar"
       >
+        <div
+          *ngIf="hasStatsContext && rows.length"
+          class="w-100 mena-structured-filters border-bottom pb-2 mb-2"
+        >
+          <div class="form-row align-items-end">
+            <div
+              class="form-group col-sm-6 col-md-4 col-lg-3 mb-2 mb-lg-0"
+              *ngIf="inputStatsContext?.rowCentreIdKey && centreFilterOptions.length"
+            >
+              <label class="small font-weight-bold text-muted mb-1 d-block">Centre</label>
+              <select
+                class="form-control form-control-sm"
+                [(ngModel)]="filterCentreId"
+              >
+                <option value="">Tous les centres</option>
+                <option *ngFor="let o of centreFilterOptions" [value]="o.value">{{ o.label }}</option>
+              </select>
+            </div>
+            <div
+              class="form-group col-sm-6 col-md-4 col-lg-3 mb-2 mb-lg-0"
+              *ngIf="inputStatsContext?.secondaryRowCentreIdKey && secondaryCentreFilterOptions.length"
+            >
+              <label class="small font-weight-bold text-muted mb-1 d-block">Centre secondaire (CEC)</label>
+              <select
+                class="form-control form-control-sm"
+                [(ngModel)]="filterSecondaryCentreId"
+              >
+                <option value="">Tous</option>
+                <option *ngFor="let o of secondaryCentreFilterOptions" [value]="o.value">{{ o.label }}</option>
+              </select>
+            </div>
+            <div
+              class="form-group col-sm-6 col-md-4 col-lg-3 mb-2 mb-lg-0"
+              *ngIf="inputStatsContext?.rowPeriodeIdKey && periodeFilterOptions.length"
+            >
+              <label class="small font-weight-bold text-muted mb-1 d-block">Période d’activité</label>
+              <select
+                class="form-control form-control-sm"
+                [(ngModel)]="filterPeriodeId"
+              >
+                <option value="">Toutes</option>
+                <option *ngFor="let o of periodeFilterOptions" [value]="o.value">{{ o.label }}</option>
+              </select>
+            </div>
+            <div
+              class="form-group col-sm-6 col-md-4 col-lg-3 mb-2 mb-lg-0"
+              *ngIf="inputStatsContext?.rowAnneeIdKey && anneeFilterOptions.length"
+            >
+              <label class="small font-weight-bold text-muted mb-1 d-block">Année scolaire</label>
+              <select
+                class="form-control form-control-sm"
+                [(ngModel)]="filterAnneeId"
+              >
+                <option value="">Toutes</option>
+                <option *ngFor="let o of anneeFilterOptions" [value]="o.value">{{ o.label }}</option>
+              </select>
+            </div>
+            <div
+              class="form-group col-sm-6 col-md-4 col-lg-3 mb-2 mb-lg-0"
+              *ngIf="inputStatsContext?.rowNiveauIdKey && niveauFilterOptions.length"
+            >
+              <label class="small font-weight-bold text-muted mb-1 d-block">Niveau</label>
+              <select
+                class="form-control form-control-sm"
+                [(ngModel)]="filterNiveauId"
+              >
+                <option value="">Tous</option>
+                <option *ngFor="let o of niveauFilterOptions" [value]="o.value">{{ o.label }}</option>
+              </select>
+            </div>
+            <div class="form-group col-auto mb-0" *ngIf="hasActiveStructuredFilter">
+              <button
+                type="button"
+                class="btn btn-outline-secondary btn-sm"
+                (click)="clearStructuredFilters()"
+              >
+                Réinit. filtres
+              </button>
+            </div>
+          </div>
+        </div>
         <div class="input-group input-group-sm mena-list-filter-wrap">
           <div class="input-group-prepend">
             <span class="input-group-text bg-light border-right-0" aria-hidden="true">
@@ -141,8 +253,8 @@
             <button
               type="button"
               class="btn btn-outline-secondary"
-              (click)="clearListFilter()"
-              title="Effacer le filtre"
+              (click)="clearAllListFilters()"
+              title="Effacer tous les filtres"
             >
               <i class="fas fa-times"></i>
             </button>
@@ -163,14 +275,14 @@
           <thead>
             <tr>
               <th>#</th>
-              <th *ngFor="let col of columns">{{ col }}</th>
+              <th *ngFor="let col of columns">{{ columnHeaderLabel(col) }}</th>
               <th *ngIf="canUseRowActions" class="text-right mena-col-actions">Actions</th>
             </tr>
           </thead>
           <tbody>
             <tr *ngFor="let row of filteredRows; let i = index">
               <td>{{ i + 1 }}</td>
-              <td *ngFor="let col of columns">{{ formatCell(row[col]) }}</td>
+              <td *ngFor="let col of columns">{{ formatCell(row[col], col) }}</td>
               <td *ngIf="canUseRowActions" class="text-right text-nowrap mena-col-actions">
                 <div class="mena-row-actions">
                   <button
@@ -203,7 +315,7 @@
             <button
               type="button"
               class="btn btn-link btn-sm p-0 align-baseline"
-              (click)="clearListFilter()"
+              (click)="clearAllListFilters()"
             >
               Effacer
             </button>
@@ -270,7 +382,7 @@
           <form [formGroup]="fg" (ngSubmit)="submitRecord()">
             <div class="form-row">
               <div
-                *ngFor="let field of createFields"
+                *ngFor="let field of fieldsForForm"
                 class="form-group col-md-6"
               >
                 <label [attr.for]="'cf-' + field.key" class="small font-weight-bold">{{
@@ -404,9 +516,13 @@
       </div>
       <div class="modal-body">
         <p class="mb-2">
-          Cette action est définitive pour l’enregistrement
-          <strong>#{{ deleteTargetId }}</strong>
-          <span *ngIf="deleteTargetLabel"> — {{ deleteTargetLabel }}</span>.
+          Cette action est définitive
+          <span *ngIf="deleteTargetLabel">
+            pour <strong>{{ deleteTargetLabel }}</strong>
+          </span>
+          <span *ngIf="!deleteTargetLabel">
+            pour l’enregistrement <strong>réf. {{ deleteTargetId }}</strong>
+          </span>.
         </p>
         <div *ngIf="deleteError" class="alert alert-danger small mb-0">
           {{ deleteError }}

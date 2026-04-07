@@ -1,0 +1,8 @@
+<div class="mena-chart">
+  <h6 *ngIf="chartTitle" class="mena-chart__title text-muted small font-weight-bold mb-2">
+    {{ chartTitle }}
+  </h6>
+  <div class="mena-chart__canvas-wrap">
+    <canvas #canvasEl></canvas>
+  </div>
+</div>

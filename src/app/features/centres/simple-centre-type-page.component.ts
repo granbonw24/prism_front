@@ -21,6 +21,8 @@ type Row = {
   nombreVisite?: number | null;
   localisationCentre?: string | null;
   nomMilieuImplentation?: string | null;
+  encadreurNonMena?: string | null;
+  encadrerParMena?: boolean | null;
 };
 type LocaliteOption = { id: number; codeLocalite?: string | null; nomLocalite?: string | null };
 type IepOption = { id: number; codeIep?: string | null; nomIep?: string | null };
@@ -111,6 +113,8 @@ export class SimpleCentreTypePageComponent {
     nombreVisite: number | null;
     localisationCentre: string | null;
     nomMilieuImplentation: string | null;
+    encadreurNonMena: string | null;
+    encadrerParMena: boolean | null;
   } = {
     libelle: '',
     idLocalite: null,
@@ -124,6 +128,8 @@ export class SimpleCentreTypePageComponent {
     nombreVisite: null,
     localisationCentre: null,
     nomMilieuImplentation: null,
+    encadreurNonMena: null,
+    encadrerParMena: null,
   };
 
   constructor(
@@ -166,6 +172,8 @@ export class SimpleCentreTypePageComponent {
           nombreVisite: x.nombreVisite ?? null,
           localisationCentre: x.localisationCentre ?? null,
           nomMilieuImplentation: x.nomMilieuImplentation ?? null,
+          encadreurNonMena: x.encadreurNonMena ?? null,
+          encadrerParMena: x.encadrerParMena ?? null,
         }));
         this.localites = res.localites ?? [];
         this.ieps = res.ieps ?? [];
@@ -297,6 +305,8 @@ export class SimpleCentreTypePageComponent {
       nombreVisite: row.nombreVisite ?? null,
       localisationCentre: row.localisationCentre ?? null,
       nomMilieuImplentation: row.nomMilieuImplentation ?? null,
+      encadreurNonMena: row.encadreurNonMena ?? null,
+      encadrerParMena: row.encadrerParMena ?? null,
     };
   }
 
