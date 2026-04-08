@@ -9,9 +9,5 @@ export const partenairePlaceholderRoutes: Routes = [
 export const sectionPlaceholderRoutes: Routes = [
   { path: 'performance', component: SectionPlaceholderComponent, data: { title: 'Performance' } },
   { path: 'control', component: SectionPlaceholderComponent, data: { title: 'Control' } },
-  { path: 'visites/pointage', component: SectionPlaceholderComponent, data: { title: 'Visites - Point des visites' } },
-  { path: 'visites/conseiller', component: SectionPlaceholderComponent, data: { title: 'Visites - Suivi du conseiller' } },
-  { path: 'visites/superviseur', component: SectionPlaceholderComponent, data: { title: 'Visites - Suivi du superviseur' } },
-  { path: 'visites/iepp', component: SectionPlaceholderComponent, data: { title: 'Visites - Suivi par l’IEPP' } },
   { path: 'evaluation-periodique', component: SectionPlaceholderComponent, data: { title: 'Évaluation périodique' } },
 ];

@@ -14,6 +14,7 @@ import { apprenantFeatureRoutes } from '@features/routing/apprenant.routes';
 import { centresFeatureRoutes } from '@features/routing/centres.routes';
 import { dashboardFeatureRoutes } from '@features/routing/dashboard.routes';
 import { partenairePlaceholderRoutes, sectionPlaceholderRoutes } from '@features/routing/placeholders.routes';
+import { visitesFeatureRoutes } from '@features/routing/visites.routes';
 import { promoteursFeatureRoutes } from '@features/routing/promoteurs.routes';
 import { referentielFeatureRoutes } from '@features/routing/referentiel.routes';
 
@@ -24,6 +25,7 @@ export const mainChildRoutes: Routes = [
   ...centresFeatureRoutes,
   ...promoteursFeatureRoutes,
   ...administrationFeatureRoutes,
+  ...visitesFeatureRoutes,
   ...partenairePlaceholderRoutes,
   ...apprenantFeatureRoutes,
   ...sectionPlaceholderRoutes,

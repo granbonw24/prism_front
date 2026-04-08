@@ -4,11 +4,13 @@ import { FormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import {
-  AdministrationService,
   AppRole,
   Fonctionnalite,
   Permission,
   RoleFonctionnalitePermission,
+} from '@models/administration';
+import {
+  AdministrationService,
 } from '@services/administration.service';
 
 type RoleId = number | null;

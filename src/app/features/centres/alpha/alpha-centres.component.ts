@@ -1,65 +1,26 @@
 import { CommonModule } from '@angular/common';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Component, Inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { forkJoin } from 'rxjs';
+import {
+  AlphaFullCreatePayload,
+  AlphaRow,
+  AutoriteOption,
+  autoriteOptionLabel,
+  IepOption,
+  iepOptionLabel,
+  LocaliteOption,
+  localiteOptionLabel,
+  NatureOption,
+  natureOptionLabel,
+  PeriodiciteOption,
+  periodiciteOptionLabel,
+  RefOption,
+  refOptionLabel,
+  SpringPage,
+} from '@models/centre';
 import { API_BASE_URL } from '@core/tokens/api-base-url.token';
-
-type RefOption = { id: number; libelle?: string; code?: string };
-
-type AlphaRow = {
-  idCentre: number;
-  codeCentre?: string | null;
-  codeType?: string | null;
-  libelle?: string | null;
-  idLocalite?: number | null;
-  idIep?: number | null;
-  idNaturecentre?: number | null;
-  idPeriodicite?: number | null;
-  idAutoriteAutorisation?: number | null;
-  autorisation?: boolean | null;
-  estElectrifie?: boolean | null;
-  aDeLeau?: boolean | null;
-  nombreVisite?: number | null;
-  localisationCentre?: string | null;
-  nomMilieuImplentation?: string | null;
-  encadreurNonMena?: string | null;
-  encadrerParMena?: boolean | null;
-};
-
-type LocaliteOption = { id: number; codeLocalite?: string | null; nomLocalite?: string | null };
-type IepOption = { id: number; codeIep?: string | null; nomIep?: string | null };
-type NatureOption = { id: number; codeNatureCentre?: string | null; libelleNatureCentre?: string | null };
-type PeriodiciteOption = { id: number; codePeriodicite?: string | null; libellePeriodicite?: string | null };
-type AutoriteOption = {
-  id: number;
-  codeAutorisation?: string | null;
-  libelleAutoriteAutorisation?: string | null;
-};
-
-type AlphaFullCreatePayload = {
-  campagneId: number;
-  categorieCentreAlphaId: number;
-  typeAlphaId: number;
-  regimeAlphaId: number;
-  libelleAlpha: string;
-  promoteur: { libellePromoteur: string };
-  centre: {
-    localiteId: number;
-    periodiciteId?: number | null;
-    iepId: number;
-    autoriteAutorisationId?: number | null;
-    natureCentreId: number;
-    autorisation?: boolean | null;
-    encadreurNonMena?: string | null;
-    encadrerParMena?: boolean | null;
-    estElectrifie?: boolean | null;
-    aDeLeau?: boolean | null;
-    nombreVisite?: number | null;
-    localisationCentre?: string | null;
-    nomMilieuImplentation?: string | null;
-  };
-};
 
 @Component({
   selector: 'app-alpha-centres',
@@ -83,6 +44,15 @@ export class AlphaCentresComponent {
   natures: NatureOption[] = [];
   periodicites: PeriodiciteOption[] = [];
   autorites: AutoriteOption[] = [];
+  promoteurs: RefOption[] = [];
+
+  /** Exposés au template pour les libellés des &lt;select&gt; filtres. */
+  readonly refOptionLabel = refOptionLabel;
+  readonly localiteOptionLabel = localiteOptionLabel;
+  readonly iepOptionLabel = iepOptionLabel;
+  readonly natureOptionLabel = natureOptionLabel;
+  readonly periodiciteOptionLabel = periodiciteOptionLabel;
+  readonly autoriteOptionLabel = autoriteOptionLabel;
 
   stepIndex = 0;
 
@@ -113,6 +83,39 @@ export class AlphaCentresComponent {
   // Détails / édition (modales)
   detailsRow: AlphaRow | null = null;
   editRowId: number | null = null;
+  pageIndex = 0;
+  pageSize = 20;
+  totalElements = 0;
+  totalPages = 0;
+
+  /** Recherche rapide → paramètre API `q` (OR sur plusieurs colonnes + id si entier). */
+  searchQ = '';
+
+  /** Filtres liste (noms alignés sur l’API query). */
+  alphaListFilter: Record<string, string> = {
+    idCompagne: '',
+    idCategorieCentreAlpha: '',
+    idTypeAlpha: '',
+    idRegimeAlpha: '',
+    idLocalite: '',
+    idPeriodicite: '',
+    idIep: '',
+    idAutoriteAutorisation: '',
+    idNaturecentre: '',
+    idPromoteur: '',
+    codeCentre: '',
+    codeAlpha: '',
+    libelleAlpha: '',
+    encadreurNonMena: '',
+    localisationCentre: '',
+    nomMilieuImplentation: '',
+    autorisation: '',
+    encadrerParMena: '',
+    estElectrifie: '',
+    aDeLeau: '',
+    nombreVisite: '',
+  };
+
   editForm: {
     libelle: string;
     idLocalite: number | null;
@@ -156,7 +159,9 @@ export class AlphaCentresComponent {
     this.loading = true;
     this.errorMessage = null;
     forkJoin({
-      rows: this.http.get<AlphaRow[]>(`${this.apiBaseUrl}/api/v1/alpha`),
+      rows: this.http.get<SpringPage<Record<string, unknown>>>(`${this.apiBaseUrl}/api/v1/alpha`, {
+        params: this.buildAlphaListParams(),
+      }),
       campagnes: this.http.get<any[]>(`${this.apiBaseUrl}/api/campagnes`),
       categories: this.http.get<any[]>(`${this.apiBaseUrl}/api/categorie-centre-alpha`),
       typesAlpha: this.http.get<any[]>(`${this.apiBaseUrl}/api/v1/TypeAlphas`),
@@ -166,30 +171,47 @@ export class AlphaCentresComponent {
       natures: this.http.get<NatureOption[]>(`${this.apiBaseUrl}/api/naturecentre`),
       periodicites: this.http.get<PeriodiciteOption[]>(`${this.apiBaseUrl}/api/v1/Periodicites`),
       autorites: this.http.get<AutoriteOption[]>(`${this.apiBaseUrl}/api/autoriteautorisation`),
+      promoteurs: this.http.get<any[]>(`${this.apiBaseUrl}/api/promoteur`),
     }).subscribe({
       next: (res) => {
-        this.rows = res.rows ?? [];
-        this.campagnes = (res.campagnes ?? []).map((x) => ({
+        const page = res.rows;
+        const list = page.content ?? [];
+        this.totalElements = page.totalElements ?? 0;
+        this.totalPages = page.totalPages ?? 0;
+        this.rows = list.map((x) => this.mapAlphaRow(x));
+        this.campagnes = (res.campagnes ?? []).map((x: any) => ({
           id: x.id,
-          libelle: x.codeCampagne ?? `Campagne #${x.id}`,
+          code: x.codeCampagne ?? undefined,
+          libelle:
+            x.dateDebutCampagne != null && x.dateFinCampagne != null
+              ? `${x.dateDebutCampagne} → ${x.dateFinCampagne}`
+              : undefined,
         }));
-        this.categories = (res.categories ?? []).map((x) => ({
+        this.categories = (res.categories ?? []).map((x: any) => ({
           id: x.id,
-          libelle: x.libelleCategorieCentreAlpha ?? x.codeCategorieCentreAlpha ?? `#${x.id}`,
+          code: x.codeCategorieCentreAlpha ?? undefined,
+          libelle: x.libelleCategorieCentreAlpha ?? undefined,
         }));
-        this.typesAlpha = (res.typesAlpha ?? []).map((x) => ({
+        this.typesAlpha = (res.typesAlpha ?? []).map((x: any) => ({
           id: x.id,
-          libelle: x.libelleTypeAlpha ?? x.codeTypeAlpha ?? `#${x.id}`,
+          code: x.codeTypeAlpha ?? undefined,
+          libelle: x.libelleTypeAlpha ?? undefined,
         }));
-        this.regimes = (res.regimes ?? []).map((x) => ({
+        this.regimes = (res.regimes ?? []).map((x: any) => ({
           id: x.id,
-          libelle: x.libelleRegimeAlpha ?? x.codeRegimeAlpha ?? `#${x.id}`,
+          code: x.codeRegimeAlpha ?? undefined,
+          libelle: x.libelleRegimeAlpha ?? undefined,
         }));
         this.localites = res.localites ?? [];
         this.ieps = res.ieps ?? [];
         this.natures = res.natures ?? [];
         this.periodicites = res.periodicites ?? [];
         this.autorites = res.autorites ?? [];
+        this.promoteurs = (res.promoteurs ?? []).map((x: any) => ({
+          id: x.id,
+          code: x.codePromoteur ?? undefined,
+          libelle: x.libellePromoteur ?? undefined,
+        }));
         this.loading = false;
       },
       error: (e) => {
@@ -284,22 +306,22 @@ export class AlphaCentresComponent {
 
   campagneLabel(id: number | null | undefined): string {
     const found = this.campagnes.find((x) => x.id === id);
-    return found?.libelle ?? '—';
+    return found ? this.refOptionLabel(found) : '—';
   }
 
   categorieLabel(id: number | null | undefined): string {
     const found = this.categories.find((x) => x.id === id);
-    return found?.libelle ?? '—';
+    return found ? this.refOptionLabel(found) : '—';
   }
 
   typeAlphaLabel(id: number | null | undefined): string {
     const found = this.typesAlpha.find((x) => x.id === id);
-    return found?.libelle ?? '—';
+    return found ? this.refOptionLabel(found) : '—';
   }
 
   regimeLabel(id: number | null | undefined): string {
     const found = this.regimes.find((x) => x.id === id);
-    return found?.libelle ?? '—';
+    return found ? this.refOptionLabel(found) : '—';
   }
 
   submit(): void {
@@ -422,6 +444,93 @@ export class AlphaCentresComponent {
         this.saving = false;
       },
     });
+  }
+
+  private buildAlphaListParams(): HttpParams {
+    let p = new HttpParams()
+      .set('page', String(this.pageIndex))
+      .set('size', String(this.pageSize))
+      .set('sort', 'id,asc');
+    const q = String(this.searchQ ?? '').trim();
+    if (q !== '') {
+      p = p.set('q', q);
+    }
+    for (const [key, val] of Object.entries(this.alphaListFilter)) {
+      const s = String(val ?? '').trim();
+      if (s !== '') {
+        p = p.set(key, s);
+      }
+    }
+    return p;
+  }
+
+  private mapAlphaRow(x: Record<string, unknown>): AlphaRow {
+    return {
+      idCentre: Number(x['idCentre'] ?? x['id'] ?? 0),
+      codeCentre: (x['codeCentre'] as string | undefined) ?? null,
+      codeType: (x['codeType'] as string | undefined) ?? null,
+      libelle: (x['libelle'] as string | undefined) ?? null,
+      idLocalite: (x['idLocalite'] as number | null | undefined) ?? null,
+      idIep: (x['idIep'] as number | null | undefined) ?? null,
+      idNaturecentre: (x['idNaturecentre'] as number | null | undefined) ?? null,
+      idPeriodicite: (x['idPeriodicite'] as number | null | undefined) ?? null,
+      idAutoriteAutorisation: (x['idAutoriteAutorisation'] as number | null | undefined) ?? null,
+      autorisation: (x['autorisation'] as boolean | null | undefined) ?? null,
+      estElectrifie: (x['estElectrifie'] as boolean | null | undefined) ?? null,
+      aDeLeau: (x['aDeLeau'] as boolean | null | undefined) ?? null,
+      nombreVisite: (x['nombreVisite'] as number | null | undefined) ?? null,
+      localisationCentre: (x['localisationCentre'] as string | undefined) ?? null,
+      nomMilieuImplentation: (x['nomMilieuImplentation'] as string | undefined) ?? null,
+      encadreurNonMena: (x['encadreurNonMena'] as string | undefined) ?? null,
+      encadrerParMena: (x['encadrerParMena'] as boolean | null | undefined) ?? null,
+    };
+  }
+
+  applyListFilters(): void {
+    this.pageIndex = 0;
+    this.loadAll();
+  }
+
+  resetListFilters(): void {
+    this.searchQ = '';
+    for (const k of Object.keys(this.alphaListFilter)) {
+      this.alphaListFilter[k] = '';
+    }
+    this.pageIndex = 0;
+    this.loadAll();
+  }
+
+  goPrevPage(): void {
+    if (!this.canGoPrevPage()) return;
+    this.pageIndex--;
+    this.loadAll();
+  }
+
+  goNextPage(): void {
+    if (!this.canGoNextPage()) return;
+    this.pageIndex++;
+    this.loadAll();
+  }
+
+  /** Pagination toujours utilisable côté UI (évite totalPages === 0 renvoyé par Spring sur liste vide). */
+  canGoPrevPage(): boolean {
+    return !this.loading && this.pageIndex > 0;
+  }
+
+  canGoNextPage(): boolean {
+    if (this.loading) return false;
+    const tp = this.totalPages;
+    if (tp == null || tp < 2) return false;
+    return this.pageIndex < tp - 1;
+  }
+
+  get displayTotalPages(): number {
+    return this.totalPages > 0 ? this.totalPages : 1;
+  }
+
+  onPageSizeChange(): void {
+    this.pageIndex = 0;
+    this.loadAll();
   }
 
   private formatError(e: unknown): string {

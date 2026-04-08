@@ -52,6 +52,42 @@
           </tbody>
         </table>
       </div>
+      <div *ngIf="!loading" class="d-flex flex-wrap align-items-center justify-content-between mt-2 px-2 py-2 bg-light border rounded small mena-list-pagination">
+        <div class="d-flex flex-wrap align-items-center mb-1 mb-md-0">
+          <span class="text-muted mr-2">Lignes par page</span>
+          <select
+            class="form-control form-control-sm d-inline-block"
+            style="width: 4.75rem"
+            [(ngModel)]="pageSize"
+            (ngModelChange)="onPageSizeChange()"
+          >
+            <option [ngValue]="10">10</option>
+            <option [ngValue]="20">20</option>
+            <option [ngValue]="50">50</option>
+            <option [ngValue]="100">100</option>
+          </select>
+        </div>
+        <div class="d-flex flex-wrap align-items-center mb-1 mb-md-0">
+          <button
+            type="button"
+            class="btn btn-sm btn-outline-secondary"
+            (click)="goPrevPage()"
+            [disabled]="!canGoPrevPage()"
+          >
+            Précédent
+          </button>
+          <span class="mx-2 text-muted">Page {{ pageIndex + 1 }} / {{ displayTotalPages }}</span>
+          <button
+            type="button"
+            class="btn btn-sm btn-outline-secondary"
+            (click)="goNextPage()"
+            [disabled]="!canGoNextPage()"
+          >
+            Suivant
+          </button>
+        </div>
+        <div class="text-muted">{{ totalElements }} résultat(s) au total</div>
+      </div>
     </div>
   </div>
 </div>

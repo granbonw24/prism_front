@@ -1,9 +1,10 @@
 import { CommonModule } from '@angular/common';
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
-import { AdministrationService, AppRole, AppUserAdmin, AppUserAdminUpsertRequest } from '@services/administration.service';
+import { AppRole, AppUserAdmin, AppUserAdminUpsertRequest } from '@models/administration';
+import { AdministrationService } from '@services/administration.service';
 
 @Component({
   selector: 'app-utilisateurs',
@@ -12,13 +13,18 @@ import { AdministrationService, AppRole, AppUserAdmin, AppUserAdminUpsertRequest
   templateUrl: './utilisateurs.component.html',
   styleUrl: './utilisateurs.component.css',
 })
-export class UtilisateursComponent {
+export class UtilisateursComponent implements OnInit {
   loading = false;
   saving = false;
   errorMessage: string | null = null;
 
   roles: AppRole[] = [];
   users: AppUserAdmin[] = [];
+
+  pageIndex = 0;
+  pageSize = 20;
+  totalPages = 0;
+  totalElements = 0;
 
   detailsUser: AppUserAdmin | null = null;
   editUserId: number | null = null;
@@ -53,17 +59,76 @@ export class UtilisateursComponent {
     this.loading = true;
     this.errorMessage = null;
     try {
-      const [roles, users] = await Promise.all([
-        firstValueFrom(this.admin.getRoles()),
-        firstValueFrom(this.admin.getUsers()),
-      ]);
+      const roles = await firstValueFrom(this.admin.getRoles());
       this.roles = roles;
-      this.users = users;
+      await this.loadUsersPage();
     } catch (e) {
       this.errorMessage = this.formatError(e);
     } finally {
       this.loading = false;
     }
+  }
+
+  private async loadUsersPage(): Promise<void> {
+    const page = await firstValueFrom(this.admin.getUsersPage(this.pageIndex, this.pageSize));
+    this.users = page.content ?? [];
+    this.totalPages = page.totalPages ?? 0;
+    this.totalElements = page.totalElements ?? 0;
+  }
+
+  async goPrevPage(): Promise<void> {
+    if (!this.canGoPrevPage()) return;
+    this.pageIndex--;
+    this.loading = true;
+    this.errorMessage = null;
+    try {
+      await this.loadUsersPage();
+    } catch (e) {
+      this.errorMessage = this.formatError(e);
+    } finally {
+      this.loading = false;
+    }
+  }
+
+  async goNextPage(): Promise<void> {
+    if (!this.canGoNextPage()) return;
+    this.pageIndex++;
+    this.loading = true;
+    this.errorMessage = null;
+    try {
+      await this.loadUsersPage();
+    } catch (e) {
+      this.errorMessage = this.formatError(e);
+    } finally {
+      this.loading = false;
+    }
+  }
+
+  async onPageSizeChange(): Promise<void> {
+    this.pageIndex = 0;
+    this.loading = true;
+    this.errorMessage = null;
+    try {
+      await this.loadUsersPage();
+    } catch (e) {
+      this.errorMessage = this.formatError(e);
+    } finally {
+      this.loading = false;
+    }
+  }
+
+  canGoPrevPage(): boolean {
+    return this.pageIndex > 0 && !this.loading;
+  }
+
+  canGoNextPage(): boolean {
+    const tp = this.totalPages;
+    if (tp <= 0) return false;
+    return this.pageIndex < tp - 1 && !this.loading;
+  }
+
+  get displayTotalPages(): number {
+    return this.totalPages > 0 ? this.totalPages : 1;
   }
 
   openCreate(): void {
@@ -106,6 +171,7 @@ export class UtilisateursComponent {
         }),
       );
       this.closeCreate();
+      this.pageIndex = 0;
       await this.reload();
     } catch (e) {
       this.errorMessage = this.formatError(e);

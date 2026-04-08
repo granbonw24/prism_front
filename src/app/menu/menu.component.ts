@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
-import { RouterLink, RouterLinkActive } from '@angular/router';
+import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { BRAND_CONFIG } from '@core/config/brand.config';
 import { REFERENTIEL_ROUTE_DATA, type ReferentielRouteData } from '@core/config/referentiel-routes.data';
 
@@ -16,6 +16,13 @@ import { REFERENTIEL_ROUTE_DATA, type ReferentielRouteData } from '@core/config/
   `,
 })
 export class MenuComponent {
+  constructor(private readonly router: Router) {}
+
+  /** Ouvre le bloc menu VISITES lorsque l’URL courante est une route visites (`/visites/...`). */
+  visitesSectionOpen(): boolean {
+    return this.router.url.startsWith('/visites');
+  }
+
   /** Liens référentiels : alignés sur `app.routes` et les `apiPath` du backend. */
   readonly referentielRoutes = REFERENTIEL_ROUTE_DATA;
   readonly referentielGroups = groupReferentiels(REFERENTIEL_ROUTE_DATA);

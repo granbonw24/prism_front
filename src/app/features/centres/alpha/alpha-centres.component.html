@@ -48,36 +48,28 @@
             <label class="small text-muted">Localité</label>
             <select class="form-control" [(ngModel)]="model.centre.localiteId" [disabled]="saving">
               <option [ngValue]="null">--</option>
-              <option *ngFor="let l of localites" [ngValue]="l.id">
-                {{ l.codeLocalite ?? ('LOC#' + l.id) }} — {{ l.nomLocalite ?? '—' }}
-              </option>
+              <option *ngFor="let l of localites" [ngValue]="l.id">{{ localiteOptionLabel(l) }}</option>
             </select>
           </div>
           <div class="form-group col-md-3">
             <label class="small text-muted">IEP</label>
             <select class="form-control" [(ngModel)]="model.centre.iepId" [disabled]="saving">
               <option [ngValue]="null">--</option>
-              <option *ngFor="let i of ieps" [ngValue]="i.id">
-                {{ i.codeIep ?? ('IEP#' + i.id) }} — {{ i.nomIep ?? '—' }}
-              </option>
+              <option *ngFor="let i of ieps" [ngValue]="i.id">{{ iepOptionLabel(i) }}</option>
             </select>
           </div>
           <div class="form-group col-md-3">
             <label class="small text-muted">Nature centre</label>
             <select class="form-control" [(ngModel)]="model.centre.natureCentreId" [disabled]="saving">
               <option [ngValue]="null">--</option>
-              <option *ngFor="let n of natures" [ngValue]="n.id">
-                {{ n.codeNatureCentre ?? ('NAT#' + n.id) }} — {{ n.libelleNatureCentre ?? '—' }}
-              </option>
+              <option *ngFor="let n of natures" [ngValue]="n.id">{{ natureOptionLabel(n) }}</option>
             </select>
           </div>
           <div class="form-group col-md-3">
             <label class="small text-muted">Périodicité</label>
             <select class="form-control" [(ngModel)]="model.centre.periodiciteId" [disabled]="saving">
               <option [ngValue]="null">--</option>
-              <option *ngFor="let p of periodicites" [ngValue]="p.id">
-                {{ p.codePeriodicite ?? ('PER#' + p.id) }} — {{ p.libellePeriodicite ?? '—' }}
-              </option>
+              <option *ngFor="let p of periodicites" [ngValue]="p.id">{{ periodiciteOptionLabel(p) }}</option>
             </select>
           </div>
         </div>
@@ -87,9 +79,7 @@
             <label class="small text-muted">Autorité autorisation</label>
             <select class="form-control" [(ngModel)]="model.centre.autoriteAutorisationId" [disabled]="saving">
               <option [ngValue]="null">--</option>
-              <option *ngFor="let a of autorites" [ngValue]="a.id">
-                {{ a.codeAutorisation ?? ('AUT#' + a.id) }} — {{ a.libelleAutoriteAutorisation ?? '—' }}
-              </option>
+              <option *ngFor="let a of autorites" [ngValue]="a.id">{{ autoriteOptionLabel(a) }}</option>
             </select>
           </div>
           <div class="form-group col-md-6">
@@ -164,28 +154,28 @@
             <label class="small text-muted">Campagne</label>
             <select class="form-control" [(ngModel)]="model.campagneId" [disabled]="saving">
               <option [ngValue]="null">--</option>
-              <option *ngFor="let c of campagnes" [ngValue]="c.id">{{ c.libelle }}</option>
+              <option *ngFor="let c of campagnes" [ngValue]="c.id">{{ refOptionLabel(c) }}</option>
             </select>
           </div>
           <div class="form-group col-md-3">
             <label class="small text-muted">Catégorie</label>
             <select class="form-control" [(ngModel)]="model.categorieCentreAlphaId" [disabled]="saving">
               <option [ngValue]="null">--</option>
-              <option *ngFor="let c of categories" [ngValue]="c.id">{{ c.libelle }}</option>
+              <option *ngFor="let c of categories" [ngValue]="c.id">{{ refOptionLabel(c) }}</option>
             </select>
           </div>
           <div class="form-group col-md-3">
             <label class="small text-muted">Type alpha</label>
             <select class="form-control" [(ngModel)]="model.typeAlphaId" [disabled]="saving">
               <option [ngValue]="null">--</option>
-              <option *ngFor="let t of typesAlpha" [ngValue]="t.id">{{ t.libelle }}</option>
+              <option *ngFor="let t of typesAlpha" [ngValue]="t.id">{{ refOptionLabel(t) }}</option>
             </select>
           </div>
           <div class="form-group col-md-3">
             <label class="small text-muted">Régime alpha</label>
             <select class="form-control" [(ngModel)]="model.regimeAlphaId" [disabled]="saving">
               <option [ngValue]="null">--</option>
-              <option *ngFor="let r of regimes" [ngValue]="r.id">{{ r.libelle }}</option>
+              <option *ngFor="let r of regimes" [ngValue]="r.id">{{ refOptionLabel(r) }}</option>
             </select>
           </div>
         </div>
@@ -263,6 +253,173 @@
       <h6 class="m-0 font-weight-bold text-primary">Liste</h6>
     </div>
     <div class="card-body pt-3">
+      <div class="mb-3 p-2 bg-light rounded small border">
+        <div class="mb-3">
+          <div class="font-weight-bold text-secondary mb-1">Recherche rapide</div>
+          <p class="text-muted mb-2" style="font-size: 0.85rem">
+            Recherche sur <strong>codes et libellés</strong> (et autres champs texte) via le paramètre <code>q</code>. Les listes
+            ci‑dessous permettent de filtrer par référentiels (code — libellé chargés depuis la base).
+          </p>
+          <div class="form-group col-md-12 px-0 mb-0">
+            <label class="mb-0 text-muted">Texte libre (code, libellé, localisation…)</label>
+            <input
+              class="form-control form-control-sm"
+              [(ngModel)]="searchQ"
+              placeholder="Ex. code centre, code Alpha, libellé…"
+            />
+          </div>
+        </div>
+
+        <hr class="my-3" />
+
+        <div class="font-weight-bold text-secondary mb-1">Filtres détaillés</div>
+        <p class="text-muted mb-2" style="font-size: 0.85rem">
+          Listes issues des référentiels (valeur = identifiant en base). Champs texte : recherche partielle. Booléens : liste.
+        </p>
+        <div class="form-row">
+          <div class="form-group col-md-2 mb-1">
+            <label class="mb-0 text-muted">Campagne</label>
+            <select class="form-control form-control-sm" [(ngModel)]="alphaListFilter['idCompagne']">
+              <option value="">— Toutes —</option>
+              <option *ngFor="let o of campagnes" [value]="'' + o.id">{{ refOptionLabel(o) }}</option>
+            </select>
+          </div>
+          <div class="form-group col-md-2 mb-1">
+            <label class="mb-0 text-muted">Catégorie centre Alpha</label>
+            <select class="form-control form-control-sm" [(ngModel)]="alphaListFilter['idCategorieCentreAlpha']">
+              <option value="">— Toutes —</option>
+              <option *ngFor="let o of categories" [value]="'' + o.id">{{ refOptionLabel(o) }}</option>
+            </select>
+          </div>
+          <div class="form-group col-md-2 mb-1">
+            <label class="mb-0 text-muted">Type Alpha</label>
+            <select class="form-control form-control-sm" [(ngModel)]="alphaListFilter['idTypeAlpha']">
+              <option value="">— Tous —</option>
+              <option *ngFor="let o of typesAlpha" [value]="'' + o.id">{{ refOptionLabel(o) }}</option>
+            </select>
+          </div>
+          <div class="form-group col-md-2 mb-1">
+            <label class="mb-0 text-muted">Régime Alpha</label>
+            <select class="form-control form-control-sm" [(ngModel)]="alphaListFilter['idRegimeAlpha']">
+              <option value="">— Tous —</option>
+              <option *ngFor="let o of regimes" [value]="'' + o.id">{{ refOptionLabel(o) }}</option>
+            </select>
+          </div>
+          <div class="form-group col-md-2 mb-1">
+            <label class="mb-0 text-muted">Localité</label>
+            <select class="form-control form-control-sm" [(ngModel)]="alphaListFilter['idLocalite']">
+              <option value="">— Toutes —</option>
+              <option *ngFor="let l of localites" [value]="'' + l.id">{{ localiteOptionLabel(l) }}</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group col-md-2 mb-1">
+            <label class="mb-0 text-muted">Code centre (contient)</label>
+            <input class="form-control form-control-sm" [(ngModel)]="alphaListFilter['codeCentre']" />
+          </div>
+          <div class="form-group col-md-2 mb-1">
+            <label class="mb-0 text-muted">Code Alpha (contient)</label>
+            <input class="form-control form-control-sm" [(ngModel)]="alphaListFilter['codeAlpha']" />
+          </div>
+          <div class="form-group col-md-2 mb-1">
+            <label class="mb-0 text-muted">Libellé Alpha (contient)</label>
+            <input class="form-control form-control-sm" [(ngModel)]="alphaListFilter['libelleAlpha']" />
+          </div>
+          <div class="form-group col-md-2 mb-1">
+            <label class="mb-0 text-muted">IEP</label>
+            <select class="form-control form-control-sm" [(ngModel)]="alphaListFilter['idIep']">
+              <option value="">— Tous —</option>
+              <option *ngFor="let i of ieps" [value]="'' + i.id">{{ iepOptionLabel(i) }}</option>
+            </select>
+          </div>
+          <div class="form-group col-md-2 mb-1">
+            <label class="mb-0 text-muted">Nature centre</label>
+            <select class="form-control form-control-sm" [(ngModel)]="alphaListFilter['idNaturecentre']">
+              <option value="">— Toutes —</option>
+              <option *ngFor="let n of natures" [value]="'' + n.id">{{ natureOptionLabel(n) }}</option>
+            </select>
+          </div>
+          <div class="form-group col-md-2 mb-1">
+            <label class="mb-0 text-muted">Nombre de visites</label>
+            <input class="form-control form-control-sm" [(ngModel)]="alphaListFilter['nombreVisite']" type="number" min="0" placeholder="-" />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group col-md-2 mb-1">
+            <label class="mb-0 text-muted">Autorisation</label>
+            <select class="form-control form-control-sm" [(ngModel)]="alphaListFilter['autorisation']">
+              <option value="">—</option>
+              <option value="true">Oui</option>
+              <option value="false">Non</option>
+            </select>
+          </div>
+          <div class="form-group col-md-2 mb-1">
+            <label class="mb-0 text-muted">Eau</label>
+            <select class="form-control form-control-sm" [(ngModel)]="alphaListFilter['aDeLeau']">
+              <option value="">—</option>
+              <option value="true">Oui</option>
+              <option value="false">Non</option>
+            </select>
+          </div>
+          <div class="form-group col-md-2 mb-1">
+            <label class="mb-0 text-muted">Électrifié</label>
+            <select class="form-control form-control-sm" [(ngModel)]="alphaListFilter['estElectrifie']">
+              <option value="">—</option>
+              <option value="true">Oui</option>
+              <option value="false">Non</option>
+            </select>
+          </div>
+          <div class="form-group col-md-2 mb-1">
+            <label class="mb-0 text-muted">Périodicité</label>
+            <select class="form-control form-control-sm" [(ngModel)]="alphaListFilter['idPeriodicite']">
+              <option value="">— Toutes —</option>
+              <option *ngFor="let p of periodicites" [value]="'' + p.id">{{ periodiciteOptionLabel(p) }}</option>
+            </select>
+          </div>
+          <div class="form-group col-md-2 mb-1">
+            <label class="mb-0 text-muted">Autorité autorisation</label>
+            <select class="form-control form-control-sm" [(ngModel)]="alphaListFilter['idAutoriteAutorisation']">
+              <option value="">— Toutes —</option>
+              <option *ngFor="let a of autorites" [value]="'' + a.id">{{ autoriteOptionLabel(a) }}</option>
+            </select>
+          </div>
+          <div class="form-group col-md-2 mb-1">
+            <label class="mb-0 text-muted">Promoteur</label>
+            <select class="form-control form-control-sm" [(ngModel)]="alphaListFilter['idPromoteur']">
+              <option value="">— Tous —</option>
+              <option *ngFor="let o of promoteurs" [value]="'' + o.id">{{ refOptionLabel(o) }}</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group col-md-2 mb-1">
+            <label class="mb-0 text-muted">Encadr. non MENA (contient)</label>
+            <input class="form-control form-control-sm" [(ngModel)]="alphaListFilter['encadreurNonMena']" />
+          </div>
+          <div class="form-group col-md-2 mb-1">
+            <label class="mb-0 text-muted">Localisation (contient)</label>
+            <input class="form-control form-control-sm" [(ngModel)]="alphaListFilter['localisationCentre']" />
+          </div>
+          <div class="form-group col-md-2 mb-1">
+            <label class="mb-0 text-muted">Milieu impl. (contient)</label>
+            <input class="form-control form-control-sm" [(ngModel)]="alphaListFilter['nomMilieuImplentation']" />
+          </div>
+          <div class="form-group col-md-2 mb-1">
+            <label class="mb-0 text-muted">Encadré par MENA</label>
+            <select class="form-control form-control-sm" [(ngModel)]="alphaListFilter['encadrerParMena']">
+              <option value="">—</option>
+              <option value="true">Oui</option>
+              <option value="false">Non</option>
+            </select>
+          </div>
+        </div>
+        <div class="d-flex flex-wrap align-items-center mt-2">
+          <button type="button" class="btn btn-sm btn-primary" (click)="applyListFilters()">Filtrer</button>
+          <button type="button" class="btn btn-sm btn-outline-secondary ml-1" (click)="resetListFilters()">Réinitialiser</button>
+          <span class="text-muted small ml-3" *ngIf="!loading">{{ totalElements }} résultat(s)</span>
+        </div>
+      </div>
       <div *ngIf="loading" class="small text-muted">Chargement…</div>
       <div *ngIf="!loading" class="table-responsive">
         <table class="table table-bordered align-middle">
@@ -333,6 +490,43 @@
             </tr>
           </tbody>
         </table>
+      </div>
+
+      <div *ngIf="!loading" class="d-flex flex-wrap align-items-center justify-content-between mt-2 px-2 py-2 bg-light border rounded small mena-list-pagination">
+        <div class="d-flex flex-wrap align-items-center mb-1 mb-md-0">
+          <span class="text-muted mr-2">Lignes par page</span>
+          <select
+            class="form-control form-control-sm d-inline-block"
+            style="width: 4.75rem"
+            [(ngModel)]="pageSize"
+            (ngModelChange)="onPageSizeChange()"
+          >
+            <option [ngValue]="10">10</option>
+            <option [ngValue]="20">20</option>
+            <option [ngValue]="50">50</option>
+            <option [ngValue]="100">100</option>
+          </select>
+        </div>
+        <div class="d-flex flex-wrap align-items-center mb-1 mb-md-0">
+          <button
+            type="button"
+            class="btn btn-sm btn-outline-secondary"
+            (click)="goPrevPage()"
+            [disabled]="!canGoPrevPage()"
+          >
+            Précédent
+          </button>
+          <span class="mx-2 text-muted">Page {{ pageIndex + 1 }} / {{ displayTotalPages }}</span>
+          <button
+            type="button"
+            class="btn btn-sm btn-outline-secondary"
+            (click)="goNextPage()"
+            [disabled]="!canGoNextPage()"
+          >
+            Suivant
+          </button>
+        </div>
+        <div class="text-muted">{{ totalElements }} résultat(s) au total</div>
       </div>
     </div>
   </div>
@@ -451,28 +645,28 @@
             <label class="small text-muted">Localité</label>
             <select class="form-control" [(ngModel)]="editForm.idLocalite" [disabled]="saving">
               <option [ngValue]="null">--</option>
-              <option *ngFor="let l of localites" [ngValue]="l.id">{{ l.codeLocalite ?? ('LOC#' + l.id) }} — {{ l.nomLocalite ?? '—' }}</option>
+              <option *ngFor="let l of localites" [ngValue]="l.id">{{ localiteOptionLabel(l) }}</option>
             </select>
           </div>
           <div class="form-group col-md-3">
             <label class="small text-muted">IEP</label>
             <select class="form-control" [(ngModel)]="editForm.idIep" [disabled]="saving">
               <option [ngValue]="null">--</option>
-              <option *ngFor="let i of ieps" [ngValue]="i.id">{{ i.codeIep ?? ('IEP#' + i.id) }} — {{ i.nomIep ?? '—' }}</option>
+              <option *ngFor="let i of ieps" [ngValue]="i.id">{{ iepOptionLabel(i) }}</option>
             </select>
           </div>
           <div class="form-group col-md-3">
             <label class="small text-muted">Nature</label>
             <select class="form-control" [(ngModel)]="editForm.idNaturecentre" [disabled]="saving">
               <option [ngValue]="null">--</option>
-              <option *ngFor="let n of natures" [ngValue]="n.id">{{ n.codeNatureCentre ?? ('NAT#' + n.id) }} — {{ n.libelleNatureCentre ?? '—' }}</option>
+              <option *ngFor="let n of natures" [ngValue]="n.id">{{ natureOptionLabel(n) }}</option>
             </select>
           </div>
           <div class="form-group col-md-3">
             <label class="small text-muted">Périodicité</label>
             <select class="form-control" [(ngModel)]="editForm.idPeriodicite" [disabled]="saving">
               <option [ngValue]="null">--</option>
-              <option *ngFor="let p of periodicites" [ngValue]="p.id">{{ p.codePeriodicite ?? ('PER#' + p.id) }} — {{ p.libellePeriodicite ?? '—' }}</option>
+              <option *ngFor="let p of periodicites" [ngValue]="p.id">{{ periodiciteOptionLabel(p) }}</option>
             </select>
           </div>
         </div>
@@ -482,7 +676,7 @@
             <label class="small text-muted">Autorité autorisation</label>
             <select class="form-control" [(ngModel)]="editForm.idAutoriteAutorisation" [disabled]="saving">
               <option [ngValue]="null">--</option>
-              <option *ngFor="let a of autorites" [ngValue]="a.id">{{ a.codeAutorisation ?? ('AUT#' + a.id) }} — {{ a.libelleAutoriteAutorisation ?? '—' }}</option>
+              <option *ngFor="let a of autorites" [ngValue]="a.id">{{ autoriteOptionLabel(a) }}</option>
             </select>
           </div>
           <div class="form-group col-md-2">

@@ -1,79 +1,28 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { API_BASE_URL } from '@core/tokens/api-base-url.token';
+import { SpringPage } from '@models/centre';
+import {
+  AppRole,
+  AppUserAdmin,
+  AppUserAdminUpsertRequest,
+  Fonctionnalite,
+  Permission,
+  PersonnelAdmin,
+  PersonnelAdminDashboard,
+  RoleFonctionnalitePermission,
+} from '@models/administration';
 
-export interface AppRole {
-  id: number;
-  codeRole?: string;
-  libelleRole?: string;
-  descriptionRole?: string;
-}
-
-export interface Fonctionnalite {
-  id: number;
-  codeFonctionnalite?: string;
-  libelleFonctionnalite?: string;
-  module?: string;
-}
-
-export interface Permission {
-  id: number;
-  codePermission?: string;
-  libellePermission?: string;
-}
-
-export interface RoleFonctionnalitePermission {
-  id: number;
-  role?: { id: number };
-  fonctionnalite?: { id: number };
-  permission?: { id: number };
-}
-
-export interface AppUserAdmin {
-  id: number;
-  username: string;
-  email?: string;
-  actif?: boolean;
-  roleIds: number[];
-}
-
-export interface AppUserAdminUpsertRequest {
-  username: string;
-  email?: string | null;
-  actif?: boolean | null;
-  password?: string | null;
-  roleIds?: number[] | null;
-}
-
-export interface PersonnelAdmin {
-  id: number;
-  niveauPersonnelId: number | null;
-  fonctionId: number | null;
-  civiliteId: number | null;
-  centreId: number | null;
-  structureFormationCertificationId: number | null;
-  statutPersonnelId: number | null;
-  codePersonnel?: string | null;
-  certifierPersonnel?: boolean | null;
-  nomPersonnel?: string | null;
-  prenomsPersonnel?: string | null;
-  anneExpePersonnel?: number | null;
-  sexePersonnel?: string | null;
-  dateNaissance?: string | null;
-  ancienneFonctPromoPesonnel?: number | null;
-  contactPersonnel?: string | null;
-  boitePostalePersonnel?: string | null;
-  emailPersonnel?: string | null;
-  denominationPersonnel?: string | null;
-  nomDuPrgramme?: string | null;
-  nomRepresentantLegalSturcture?: string | null;
-}
-
-export interface PersonnelAdminDashboard {
-  centreId: number;
-  total: number;
-}
+/** Paramètres optionnels pour filtrer la liste du personnel (query HTTP). */
+export type PersonnelListQuery = {
+  idFonction?: number | null;
+  idStatutPersonnel?: number | null;
+  idNiveauPersonnel?: number | null;
+  idCivilite?: number | null;
+  sexePersonnel?: string;
+  q?: string;
+};
 
 @Injectable({ providedIn: 'root' })
 export class AdministrationService {
@@ -127,8 +76,12 @@ export class AdministrationService {
     );
   }
 
-  getUsers(): Observable<AppUserAdmin[]> {
-    return this.http.get<AppUserAdmin[]>(`${this.apiBaseUrl}/api/app-users`);
+  getUsersPage(page: number, size: number): Observable<SpringPage<AppUserAdmin>> {
+    const params = new HttpParams()
+      .set('page', String(page))
+      .set('size', String(size))
+      .set('sort', 'id,asc');
+    return this.http.get<SpringPage<AppUserAdmin>>(`${this.apiBaseUrl}/api/app-users`, { params });
   }
 
   createUser(payload: AppUserAdminUpsertRequest): Observable<AppUserAdmin> {
@@ -149,9 +102,39 @@ export class AdministrationService {
     });
   }
 
-  listPersonnelByCentre(centreId: number): Observable<PersonnelAdmin[]> {
-    return this.http.get<PersonnelAdmin[]>(`${this.apiBaseUrl}/api/admin/personnel`, {
-      params: { centreId },
+  listPersonnelByCentrePage(
+    centreId: number,
+    page: number,
+    size: number,
+    query: PersonnelListQuery = {},
+  ): Observable<SpringPage<PersonnelAdmin>> {
+    let params = new HttpParams()
+      .set('centreId', String(centreId))
+      .set('page', String(page))
+      .set('size', String(size))
+      .set('sort', 'id,asc');
+    if (query.idFonction != null) {
+      params = params.set('idFonction', String(query.idFonction));
+    }
+    if (query.idStatutPersonnel != null) {
+      params = params.set('idStatutPersonnel', String(query.idStatutPersonnel));
+    }
+    if (query.idNiveauPersonnel != null) {
+      params = params.set('idNiveauPersonnel', String(query.idNiveauPersonnel));
+    }
+    if (query.idCivilite != null) {
+      params = params.set('idCivilite', String(query.idCivilite));
+    }
+    const sexe = String(query.sexePersonnel ?? '').trim();
+    if (sexe !== '') {
+      params = params.set('sexePersonnel', sexe);
+    }
+    const q = String(query.q ?? '').trim();
+    if (q !== '') {
+      params = params.set('q', q);
+    }
+    return this.http.get<SpringPage<PersonnelAdmin>>(`${this.apiBaseUrl}/api/admin/personnel`, {
+      params,
     });
   }
 

@@ -1,5 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { unwrapListBody } from '@core/http/unwrap-spring-page';
 import { Component, EventEmitter, Inject, Input, OnChanges, OnDestroy, OnInit, Output, SimpleChanges } from '@angular/core';
 import {
   FormBuilder,
@@ -16,6 +17,9 @@ import { resolveColumnHeaderLabel } from '@core/config/referentiel-column-labels
 import { API_BASE_URL } from '@core/tokens/api-base-url.token';
 import { formatHttpError } from '@core/utils/http-error.util';
 import { MenaChartComponent } from '@shared/mena-chart/mena-chart.component';
+
+/** Paramètres pour charger toutes les options centre (listes paginées côté API). */
+const CENTRE_OPTIONS_PAGE_PARAMS = { page: '0', size: '5000' };
 
 @Component({
   selector: 'app-referentiel-list-page',
@@ -720,7 +724,7 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
     labelKeys: string[],
     target: Record<string, string>,
   ): void {
-    const list = Array.isArray(rows) ? rows : [];
+    const list = unwrapListBody(rows);
     for (const raw of list) {
       const row = raw as Record<string, unknown>;
       const idRaw = row[valueKey];
@@ -744,7 +748,7 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
   }
 
   private ingestCentreList(rows: unknown, ctx: ListStatsContext): void {
-    const list = Array.isArray(rows) ? rows : [];
+    const list = unwrapListBody(rows);
     const vk = ctx.centreOptionValueKey ?? 'id';
     const lks = ctx.centreOptionLabelKeys ?? ['libelle', 'nom', 'code'];
     for (const raw of list) {
@@ -774,7 +778,7 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
   }
 
   private ingestSecondaryCentreList(rows: unknown, ctx: ListStatsContext): void {
-    const list = Array.isArray(rows) ? rows : [];
+    const list = unwrapListBody(rows);
     const vk = ctx.centreOptionValueKey ?? 'id';
     const lks = ctx.centreOptionLabelKeys ?? ['libelle', 'nom', 'code'];
     for (const raw of list) {
@@ -821,7 +825,9 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
 
     const req: Record<string, ReturnType<HttpClient['get']>> = {};
     if (ctx.centresApiPath) {
-      req['centres'] = this.http.get<unknown[]>(`${this.apiBaseUrl}${ctx.centresApiPath}`);
+      req['centres'] = this.http.get<unknown>(`${this.apiBaseUrl}${ctx.centresApiPath}`, {
+        params: CENTRE_OPTIONS_PAGE_PARAMS,
+      });
     }
     const secPath = ctx.secondaryCentresApiPath;
     const secSeparate =
@@ -829,7 +835,9 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
       !!secPath &&
       secPath !== ctx.centresApiPath;
     if (secSeparate) {
-      req['centres2'] = this.http.get<unknown[]>(`${this.apiBaseUrl}${secPath}`);
+      req['centres2'] = this.http.get<unknown>(`${this.apiBaseUrl}${secPath}`, {
+        params: CENTRE_OPTIONS_PAGE_PARAMS,
+      });
     }
     if (ctx.periodesApiPath) {
       req['periodes'] = this.http.get<unknown[]>(`${this.apiBaseUrl}${ctx.periodesApiPath}`);
@@ -997,7 +1005,7 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
     const url = `${this.apiBaseUrl}${this.apiPath}`;
     this.loadSub = this.http.get<unknown>(url).subscribe({
       next: (body) => {
-        const list = Array.isArray(body) ? body : [];
+        const list = unwrapListBody(body);
         this.rows = list as Record<string, unknown>[];
         this.buildColumns();
         this.detectEtatColumn();
@@ -1059,9 +1067,15 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
       if (field.type !== 'select' || !field.optionsApiPath) continue;
       const cacheKey = this.optionsCacheKey(field);
       if ((this.fieldOptions[cacheKey]?.length ?? 0) > 0) continue;
-      const sub = this.http.get<unknown[]>(`${this.apiBaseUrl}${field.optionsApiPath}`).subscribe({
+      const centreOptionsPaths = new Set(['/api/v1/alpha', '/api/cec', '/api/cp', '/api/sie']);
+      const optPath = field.optionsApiPath ?? '';
+      const sub = this.http
+        .get<unknown>(`${this.apiBaseUrl}${optPath}`, {
+          params: centreOptionsPaths.has(optPath) ? CENTRE_OPTIONS_PAGE_PARAMS : undefined,
+        })
+        .subscribe({
         next: (rows) => {
-          const list = Array.isArray(rows) ? rows : [];
+          const list = unwrapListBody(rows);
           this.fieldOptions[cacheKey] = list
             .map((row) => this.toOption(field, row as Record<string, unknown>))
             .filter((x): x is { value: string | number; label: string } => x != null);

@@ -2,16 +2,11 @@ import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { forkJoin } from 'rxjs';
-import {
-  AdministrationService,
-  PersonnelAdmin,
-  PersonnelAdminDashboard,
-} from '@services/administration.service';
+import { PersonnelAdmin, PersonnelAdminDashboard } from '@models/administration';
+import { AdministrationService, PersonnelListQuery } from '@services/administration.service';
 import { HttpClient } from '@angular/common/http';
 import { Inject } from '@angular/core';
 import { API_BASE_URL } from '@core/tokens/api-base-url.token';
-
-type RefItem = { id: number; libelle?: string; code?: string };
 
 @Component({
   selector: 'app-personnel-admin',
@@ -25,6 +20,28 @@ export class PersonnelComponent {
 
   dashboard: PersonnelAdminDashboard | null = null;
   rows: PersonnelAdmin[] = [];
+
+  pageIndex = 0;
+  pageSize = 20;
+  totalPages = 0;
+  totalElements = 0;
+
+  /** Filtres de la liste (réutilisent les référentiels déjà chargés). */
+  listFilter: {
+    idFonction: number | null;
+    idStatutPersonnel: number | null;
+    idNiveauPersonnel: number | null;
+    idCivilite: number | null;
+    sexePersonnel: string;
+    q: string;
+  } = {
+    idFonction: null,
+    idStatutPersonnel: null,
+    idNiveauPersonnel: null,
+    idCivilite: null,
+    sexePersonnel: '',
+    q: '',
+  };
 
   centres: any[] = [];
   fonctions: any[] = [];
@@ -95,9 +112,46 @@ export class PersonnelComponent {
     if (this.centreId == null) {
       this.rows = [];
       this.dashboard = null;
+      this.pageIndex = 0;
+      this.resetListFilters(false);
       return;
     }
     this.creating.idCentreId = this.centreId;
+    this.pageIndex = 0;
+    this.resetListFilters(false);
+    this.reload();
+  }
+
+  private buildListQuery(): PersonnelListQuery {
+    return {
+      idFonction: this.listFilter.idFonction,
+      idStatutPersonnel: this.listFilter.idStatutPersonnel,
+      idNiveauPersonnel: this.listFilter.idNiveauPersonnel,
+      idCivilite: this.listFilter.idCivilite,
+      sexePersonnel: this.listFilter.sexePersonnel,
+      q: this.listFilter.q,
+    };
+  }
+
+  /** Réinitialise les critères de liste ; si {@code reloadList} recharge la grille. */
+  resetListFilters(reloadList = true): void {
+    this.listFilter = {
+      idFonction: null,
+      idStatutPersonnel: null,
+      idNiveauPersonnel: null,
+      idCivilite: null,
+      sexePersonnel: '',
+      q: '',
+    };
+    this.pageIndex = 0;
+    if (reloadList && this.centreId != null) {
+      this.reload();
+    }
+  }
+
+  applyListFilters(): void {
+    if (this.centreId == null) return;
+    this.pageIndex = 0;
     this.reload();
   }
 
@@ -105,13 +159,15 @@ export class PersonnelComponent {
     if (this.centreId == null) return;
     this.loading = true;
     this.errorMessage = null;
-    forkJoin({
-      rows: this.admin.listPersonnelByCentre(this.centreId),
-      dashboard: this.admin.getPersonnelDashboard(this.centreId),
-    }).subscribe({
-      next: (res) => {
-        this.rows = res.rows ?? [];
-        this.dashboard = res.dashboard ?? null;
+    this.admin.listPersonnelByCentrePage(this.centreId, this.pageIndex, this.pageSize, this.buildListQuery()).subscribe({
+      next: (page) => {
+        this.rows = page.content ?? [];
+        this.totalPages = page.totalPages ?? 0;
+        this.totalElements = page.totalElements ?? 0;
+        this.dashboard = {
+          centreId: this.centreId!,
+          total: page.totalElements ?? 0,
+        };
         this.loading = false;
       },
       error: (e) => {
@@ -119,6 +175,40 @@ export class PersonnelComponent {
         this.loading = false;
       },
     });
+  }
+
+  goPrevPage(): void {
+    if (this.centreId == null || this.pageIndex <= 0 || this.loading) return;
+    this.pageIndex--;
+    this.reload();
+  }
+
+  goNextPage(): void {
+    if (this.centreId == null || this.loading) return;
+    const tp = this.totalPages;
+    if (tp <= 0 || this.pageIndex >= tp - 1) return;
+    this.pageIndex++;
+    this.reload();
+  }
+
+  onPageSizeChange(): void {
+    if (this.centreId == null) return;
+    this.pageIndex = 0;
+    this.reload();
+  }
+
+  canGoPrevPage(): boolean {
+    return this.centreId != null && this.pageIndex > 0 && !this.loading;
+  }
+
+  canGoNextPage(): boolean {
+    const tp = this.totalPages;
+    if (this.centreId == null || tp <= 0 || this.loading) return false;
+    return this.pageIndex < tp - 1;
+  }
+
+  get displayTotalPages(): number {
+    return this.totalPages > 0 ? this.totalPages : 1;
   }
 
   canCreate(): boolean {

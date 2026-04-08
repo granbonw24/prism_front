@@ -1,7 +1,8 @@
 import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { AdministrationService, AppRole } from '@services/administration.service';
+import { AppRole } from '@models/administration';
+import { AdministrationService } from '@services/administration.service';
 
 @Component({
   selector: 'app-acteurs',

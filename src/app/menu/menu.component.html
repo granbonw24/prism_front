@@ -105,19 +105,56 @@
           <span>CONTROL</span></a>
       </li>
 
-  <li class="nav-item">
-        <a class="nav-link collapsed" routerLink="#" data-toggle="collapse" data-target="#collapseUtilities3" aria-expanded="true" aria-controls="collapseUtilities">
-          <i class="fas fa-fw fa-wrench"></i>
-          <span>VISITES</span>
+  <li class="nav-item" [class.active]="visitesSectionOpen()">
+        <a
+          id="headingVisites"
+          class="nav-link"
+          [class.collapsed]="!visitesSectionOpen()"
+          routerLink="#"
+          data-toggle="collapse"
+          data-target="#collapseVisites"
+          [attr.aria-expanded]="visitesSectionOpen()"
+          aria-controls="collapseVisites"
+        >
+          <i class="fas fa-fw fa-clipboard-check" aria-hidden="true"></i>
+          <span>Visites</span>
         </a>
-        <div id="collapseUtilities3" class="collapse" aria-labelledby="headingUtilities" data-parent="#accordionSidebar">
+        <div
+          id="collapseVisites"
+          class="collapse"
+          [class.show]="visitesSectionOpen()"
+          aria-labelledby="headingVisites"
+          data-parent="#accordionSidebar"
+        >
           <div class="bg-white py-2 collapse-inner rounded">
-            <!-- <h6 class="collapse-header">Custom Utilities:</h6> -->
-            <a class="collapse-item" routerLink="/visites/pointage" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">point des visites </a>
-            <a class="collapse-item" routerLink="/visites/conseiller" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">suivi du conseiller </a>
-            <a class="collapse-item" routerLink="/visites/superviseur" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Suivi par le superviseur</a>
-            <a class="collapse-item" routerLink="/visites/iepp" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">suivi par l'iepp</a>
-
+            <a
+              class="collapse-item"
+              routerLink="/visites/pointage"
+              routerLinkActive="active"
+              [routerLinkActiveOptions]="{ exact: true }"
+              >Point des visites</a
+            >
+            <a
+              class="collapse-item"
+              routerLink="/visites/conseiller"
+              routerLinkActive="active"
+              [routerLinkActiveOptions]="{ exact: true }"
+              >Suivi du conseiller</a
+            >
+            <a
+              class="collapse-item"
+              routerLink="/visites/superviseur"
+              routerLinkActive="active"
+              [routerLinkActiveOptions]="{ exact: true }"
+              >Suivi par le superviseur</a
+            >
+            <a
+              class="collapse-item"
+              routerLink="/visites/iepp"
+              routerLinkActive="active"
+              [routerLinkActiveOptions]="{ exact: true }"
+              >Suivi par l’IEPP</a
+            >
           </div>
         </div>
       </li>

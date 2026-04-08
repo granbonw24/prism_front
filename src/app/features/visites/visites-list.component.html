@@ -1,0 +1,382 @@
+<div class="container-fluid">
+  <div class="d-sm-flex align-items-center justify-content-between mb-3">
+    <h1 class="h4 mb-0 text-gray-800">{{ pageTitle }}</h1>
+    <div class="d-flex flex-wrap gap-1">
+      <button class="btn btn-sm btn-primary" type="button" (click)="openCreate()" [disabled]="loading || saving">
+        Créer une fiche
+      </button>
+      <button class="btn btn-sm btn-outline-primary" type="button" (click)="reload()" [disabled]="loading">
+        Rafraîchir
+      </button>
+    </div>
+  </div>
+
+  <p class="small text-muted mb-3">
+    Données issues des fiches <strong>Documents</strong> (référentiel) rattachées aux centres Alpha : critères de suivi
+    (existe, à jour, etc.). Les vues conseiller, superviseur et IEPP partagent la même liste pour l’instant.
+  </p>
+
+  <div *ngIf="errorMessage" class="alert alert-danger py-2">
+    {{ errorMessage }}
+  </div>
+
+  <div class="card border-0 shadow-sm mb-3">
+    <div class="card-body py-3">
+      <div class="form-row align-items-end">
+        <div class="form-group col-md-3 col-sm-6 mb-2 mb-md-0">
+          <label class="small text-muted mb-1">Recherche</label>
+          <input
+            class="form-control form-control-sm"
+            type="search"
+            [(ngModel)]="searchQ"
+            (keyup.enter)="applyFilters()"
+            placeholder="Code doc., centre, nature, type…"
+            autocomplete="off"
+          />
+        </div>
+        <div class="form-group col-md-3 col-sm-6 mb-2 mb-md-0">
+          <label class="small text-muted mb-1">Centre Alpha</label>
+          <select class="form-control form-control-sm" [(ngModel)]="filterIdCentre">
+            <option [ngValue]="''">Tous</option>
+            <option *ngFor="let a of alphas" [ngValue]="a.idCentre">{{ alphaOptionLabel(a) }}</option>
+          </select>
+        </div>
+        <div class="form-group col-md-2 col-sm-6 mb-2 mb-md-0">
+          <label class="small text-muted mb-1">Nature document</label>
+          <select class="form-control form-control-sm" [(ngModel)]="filterIdNatureDocument">
+            <option [ngValue]="''">Toutes</option>
+            <option *ngFor="let n of natures" [ngValue]="n.id">{{ n.libelleNatureDocument ?? '—' }}</option>
+          </select>
+        </div>
+        <div class="form-group col-md-2 col-sm-6 mb-2 mb-md-0">
+          <label class="small text-muted mb-1">Type document</label>
+          <select class="form-control form-control-sm" [(ngModel)]="filterIdTypeDocument">
+            <option [ngValue]="''">Tous</option>
+            <option *ngFor="let t of types" [ngValue]="t.id">
+              {{ (t.codeTypeDocument ?? '') + (t.libelleTypeDocument ? ' — ' + t.libelleTypeDocument : '') || '—' }}
+            </option>
+          </select>
+        </div>
+        <div class="form-group col-md-2 col-sm-12 mb-0 d-flex flex-wrap gap-1">
+          <button type="button" class="btn btn-sm btn-primary flex-grow-1" (click)="applyFilters()" [disabled]="loading">
+            Filtrer
+          </button>
+          <button type="button" class="btn btn-sm btn-outline-secondary flex-grow-1" (click)="clearFilters()" [disabled]="loading">
+            Réinitialiser
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card border-0 shadow-sm">
+    <div class="card-header py-3 bg-white border-bottom-0">
+      <div class="d-flex align-items-center justify-content-between">
+        <h6 class="m-0 font-weight-bold text-primary">Fiches de suivi</h6>
+        <div class="small text-muted">CRUD via <code>/api/documents</code></div>
+      </div>
+    </div>
+    <div class="card-body pt-3">
+      <div *ngIf="loading" class="small text-muted">Chargement…</div>
+      <div *ngIf="!loading" class="table-responsive">
+        <table class="table table-bordered align-middle mena-table table-sm">
+          <thead class="thead-light">
+            <tr>
+              <th>ID</th>
+              <th>Code doc.</th>
+              <th>Centre</th>
+              <th>Nature</th>
+              <th>Type</th>
+              <th>Existe</th>
+              <th>À jour</th>
+              <th>Bien tenu</th>
+              <th>Resp. méth.</th>
+              <th>Bien renseigné</th>
+              <th style="width: 110px" class="text-center">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let r of rows">
+              <td class="text-muted">{{ r.id }}</td>
+              <td class="font-weight-bold">{{ r.codeDocument ?? '—' }}</td>
+              <td>
+                <div>{{ r.libelleAlpha ?? '—' }}</div>
+                <div class="small text-muted">{{ r.codeCentre ?? '' }}</div>
+              </td>
+              <td>{{ r.libelleNatureDocument ?? '—' }}</td>
+              <td>
+                <div>{{ r.libelleTypeDocument ?? '—' }}</div>
+                <div class="small text-muted">{{ r.codeTypeDocument ?? '' }}</div>
+              </td>
+              <td>{{ r.existe ?? '—' }}</td>
+              <td>{{ r.ajour ?? '—' }}</td>
+              <td>{{ r.bientenu ?? '—' }}</td>
+              <td>{{ r.respmethode ?? '—' }}</td>
+              <td>{{ r.bienrensigne ?? '—' }}</td>
+              <td class="text-center">
+                <button
+                  class="btn btn-sm btn-outline-primary mr-1"
+                  type="button"
+                  (click)="openEdit(r)"
+                  [disabled]="saving"
+                  title="Modifier"
+                  aria-label="Modifier"
+                >
+                  <i class="fas fa-pen" aria-hidden="true"></i>
+                </button>
+                <button
+                  class="btn btn-sm btn-outline-danger"
+                  type="button"
+                  (click)="confirmDelete(r)"
+                  [disabled]="saving"
+                  title="Supprimer"
+                  aria-label="Supprimer"
+                >
+                  <i class="fas fa-trash" aria-hidden="true"></i>
+                </button>
+              </td>
+            </tr>
+            <tr *ngIf="rows.length === 0">
+              <td colspan="11" class="text-center text-muted py-4">Aucune fiche pour ces critères.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div *ngIf="!loading" class="d-flex flex-wrap align-items-center justify-content-between mt-2 px-2 py-2 bg-light border rounded small mena-list-pagination">
+        <div class="d-flex flex-wrap align-items-center mb-1 mb-md-0">
+          <span class="text-muted mr-2">Lignes par page</span>
+          <select
+            class="form-control form-control-sm d-inline-block"
+            style="width: 4.75rem"
+            [(ngModel)]="pageSize"
+            (ngModelChange)="onPageSizeChange()"
+          >
+            <option [ngValue]="10">10</option>
+            <option [ngValue]="20">20</option>
+            <option [ngValue]="50">50</option>
+            <option [ngValue]="100">100</option>
+          </select>
+          <span class="text-muted ml-3 d-none d-sm-inline">{{ totalElements }} fiche(s)</span>
+        </div>
+        <div class="d-flex flex-wrap align-items-center mb-1 mb-md-0">
+          <button type="button" class="btn btn-sm btn-outline-secondary" (click)="goPrevPage()" [disabled]="!canGoPrevPage()">
+            Précédent
+          </button>
+          <span class="mx-2 text-muted">Page {{ pageIndex + 1 }} / {{ displayTotalPages }}</span>
+          <button type="button" class="btn btn-sm btn-outline-secondary" (click)="goNextPage()" [disabled]="!canGoNextPage()">
+            Suivant
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Création -->
+<div *ngIf="createOpen" class="modal fade show d-block" tabindex="-1" role="dialog" aria-modal="true">
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content mena-modal">
+      <div class="modal-header">
+        <h5 class="modal-title">Créer une fiche de suivi</h5>
+        <button type="button" class="close" aria-label="Close" (click)="closeCreate()">
+          <span aria-hidden="true">×</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="form-row">
+          <div class="form-group col-md-6">
+            <label class="small text-muted">Centre Alpha *</label>
+            <select class="form-control form-control-sm" [(ngModel)]="createForm.idCentre">
+              <option [ngValue]="null">—</option>
+              <option *ngFor="let a of alphas" [ngValue]="a.idCentre">{{ alphaOptionLabel(a) }}</option>
+            </select>
+          </div>
+          <div class="form-group col-md-3">
+            <label class="small text-muted">Nature *</label>
+            <select class="form-control form-control-sm" [(ngModel)]="createForm.idNatureDocument">
+              <option [ngValue]="null">—</option>
+              <option *ngFor="let n of natures" [ngValue]="n.id">{{ n.libelleNatureDocument ?? '—' }}</option>
+            </select>
+          </div>
+          <div class="form-group col-md-3">
+            <label class="small text-muted">Type *</label>
+            <select class="form-control form-control-sm" [(ngModel)]="createForm.idTypeDocument">
+              <option [ngValue]="null">—</option>
+              <option *ngFor="let t of types" [ngValue]="t.id">
+                {{ (t.codeTypeDocument ?? '') + (t.libelleTypeDocument ? ' — ' + t.libelleTypeDocument : '') || '—' }}
+              </option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group col-md-4">
+            <label class="small text-muted">Code document (optionnel)</label>
+            <input class="form-control form-control-sm" [(ngModel)]="createForm.codeDocument" placeholder="Ex: VIS-001" />
+          </div>
+          <div class="form-group col-md-2">
+            <label class="small text-muted">Existe</label>
+            <select class="form-control form-control-sm" [(ngModel)]="createForm.existe">
+              <option [ngValue]="'OUI'">OUI</option>
+              <option [ngValue]="'NON'">NON</option>
+            </select>
+          </div>
+          <div class="form-group col-md-2">
+            <label class="small text-muted">À jour</label>
+            <select class="form-control form-control-sm" [(ngModel)]="createForm.ajour">
+              <option [ngValue]="'OUI'">OUI</option>
+              <option [ngValue]="'NON'">NON</option>
+            </select>
+          </div>
+          <div class="form-group col-md-2">
+            <label class="small text-muted">Bien tenu</label>
+            <select class="form-control form-control-sm" [(ngModel)]="createForm.bientenu">
+              <option [ngValue]="'OUI'">OUI</option>
+              <option [ngValue]="'NON'">NON</option>
+            </select>
+          </div>
+          <div class="form-group col-md-2">
+            <label class="small text-muted">Resp. méth.</label>
+            <select class="form-control form-control-sm" [(ngModel)]="createForm.respmethode">
+              <option [ngValue]="'OUI'">OUI</option>
+              <option [ngValue]="'NON'">NON</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group col-md-3">
+            <label class="small text-muted">Bien renseigné</label>
+            <select class="form-control form-control-sm" [(ngModel)]="createForm.bienrensigne">
+              <option [ngValue]="'OUI'">OUI</option>
+              <option [ngValue]="'NON'">NON</option>
+            </select>
+          </div>
+        </div>
+        <div class="small text-muted">* champs obligatoires</div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" (click)="closeCreate()" [disabled]="saving">Annuler</button>
+        <button type="button" class="btn btn-primary" (click)="create()" [disabled]="saving">Créer</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div *ngIf="createOpen" class="modal-backdrop fade show"></div>
+
+<!-- Modal Édition -->
+<div *ngIf="editId != null" class="modal fade show d-block" tabindex="-1" role="dialog" aria-modal="true">
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content mena-modal">
+      <div class="modal-header">
+        <h5 class="modal-title">Modifier la fiche</h5>
+        <button type="button" class="close" aria-label="Close" (click)="closeEdit()">
+          <span aria-hidden="true">×</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="form-row">
+          <div class="form-group col-md-6">
+            <label class="small text-muted">Centre Alpha *</label>
+            <select class="form-control form-control-sm" [(ngModel)]="editForm.idCentre">
+              <option [ngValue]="null">—</option>
+              <option *ngFor="let a of alphas" [ngValue]="a.idCentre">{{ alphaOptionLabel(a) }}</option>
+            </select>
+          </div>
+          <div class="form-group col-md-3">
+            <label class="small text-muted">Nature *</label>
+            <select class="form-control form-control-sm" [(ngModel)]="editForm.idNatureDocument">
+              <option [ngValue]="null">—</option>
+              <option *ngFor="let n of natures" [ngValue]="n.id">{{ n.libelleNatureDocument ?? '—' }}</option>
+            </select>
+          </div>
+          <div class="form-group col-md-3">
+            <label class="small text-muted">Type *</label>
+            <select class="form-control form-control-sm" [(ngModel)]="editForm.idTypeDocument">
+              <option [ngValue]="null">—</option>
+              <option *ngFor="let t of types" [ngValue]="t.id">
+                {{ (t.codeTypeDocument ?? '') + (t.libelleTypeDocument ? ' — ' + t.libelleTypeDocument : '') || '—' }}
+              </option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group col-md-4">
+            <label class="small text-muted">Code document</label>
+            <input class="form-control form-control-sm" [(ngModel)]="editForm.codeDocument" />
+          </div>
+          <div class="form-group col-md-2">
+            <label class="small text-muted">Existe</label>
+            <select class="form-control form-control-sm" [(ngModel)]="editForm.existe">
+              <option [ngValue]="'OUI'">OUI</option>
+              <option [ngValue]="'NON'">NON</option>
+            </select>
+          </div>
+          <div class="form-group col-md-2">
+            <label class="small text-muted">À jour</label>
+            <select class="form-control form-control-sm" [(ngModel)]="editForm.ajour">
+              <option [ngValue]="'OUI'">OUI</option>
+              <option [ngValue]="'NON'">NON</option>
+            </select>
+          </div>
+          <div class="form-group col-md-2">
+            <label class="small text-muted">Bien tenu</label>
+            <select class="form-control form-control-sm" [(ngModel)]="editForm.bientenu">
+              <option [ngValue]="'OUI'">OUI</option>
+              <option [ngValue]="'NON'">NON</option>
+            </select>
+          </div>
+          <div class="form-group col-md-2">
+            <label class="small text-muted">Resp. méth.</label>
+            <select class="form-control form-control-sm" [(ngModel)]="editForm.respmethode">
+              <option [ngValue]="'OUI'">OUI</option>
+              <option [ngValue]="'NON'">NON</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group col-md-3">
+            <label class="small text-muted">Bien renseigné</label>
+            <select class="form-control form-control-sm" [(ngModel)]="editForm.bienrensigne">
+              <option [ngValue]="'OUI'">OUI</option>
+              <option [ngValue]="'NON'">NON</option>
+            </select>
+          </div>
+        </div>
+        <div class="small text-muted">* champs obligatoires</div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" (click)="closeEdit()" [disabled]="saving">Annuler</button>
+        <button type="button" class="btn btn-primary" (click)="saveEdit()" [disabled]="saving">Enregistrer</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div *ngIf="editId != null" class="modal-backdrop fade show"></div>
+
+<!-- Modal Suppression -->
+<div *ngIf="deleteTarget as d" class="modal fade show d-block" tabindex="-1" role="dialog" aria-modal="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content mena-modal">
+      <div class="modal-header">
+        <h5 class="modal-title">Supprimer la fiche</h5>
+        <button type="button" class="close" aria-label="Close" (click)="closeDelete()">
+          <span aria-hidden="true">×</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p class="mb-2">Confirmer la suppression de la fiche :</p>
+        <ul class="mb-0 small">
+          <li><strong>ID</strong> : {{ d.id }}</li>
+          <li><strong>Code</strong> : {{ d.codeDocument ?? '—' }}</li>
+          <li><strong>Centre</strong> : {{ d.libelleAlpha ?? '—' }}</li>
+        </ul>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" (click)="closeDelete()" [disabled]="saving">Annuler</button>
+        <button type="button" class="btn btn-danger" (click)="deleteConfirmed()" [disabled]="saving">Supprimer</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div *ngIf="deleteTarget" class="modal-backdrop fade show"></div>

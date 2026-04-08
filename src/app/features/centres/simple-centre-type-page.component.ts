@@ -1,58 +1,27 @@
 import { CommonModule } from '@angular/common';
-import { HttpClient } from '@angular/common/http';
-import { Component, Inject, Input } from '@angular/core';
+import { HttpClient, HttpParams } from '@angular/common/http';
+import { Component, Inject, Input, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { forkJoin } from 'rxjs';
+import {
+  AutoriteOption,
+  autoriteOptionLabel,
+  CentreRow as Row,
+  IepOption,
+  iepOptionLabel,
+  LocaliteOption,
+  localiteOptionLabel,
+  NatureOption,
+  natureOptionLabel,
+  PeriodiciteOption,
+  periodiciteOptionLabel,
+  RefOption,
+  refOptionLabel,
+  SimpleCentreFullCreatePayload as SimpleFullCreatePayload,
+  SpringPage,
+} from '@models/centre';
 import { API_BASE_URL } from '@core/tokens/api-base-url.token';
-
-type Row = {
-  idCentre: number;
-  codeCentre?: string | null;
-  libelle?: string | null;
-  idLocalite?: number | null;
-  idIep?: number | null;
-  idNaturecentre?: number | null;
-  idPeriodicite?: number | null;
-  idAutoriteAutorisation?: number | null;
-  autorisation?: boolean | null;
-  estElectrifie?: boolean | null;
-  aDeLeau?: boolean | null;
-  nombreVisite?: number | null;
-  localisationCentre?: string | null;
-  nomMilieuImplentation?: string | null;
-  encadreurNonMena?: string | null;
-  encadrerParMena?: boolean | null;
-};
-type LocaliteOption = { id: number; codeLocalite?: string | null; nomLocalite?: string | null };
-type IepOption = { id: number; codeIep?: string | null; nomIep?: string | null };
-type NatureOption = { id: number; codeNatureCentre?: string | null; libelleNatureCentre?: string | null };
-type PeriodiciteOption = { id: number; codePeriodicite?: string | null; libellePeriodicite?: string | null };
-type AutoriteOption = {
-  id: number;
-  codeAutorisation?: string | null;
-  libelleAutoriteAutorisation?: string | null;
-};
-
-type SimpleFullCreatePayload = {
-  libelle: string;
-  promoteur: { libellePromoteur: string };
-  centre: {
-    localiteId: number;
-    periodiciteId?: number | null;
-    iepId: number;
-    autoriteAutorisationId?: number | null;
-    natureCentreId: number;
-    autorisation?: boolean | null;
-    encadreurNonMena?: string | null;
-    encadrerParMena?: boolean | null;
-    estElectrifie?: boolean | null;
-    aDeLeau?: boolean | null;
-    nombreVisite?: number | null;
-    localisationCentre?: string | null;
-    nomMilieuImplentation?: string | null;
-  };
-};
 
 @Component({
   selector: 'app-simple-centre-type-page',
@@ -60,7 +29,7 @@ type SimpleFullCreatePayload = {
   imports: [CommonModule, FormsModule],
   templateUrl: './simple-centre-type-page.component.html',
 })
-export class SimpleCentreTypePageComponent {
+export class SimpleCentreTypePageComponent implements OnInit {
   @Input({ required: true }) title!: string;
   @Input({ required: true }) apiPath!: string;
 
@@ -69,11 +38,47 @@ export class SimpleCentreTypePageComponent {
   errorMessage: string | null = null;
 
   rows: Row[] = [];
+  pageIndex = 0;
+  pageSize = 20;
+  totalElements = 0;
+  totalPages = 0;
+
+  /** Recherche rapide → paramètre API `q`. */
+  searchQ = '';
+
+  /** Filtres liste ; `libelle` est mappé vers libelleCec / libellleCp / libelleSie selon `apiPath`. */
+  simpleListFilter: Record<string, string> = {
+    idLocalite: '',
+    idPeriodicite: '',
+    idIep: '',
+    idAutoriteAutorisation: '',
+    idNaturecentre: '',
+    idPromoteur: '',
+    codeCentre: '',
+    libelle: '',
+    encadreurNonMena: '',
+    localisationCentre: '',
+    nomMilieuImplentation: '',
+    autorisation: '',
+    encadrerParMena: '',
+    estElectrifie: '',
+    aDeLeau: '',
+    nombreVisite: '',
+  };
+
   localites: LocaliteOption[] = [];
   ieps: IepOption[] = [];
   natures: NatureOption[] = [];
   periodicites: PeriodiciteOption[] = [];
   autorites: AutoriteOption[] = [];
+  promoteurs: RefOption[] = [];
+
+  readonly refOptionLabel = refOptionLabel;
+  readonly localiteOptionLabel = localiteOptionLabel;
+  readonly iepOptionLabel = iepOptionLabel;
+  readonly natureOptionLabel = natureOptionLabel;
+  readonly periodiciteOptionLabel = periodiciteOptionLabel;
+  readonly autoriteOptionLabel = autoriteOptionLabel;
 
   stepIndex = 0;
 
@@ -149,37 +154,32 @@ export class SimpleCentreTypePageComponent {
     this.loading = true;
     this.errorMessage = null;
     forkJoin({
-      rows: this.http.get<any[]>(`${this.apiBaseUrl}${this.apiPath}`),
+      rows: this.http.get<SpringPage<Record<string, unknown>>>(`${this.apiBaseUrl}${this.apiPath}`, {
+        params: this.buildSimpleListParams(),
+      }),
       localites: this.http.get<LocaliteOption[]>(`${this.apiBaseUrl}/api/localite-d-implantation`),
       ieps: this.http.get<IepOption[]>(`${this.apiBaseUrl}/api/iep`),
       natures: this.http.get<NatureOption[]>(`${this.apiBaseUrl}/api/naturecentre`),
       periodicites: this.http.get<PeriodiciteOption[]>(`${this.apiBaseUrl}/api/v1/Periodicites`),
       autorites: this.http.get<AutoriteOption[]>(`${this.apiBaseUrl}/api/autoriteautorisation`),
+      promoteurs: this.http.get<any[]>(`${this.apiBaseUrl}/api/promoteur`),
     }).subscribe({
       next: (res) => {
-        this.rows = (res.rows ?? []).map((x) => ({
-          idCentre: x.idCentre ?? x.id,
-          codeCentre: x.codeCentre,
-          libelle: x.libelle,
-          idLocalite: x.idLocalite ?? null,
-          idIep: x.idIep ?? null,
-          idNaturecentre: x.idNaturecentre ?? null,
-          idPeriodicite: x.idPeriodicite ?? null,
-          idAutoriteAutorisation: x.idAutoriteAutorisation ?? null,
-          autorisation: x.autorisation ?? null,
-          estElectrifie: x.estElectrifie ?? null,
-          aDeLeau: x.aDeLeau ?? null,
-          nombreVisite: x.nombreVisite ?? null,
-          localisationCentre: x.localisationCentre ?? null,
-          nomMilieuImplentation: x.nomMilieuImplentation ?? null,
-          encadreurNonMena: x.encadreurNonMena ?? null,
-          encadrerParMena: x.encadrerParMena ?? null,
-        }));
+        const page = res.rows;
+        const list = page.content ?? [];
+        this.totalElements = page.totalElements ?? 0;
+        this.totalPages = page.totalPages ?? 0;
+        this.rows = list.map((x) => this.mapRow(x));
         this.localites = res.localites ?? [];
         this.ieps = res.ieps ?? [];
         this.natures = res.natures ?? [];
         this.periodicites = res.periodicites ?? [];
         this.autorites = res.autorites ?? [];
+        this.promoteurs = (res.promoteurs ?? []).map((x: any) => ({
+          id: x.id,
+          code: x.codePromoteur ?? undefined,
+          libelle: x.libellePromoteur ?? undefined,
+        }));
         this.loading = false;
       },
       error: (e) => {
@@ -370,6 +370,100 @@ export class SimpleCentreTypePageComponent {
         this.saving = false;
       },
     });
+  }
+
+  private libelleQueryParam(): string {
+    const p = this.apiPath ?? '';
+    if (p.includes('/cec')) return 'libelleCec';
+    if (p.includes('/cp')) return 'libellleCp';
+    return 'libelleSie';
+  }
+
+  private buildSimpleListParams(): HttpParams {
+    let p = new HttpParams()
+      .set('page', String(this.pageIndex))
+      .set('size', String(this.pageSize))
+      .set('sort', 'id,asc');
+    const q = String(this.searchQ ?? '').trim();
+    if (q !== '') {
+      p = p.set('q', q);
+    }
+    const libKey = this.libelleQueryParam();
+    for (const [key, val] of Object.entries(this.simpleListFilter)) {
+      const s = String(val ?? '').trim();
+      if (s === '') continue;
+      const apiKey = key === 'libelle' ? libKey : key;
+      p = p.set(apiKey, s);
+    }
+    return p;
+  }
+
+  private mapRow(x: Record<string, unknown>): Row {
+    return {
+      idCentre: Number(x['idCentre'] ?? x['id'] ?? 0),
+      codeCentre: (x['codeCentre'] as string | undefined) ?? null,
+      codeType: (x['codeType'] as string | undefined) ?? null,
+      libelle: (x['libelle'] as string | undefined) ?? null,
+      idLocalite: (x['idLocalite'] as number | null | undefined) ?? null,
+      idIep: (x['idIep'] as number | null | undefined) ?? null,
+      idNaturecentre: (x['idNaturecentre'] as number | null | undefined) ?? null,
+      idPeriodicite: (x['idPeriodicite'] as number | null | undefined) ?? null,
+      idAutoriteAutorisation: (x['idAutoriteAutorisation'] as number | null | undefined) ?? null,
+      autorisation: (x['autorisation'] as boolean | null | undefined) ?? null,
+      estElectrifie: (x['estElectrifie'] as boolean | null | undefined) ?? null,
+      aDeLeau: (x['aDeLeau'] as boolean | null | undefined) ?? null,
+      nombreVisite: (x['nombreVisite'] as number | null | undefined) ?? null,
+      localisationCentre: (x['localisationCentre'] as string | undefined) ?? null,
+      nomMilieuImplentation: (x['nomMilieuImplentation'] as string | undefined) ?? null,
+      encadreurNonMena: (x['encadreurNonMena'] as string | undefined) ?? null,
+      encadrerParMena: (x['encadrerParMena'] as boolean | null | undefined) ?? null,
+    };
+  }
+
+  applyListFilters(): void {
+    this.pageIndex = 0;
+    this.loadAll();
+  }
+
+  resetListFilters(): void {
+    this.searchQ = '';
+    for (const k of Object.keys(this.simpleListFilter)) {
+      this.simpleListFilter[k] = '';
+    }
+    this.pageIndex = 0;
+    this.loadAll();
+  }
+
+  goPrevPage(): void {
+    if (!this.canGoPrevPage()) return;
+    this.pageIndex--;
+    this.loadAll();
+  }
+
+  goNextPage(): void {
+    if (!this.canGoNextPage()) return;
+    this.pageIndex++;
+    this.loadAll();
+  }
+
+  canGoPrevPage(): boolean {
+    return !this.loading && this.pageIndex > 0;
+  }
+
+  canGoNextPage(): boolean {
+    if (this.loading) return false;
+    const tp = this.totalPages;
+    if (tp == null || tp < 2) return false;
+    return this.pageIndex < tp - 1;
+  }
+
+  get displayTotalPages(): number {
+    return this.totalPages > 0 ? this.totalPages : 1;
+  }
+
+  onPageSizeChange(): void {
+    this.pageIndex = 0;
+    this.loadAll();
   }
 
   private formatError(e: unknown): string {
