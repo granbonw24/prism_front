@@ -57,6 +57,25 @@ export type VisiteDocumentRow = {
   libelleTypeDocument?: string | null;
 };
 
+export type CentreRefDetails = {
+  id?: number | null;
+  code?: string | null;
+  libelle?: string | null;
+};
+
+/** Ligne liste + détail enrichi (`GET …/:id`). */
+export type CentreDetailRow = CentreRow & {
+  localite?: CentreRefDetails | null;
+  iep?: CentreRefDetails | null;
+  naturecentre?: CentreRefDetails | null;
+  periodicite?: CentreRefDetails | null;
+  autoriteAutorisation?: CentreRefDetails | null;
+  campagne?: CentreRefDetails | null;
+  categorieCentreAlpha?: CentreRefDetails | null;
+  typeAlpha?: CentreRefDetails | null;
+  regimeAlpha?: CentreRefDetails | null;
+};
+
 export type CentreRow = {
   idCentre: number;
   codeCentre?: string | null;
@@ -67,6 +86,7 @@ export type CentreRow = {
   idNaturecentre?: number | null;
   idPeriodicite?: number | null;
   idAutoriteAutorisation?: number | null;
+  idPromoteur?: number | null;
   autorisation?: boolean | null;
   estElectrifie?: boolean | null;
   aDeLeau?: boolean | null;

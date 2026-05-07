@@ -7,6 +7,8 @@ import { forkJoin } from 'rxjs';
 import {
   AutoriteOption,
   autoriteOptionLabel,
+  CentreDetailRow,
+  CentreRefDetails,
   CentreRow as Row,
   IepOption,
   iepOptionLabel,
@@ -109,8 +111,11 @@ export class SimpleCentreTypePageComponent implements OnInit {
   };
 
   // Détails / édition (modales)
-  detailsRow: Row | null = null;
+  detailsModalOpen = false;
+  detailsLoading = false;
+  detailsRow: CentreDetailRow | null = null;
   editRowId: number | null = null;
+  editLoading = false;
   editForm: {
     libelle: string;
     idLocalite: number | null;
@@ -126,6 +131,7 @@ export class SimpleCentreTypePageComponent implements OnInit {
     nomMilieuImplentation: string | null;
     encadreurNonMena: string | null;
     encadrerParMena: boolean | null;
+    idPromoteur: number | null;
   } = {
     libelle: '',
     idLocalite: null,
@@ -141,6 +147,7 @@ export class SimpleCentreTypePageComponent implements OnInit {
     nomMilieuImplentation: null,
     encadreurNonMena: null,
     encadrerParMena: null,
+    idPromoteur: null,
   };
 
   constructor(
@@ -342,39 +349,70 @@ export class SimpleCentreTypePageComponent implements OnInit {
   }
 
   openDetails(row: Row): void {
-    this.detailsRow = row;
+    this.detailsModalOpen = true;
+    this.detailsLoading = true;
+    this.detailsRow = null;
+    this.errorMessage = null;
+    this.http.get<Record<string, unknown>>(`${this.apiBaseUrl}${this.apiPath}/${row.idCentre}`).subscribe({
+      next: (x) => {
+        this.detailsRow = this.mapCentreDetailFromApi(x);
+        this.detailsLoading = false;
+      },
+      error: (e) => {
+        this.detailsLoading = false;
+        this.detailsModalOpen = false;
+        this.errorMessage = this.formatError(e);
+      },
+    });
   }
 
   closeDetails(): void {
+    this.detailsModalOpen = false;
     this.detailsRow = null;
+    this.detailsLoading = false;
   }
 
   openEdit(row: Row): void {
     this.editRowId = row.idCentre;
-    this.editForm = {
-      libelle: String(row.libelle ?? ''),
-      idLocalite: row.idLocalite ?? null,
-      idIep: row.idIep ?? null,
-      idNaturecentre: row.idNaturecentre ?? null,
-      idPeriodicite: row.idPeriodicite ?? null,
-      idAutoriteAutorisation: row.idAutoriteAutorisation ?? null,
-      autorisation: row.autorisation ?? null,
-      aDeLeau: row.aDeLeau ?? null,
-      estElectrifie: row.estElectrifie ?? null,
-      nombreVisite: row.nombreVisite ?? null,
-      localisationCentre: row.localisationCentre ?? null,
-      nomMilieuImplentation: row.nomMilieuImplentation ?? null,
-      encadreurNonMena: row.encadreurNonMena ?? null,
-      encadrerParMena: row.encadrerParMena ?? null,
-    };
+    this.editLoading = true;
+    this.errorMessage = null;
+    this.http.get<Record<string, unknown>>(`${this.apiBaseUrl}${this.apiPath}/${row.idCentre}`).subscribe({
+      next: (x) => {
+        const d = this.mapCentreDetailFromApi(x);
+        this.editForm = {
+          libelle: String(d.libelle ?? ''),
+          idLocalite: d.idLocalite ?? null,
+          idIep: d.idIep ?? null,
+          idNaturecentre: d.idNaturecentre ?? null,
+          idPeriodicite: d.idPeriodicite ?? null,
+          idAutoriteAutorisation: d.idAutoriteAutorisation ?? null,
+          autorisation: d.autorisation ?? null,
+          aDeLeau: d.aDeLeau ?? null,
+          estElectrifie: d.estElectrifie ?? null,
+          nombreVisite: d.nombreVisite ?? null,
+          localisationCentre: d.localisationCentre ?? null,
+          nomMilieuImplentation: d.nomMilieuImplentation ?? null,
+          encadreurNonMena: d.encadreurNonMena ?? null,
+          encadrerParMena: d.encadrerParMena ?? null,
+          idPromoteur: d.promoteur?.idPromoteur ?? d.idPromoteur ?? null,
+        };
+        this.editLoading = false;
+      },
+      error: (e) => {
+        this.editLoading = false;
+        this.editRowId = null;
+        this.errorMessage = this.formatError(e);
+      },
+    });
   }
 
   closeEdit(): void {
     this.editRowId = null;
+    this.editLoading = false;
   }
 
   canSaveEdit(): boolean {
-    return !this.saving && this.editRowId != null && this.editForm.libelle.trim().length > 0;
+    return !this.saving && !this.editLoading && this.editRowId != null && this.editForm.libelle.trim().length > 0;
   }
 
   saveEdit(): void {
@@ -460,6 +498,17 @@ export class SimpleCentreTypePageComponent implements OnInit {
 
   private mapRow(x: Record<string, unknown>): Row {
     const promoteur = this.toPromoteurDetails(x['promoteur']);
+    let idPromoteur: number | null = null;
+    const rawPid = x['idPromoteur'];
+    if (typeof rawPid === 'number' && Number.isFinite(rawPid)) {
+      idPromoteur = rawPid;
+    } else if (rawPid != null && String(rawPid).trim() !== '') {
+      const n = Number(rawPid);
+      if (Number.isFinite(n)) idPromoteur = n;
+    }
+    if (idPromoteur == null && promoteur?.idPromoteur != null) {
+      idPromoteur = promoteur.idPromoteur;
+    }
     return {
       idCentre: Number(x['idCentre'] ?? x['id'] ?? 0),
       codeCentre: (x['codeCentre'] as string | undefined) ?? null,
@@ -470,9 +519,10 @@ export class SimpleCentreTypePageComponent implements OnInit {
       idNaturecentre: (x['idNaturecentre'] as number | null | undefined) ?? null,
       idPeriodicite: (x['idPeriodicite'] as number | null | undefined) ?? null,
       idAutoriteAutorisation: (x['idAutoriteAutorisation'] as number | null | undefined) ?? null,
+      idPromoteur,
       autorisation: (x['autorisation'] as boolean | null | undefined) ?? null,
       estElectrifie: (x['estElectrifie'] as boolean | null | undefined) ?? null,
-      aDeLeau: (x['aDeLeau'] as boolean | null | undefined) ?? null,
+      aDeLeau: this.pickBool(x, 'aDeLeau', 'adeLeau', 'ADeLeau'),
       nombreVisite: (x['nombreVisite'] as number | null | undefined) ?? null,
       localisationCentre: (x['localisationCentre'] as string | undefined) ?? null,
       nomMilieuImplentation: (x['nomMilieuImplentation'] as string | undefined) ?? null,
@@ -482,13 +532,84 @@ export class SimpleCentreTypePageComponent implements OnInit {
     };
   }
 
+  private mapCentreDetailFromApi(x: Record<string, unknown>): CentreDetailRow {
+    const base = this.mapRow(x);
+    return {
+      ...base,
+      localite: this.asCentreRef(x['localite']),
+      iep: this.asCentreRef(x['iep']),
+      naturecentre: this.asCentreRef(x['naturecentre']),
+      periodicite: this.asCentreRef(x['periodicite']),
+      autoriteAutorisation: this.asCentreRef(x['autoriteAutorisation']),
+    };
+  }
+
+  refCentreLabel(ref: CentreRefDetails | null | undefined, fallback: () => string): string {
+    if (!ref) return fallback();
+    const c = ref.code?.trim();
+    const l = ref.libelle?.trim();
+    if (c && l) return `${c} — ${l}`;
+    if (c) return c;
+    if (l) return l;
+    if (ref.id != null) return `#${ref.id}`;
+    return fallback();
+  }
+
+  detailLocaliteLabel(d: CentreDetailRow): string {
+    return this.refCentreLabel(d.localite, () => this.localiteLabel(d.idLocalite ?? null));
+  }
+
+  detailIepLabel(d: CentreDetailRow): string {
+    return this.refCentreLabel(d.iep, () => this.iepLabel(d.idIep ?? null));
+  }
+
+  detailNatureLabel(d: CentreDetailRow): string {
+    return this.refCentreLabel(d.naturecentre, () => this.natureLabel(d.idNaturecentre ?? null));
+  }
+
+  detailPeriodiciteLabel(d: CentreDetailRow): string {
+    return this.refCentreLabel(d.periodicite, () => this.periodiciteLabel(d.idPeriodicite ?? null));
+  }
+
+  detailAutoriteLabel(d: CentreDetailRow): string {
+    return this.refCentreLabel(d.autoriteAutorisation, () => this.autoriteLabel(d.idAutoriteAutorisation ?? null));
+  }
+
+  private pickBool(obj: Record<string, unknown>, ...keys: string[]): boolean | null {
+    for (const k of keys) {
+      const v = obj[k];
+      if (v === true || v === false) return v;
+    }
+    return null;
+  }
+
+  private asCentreRef(value: unknown): CentreRefDetails | null {
+    if (!value || typeof value !== 'object') return null;
+    const o = value as Record<string, unknown>;
+    const idRaw = o['id'];
+    const id = typeof idRaw === 'number' ? idRaw : idRaw != null ? Number(idRaw) : null;
+    return {
+      id: id != null && Number.isFinite(id) ? id : null,
+      code: (o['code'] as string | undefined) ?? null,
+      libelle: (o['libelle'] as string | undefined) ?? null,
+    };
+  }
+
   promoteurSummary(row: Row): string {
     const p = row.promoteur;
-    if (!p) return '—';
-    const code = p.codePromoteur?.trim();
-    const libelle = p.libellePromoteur?.trim();
-    if (code && libelle) return `${code} — ${libelle}`;
-    return code || libelle || `#${p.idPromoteur ?? '-'}`;
+    if (p) {
+      const code = p.codePromoteur?.trim();
+      const libelle = p.libellePromoteur?.trim();
+      if (code && libelle) return `${code} — ${libelle}`;
+      if (code || libelle) return (code || libelle) as string;
+      if (p.idPromoteur != null) return `#${p.idPromoteur}`;
+    }
+    const id = row.idPromoteur;
+    if (id != null) {
+      const opt = this.promoteurs.find((x) => x.id === id);
+      return opt ? this.refOptionLabel(opt) : `#${id}`;
+    }
+    return '—';
   }
 
   recapWizardExistingPromoteurLabel(): string {

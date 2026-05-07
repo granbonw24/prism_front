@@ -668,17 +668,18 @@
 </div>
 
 <!-- Modal Détails -->
-<div *ngIf="detailsRow as d" class="modal fade show d-block" tabindex="-1" role="dialog" aria-modal="true">
+<div *ngIf="detailsModalOpen" class="modal fade show d-block" tabindex="-1" role="dialog" aria-modal="true">
   <div class="modal-dialog modal-lg" role="document">
     <div class="modal-content mena-modal">
       <div class="modal-header">
         <h5 class="modal-title">Détails centre Alpha</h5>
-        <button type="button" class="close" aria-label="Close" (click)="closeDetails()">
+        <button type="button" class="close" aria-label="Close" (click)="closeDetails()" [disabled]="detailsLoading">
           <span aria-hidden="true">×</span>
         </button>
       </div>
       <div class="modal-body">
-        <div class="table-responsive">
+        <div *ngIf="detailsLoading" class="text-center text-muted py-5">Chargement du détail…</div>
+        <div *ngIf="!detailsLoading && detailsRow as d" class="table-responsive">
           <table class="table table-sm table-bordered mb-0">
             <tbody>
               <tr>
@@ -694,28 +695,78 @@
                 <td>{{ d.libelle ?? '—' }}</td>
               </tr>
               <tr>
+                <th>Campagne</th>
+                <td>{{ detailCampagneLabel(d) }}</td>
+              </tr>
+              <tr>
+                <th>Catégorie centre Alpha</th>
+                <td>{{ detailCategorieAlphaLabel(d) }}</td>
+              </tr>
+              <tr>
+                <th>Type Alpha</th>
+                <td>{{ detailTypeAlphaLabel(d) }}</td>
+              </tr>
+              <tr>
+                <th>Régime Alpha</th>
+                <td>{{ detailRegimeAlphaLabel(d) }}</td>
+              </tr>
+              <tr>
                 <th>Promoteur</th>
-                <td>{{ promoteurSummary(d) }}</td>
+                <td>
+                  <div class="font-weight-bold">{{ promoteurSummary(d) }}</div>
+                  <ng-container *ngIf="d.promoteur as pr">
+                    <hr class="my-2" />
+                    <div class="small">
+                      <div><span class="text-muted">Type</span> : {{ pr.typePromoteur ?? '—' }}</div>
+                      <div *ngIf="pr.libellePromoteur?.trim()"><span class="text-muted">Libellé</span> : {{ pr.libellePromoteur }}</div>
+                      <div *ngIf="pr.codePromoteur?.trim()"><span class="text-muted">Code</span> : {{ pr.codePromoteur }}</div>
+                    </div>
+                    <ng-container *ngIf="pr.typePromoteur === 'PHYSIQUE' && pr.personnePhysique as pp">
+                      <div class="font-weight-bold small text-secondary mt-2 mb-1">Personne physique</div>
+                      <div class="small">
+                        <div *ngIf="pp.libellePersonnePhysique"><span class="text-muted">Libellé</span> : {{ pp.libellePersonnePhysique }}</div>
+                        <div *ngIf="pp.nom || pp.prenom"><span class="text-muted">Nom</span> : {{ pp.nom ?? '—' }} · <span class="text-muted">Prénom</span> : {{ pp.prenom ?? '—' }}</div>
+                        <div *ngIf="pp.contact"><span class="text-muted">Contact</span> : {{ pp.contact }}</div>
+                        <div *ngIf="pp.fonction"><span class="text-muted">Fonction</span> : {{ pp.fonction }}</div>
+                      </div>
+                    </ng-container>
+                    <ng-container *ngIf="pr.typePromoteur === 'MORALE' && pr.personneMorale as pm">
+                      <div class="font-weight-bold small text-secondary mt-2 mb-1">Personne morale</div>
+                      <div class="small">
+                        <div *ngIf="pm.denomination"><span class="text-muted">Dénomination</span> : {{ pm.denomination }}</div>
+                        <div *ngIf="pm.nomProgramme"><span class="text-muted">Nom programme</span> : {{ pm.nomProgramme }}</div>
+                        <div *ngIf="pm.libelleTypePersonneMorale || pm.idTypePersonneMorale != null">
+                          <span class="text-muted">Type personne morale</span> :
+                          {{ pm.libelleTypePersonneMorale ?? ('#' + pm.idTypePersonneMorale) }}
+                        </div>
+                        <div *ngIf="pm.nomRepresentant"><span class="text-muted">Représentant</span> : {{ pm.nomRepresentant }}</div>
+                        <div *ngIf="pm.contact"><span class="text-muted">Contact</span> : {{ pm.contact }}</div>
+                        <div *ngIf="pm.boitePostale"><span class="text-muted">Boîte postale</span> : {{ pm.boitePostale }}</div>
+                        <div *ngIf="pm.mail"><span class="text-muted">E-mail</span> : {{ pm.mail }}</div>
+                      </div>
+                    </ng-container>
+                  </ng-container>
+                </td>
               </tr>
               <tr>
                 <th>Localité</th>
-                <td>{{ localiteLabel(d.idLocalite ?? null) }}</td>
+                <td>{{ detailLocaliteLabel(d) }}</td>
               </tr>
               <tr>
                 <th>IEP</th>
-                <td>{{ iepLabel(d.idIep ?? null) }}</td>
+                <td>{{ detailIepLabel(d) }}</td>
               </tr>
               <tr>
                 <th>Nature</th>
-                <td>{{ natureLabel(d.idNaturecentre ?? null) }}</td>
+                <td>{{ detailNatureLabel(d) }}</td>
               </tr>
               <tr>
                 <th>Périodicité</th>
-                <td>{{ periodiciteLabel(d.idPeriodicite ?? null) }}</td>
+                <td>{{ detailPeriodiciteLabel(d) }}</td>
               </tr>
               <tr>
                 <th>Autorité autorisation</th>
-                <td>{{ autoriteLabel(d.idAutoriteAutorisation ?? null) }}</td>
+                <td>{{ detailAutoriteLabel(d) }}</td>
               </tr>
               <tr>
                 <th>Autorisation</th>
@@ -754,12 +805,12 @@
         </div>
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-outline-secondary" (click)="closeDetails()">Fermer</button>
+        <button type="button" class="btn btn-outline-secondary" (click)="closeDetails()" [disabled]="detailsLoading">Fermer</button>
       </div>
     </div>
   </div>
 </div>
-<div *ngIf="detailsRow" class="modal-backdrop fade show"></div>
+<div *ngIf="detailsModalOpen" class="modal-backdrop fade show"></div>
 
 <!-- Modal Modifier -->
 <div *ngIf="editRowId != null" class="modal fade show d-block" tabindex="-1" role="dialog" aria-modal="true">
@@ -772,103 +823,120 @@
         </button>
       </div>
       <div class="modal-body">
-        <div class="form-row">
-          <div class="form-group col-md-12">
-            <label class="small text-muted">Libellé</label>
-            <input class="form-control" [(ngModel)]="editForm.libelle" [disabled]="saving" />
+        <div *ngIf="editLoading" class="text-center text-muted py-5">Chargement des données…</div>
+        <ng-container *ngIf="!editLoading">
+          <div class="form-row">
+            <div class="form-group col-md-12">
+              <label class="small text-muted">Libellé</label>
+              <input class="form-control" [(ngModel)]="editForm.libelle" [disabled]="saving" />
+            </div>
           </div>
-        </div>
 
-        <div class="form-row">
-          <div class="form-group col-md-3">
-            <label class="small text-muted">Localité</label>
-            <select class="form-control" [(ngModel)]="editForm.idLocalite" [disabled]="saving">
-              <option [ngValue]="null">--</option>
-              <option *ngFor="let l of localites" [ngValue]="l.id">{{ localiteOptionLabel(l) }}</option>
-            </select>
+          <div class="form-row">
+            <div class="form-group col-md-12">
+              <label class="small text-muted">Promoteur</label>
+              <select class="form-control" [(ngModel)]="editForm.idPromoteur" [disabled]="saving">
+                <option [ngValue]="null">—</option>
+                <option *ngFor="let p of promoteurs" [ngValue]="p.id">{{ refOptionLabel(p) }}</option>
+              </select>
+            </div>
           </div>
-          <div class="form-group col-md-3">
-            <label class="small text-muted">IEP</label>
-            <select class="form-control" [(ngModel)]="editForm.idIep" [disabled]="saving">
-              <option [ngValue]="null">--</option>
-              <option *ngFor="let i of ieps" [ngValue]="i.id">{{ iepOptionLabel(i) }}</option>
-            </select>
-          </div>
-          <div class="form-group col-md-3">
-            <label class="small text-muted">Nature</label>
-            <select class="form-control" [(ngModel)]="editForm.idNaturecentre" [disabled]="saving">
-              <option [ngValue]="null">--</option>
-              <option *ngFor="let n of natures" [ngValue]="n.id">{{ natureOptionLabel(n) }}</option>
-            </select>
-          </div>
-          <div class="form-group col-md-3">
-            <label class="small text-muted">Périodicité</label>
-            <select class="form-control" [(ngModel)]="editForm.idPeriodicite" [disabled]="saving">
-              <option [ngValue]="null">--</option>
-              <option *ngFor="let p of periodicites" [ngValue]="p.id">{{ periodiciteOptionLabel(p) }}</option>
-            </select>
-          </div>
-        </div>
 
-        <div class="form-row">
-          <div class="form-group col-md-6">
-            <label class="small text-muted">Autorité autorisation</label>
-            <select class="form-control" [(ngModel)]="editForm.idAutoriteAutorisation" [disabled]="saving">
-              <option [ngValue]="null">--</option>
-              <option *ngFor="let a of autorites" [ngValue]="a.id">{{ autoriteOptionLabel(a) }}</option>
-            </select>
+          <div class="form-row">
+            <div class="form-group col-md-3">
+              <label class="small text-muted">Localité</label>
+              <select class="form-control" [(ngModel)]="editForm.idLocalite" [disabled]="saving">
+                <option [ngValue]="null">--</option>
+                <option *ngFor="let l of localites" [ngValue]="l.id">{{ localiteOptionLabel(l) }}</option>
+              </select>
+            </div>
+            <div class="form-group col-md-3">
+              <label class="small text-muted">IEP</label>
+              <select class="form-control" [(ngModel)]="editForm.idIep" [disabled]="saving">
+                <option [ngValue]="null">--</option>
+                <option *ngFor="let i of ieps" [ngValue]="i.id">{{ iepOptionLabel(i) }}</option>
+              </select>
+            </div>
+            <div class="form-group col-md-3">
+              <label class="small text-muted">Nature</label>
+              <select class="form-control" [(ngModel)]="editForm.idNaturecentre" [disabled]="saving">
+                <option [ngValue]="null">--</option>
+                <option *ngFor="let n of natures" [ngValue]="n.id">{{ natureOptionLabel(n) }}</option>
+              </select>
+            </div>
+            <div class="form-group col-md-3">
+              <label class="small text-muted">Périodicité</label>
+              <select class="form-control" [(ngModel)]="editForm.idPeriodicite" [disabled]="saving">
+                <option [ngValue]="null">--</option>
+                <option *ngFor="let p of periodicites" [ngValue]="p.id">{{ periodiciteOptionLabel(p) }}</option>
+              </select>
+            </div>
           </div>
-          <div class="form-group col-md-2">
-            <label class="small text-muted">Autorisation</label>
-            <select class="form-control" [(ngModel)]="editForm.autorisation" [disabled]="saving">
-              <option [ngValue]="true">Oui</option>
-              <option [ngValue]="false">Non</option>
-            </select>
-          </div>
-          <div class="form-group col-md-2">
-            <label class="small text-muted">Eau</label>
-            <select class="form-control" [(ngModel)]="editForm.aDeLeau" [disabled]="saving">
-              <option [ngValue]="true">Oui</option>
-              <option [ngValue]="false">Non</option>
-            </select>
-          </div>
-          <div class="form-group col-md-2">
-            <label class="small text-muted">Électricité</label>
-            <select class="form-control" [(ngModel)]="editForm.estElectrifie" [disabled]="saving">
-              <option [ngValue]="true">Oui</option>
-              <option [ngValue]="false">Non</option>
-            </select>
-          </div>
-        </div>
 
-        <div class="form-row">
-          <div class="form-group col-md-3">
-            <label class="small text-muted">Nombre visites</label>
-            <input type="number" class="form-control" [(ngModel)]="editForm.nombreVisite" [disabled]="saving" />
+          <div class="form-row">
+            <div class="form-group col-md-6">
+              <label class="small text-muted">Autorité autorisation</label>
+              <select class="form-control" [(ngModel)]="editForm.idAutoriteAutorisation" [disabled]="saving">
+                <option [ngValue]="null">--</option>
+                <option *ngFor="let a of autorites" [ngValue]="a.id">{{ autoriteOptionLabel(a) }}</option>
+              </select>
+            </div>
+            <div class="form-group col-md-2">
+              <label class="small text-muted">Autorisation</label>
+              <select class="form-control" [(ngModel)]="editForm.autorisation" [disabled]="saving">
+                <option [ngValue]="null">—</option>
+                <option [ngValue]="true">Oui</option>
+                <option [ngValue]="false">Non</option>
+              </select>
+            </div>
+            <div class="form-group col-md-2">
+              <label class="small text-muted">Eau</label>
+              <select class="form-control" [(ngModel)]="editForm.aDeLeau" [disabled]="saving">
+                <option [ngValue]="null">—</option>
+                <option [ngValue]="true">Oui</option>
+                <option [ngValue]="false">Non</option>
+              </select>
+            </div>
+            <div class="form-group col-md-2">
+              <label class="small text-muted">Électricité</label>
+              <select class="form-control" [(ngModel)]="editForm.estElectrifie" [disabled]="saving">
+                <option [ngValue]="null">—</option>
+                <option [ngValue]="true">Oui</option>
+                <option [ngValue]="false">Non</option>
+              </select>
+            </div>
           </div>
-          <div class="form-group col-md-5">
-            <label class="small text-muted">Encadreur non MENA</label>
-            <input class="form-control" [(ngModel)]="editForm.encadreurNonMena" [disabled]="saving" />
-          </div>
-          <div class="form-group col-md-4">
-            <label class="small text-muted">Encadré par MENA</label>
-            <select class="form-control" [(ngModel)]="editForm.encadrerParMena" [disabled]="saving">
-              <option [ngValue]="true">Oui</option>
-              <option [ngValue]="false">Non</option>
-            </select>
-          </div>
-        </div>
 
-        <div class="form-row">
-          <div class="form-group col-md-6">
-            <label class="small text-muted">Localisation</label>
-            <input class="form-control" [(ngModel)]="editForm.localisationCentre" [disabled]="saving" />
+          <div class="form-row">
+            <div class="form-group col-md-3">
+              <label class="small text-muted">Nombre visites</label>
+              <input type="number" class="form-control" [(ngModel)]="editForm.nombreVisite" [disabled]="saving" />
+            </div>
+            <div class="form-group col-md-5">
+              <label class="small text-muted">Encadreur non MENA</label>
+              <input class="form-control" [(ngModel)]="editForm.encadreurNonMena" [disabled]="saving" />
+            </div>
+            <div class="form-group col-md-4">
+              <label class="small text-muted">Encadré par MENA</label>
+              <select class="form-control" [(ngModel)]="editForm.encadrerParMena" [disabled]="saving">
+                <option [ngValue]="null">—</option>
+                <option [ngValue]="true">Oui</option>
+                <option [ngValue]="false">Non</option>
+              </select>
+            </div>
           </div>
-          <div class="form-group col-md-6">
-            <label class="small text-muted">Milieu d’implantation</label>
-            <input class="form-control" [(ngModel)]="editForm.nomMilieuImplentation" [disabled]="saving" />
+
+          <div class="form-row">
+            <div class="form-group col-md-6">
+              <label class="small text-muted">Localisation</label>
+              <input class="form-control" [(ngModel)]="editForm.localisationCentre" [disabled]="saving" />
+            </div>
+            <div class="form-group col-md-6">
+              <label class="small text-muted">Milieu d’implantation</label>
+              <input class="form-control" [(ngModel)]="editForm.nomMilieuImplentation" [disabled]="saving" />
+            </div>
           </div>
-        </div>
+        </ng-container>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-outline-secondary" (click)="closeEdit()" [disabled]="saving">Annuler</button>
