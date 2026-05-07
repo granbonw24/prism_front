@@ -159,13 +159,13 @@ export const REFERENTIEL_ROUTE_DATA: ReferentielRouteData[] = [
       }),
       F('idTypeDocument', 'Type de document', 'select', {
         required: true,
-        optionsApiPath: '/api/v1/TypeDocuments',
+        optionsApiPath: '/api/TypeDocuments',
         optionValueKey: 'id',
         optionLabelKeys: ['codeTypeDocument', 'libelleTypeDocument'],
       }),
       F('idCentre', 'Centre alpha', 'select', {
         required: true,
-        optionsApiPath: '/api/v1/alpha',
+        optionsApiPath: '/api/alpha',
         optionValueKey: 'idCentre',
         optionLabelKeys: ['codeType', 'libelle', 'codeCentre'],
       }),
@@ -190,7 +190,7 @@ export const REFERENTIEL_ROUTE_DATA: ReferentielRouteData[] = [
   {
     path: 'fonction',
     title: 'Fonctions',
-    apiPath: '/api/v1/fonctions',
+    apiPath: '/api/fonctions',
     createFields: [
       F('libelleFonction', 'Libellé', 'text', { required: true, maxLength: 100 }),
     ],
@@ -217,11 +217,11 @@ export const REFERENTIEL_ROUTE_DATA: ReferentielRouteData[] = [
   {
     path: 'langueapprentissage',
     title: 'Langues d’apprentissage',
-    apiPath: '/api/v1/LangueApprentissages',
+    apiPath: '/api/LangueApprentissages',
     createFields: [
       F('idCentre', 'Centre', 'select', {
         required: true,
-        optionsApiPath: '/api/v1/centres',
+        optionsApiPath: '/api/centres',
         optionValueKey: 'id',
         optionLabelKeys: ['codeCentre'],
       }),
@@ -238,7 +238,7 @@ export const REFERENTIEL_ROUTE_DATA: ReferentielRouteData[] = [
     createFields: [
       F('idCentre', 'Centre alpha', 'select', {
         required: true,
-        optionsApiPath: '/api/v1/alpha',
+        optionsApiPath: '/api/alpha',
         optionValueKey: 'idCentre',
         optionLabelKeys: ['codeType', 'libelle', 'codeCentre'],
       }),
@@ -297,7 +297,7 @@ export const REFERENTIEL_ROUTE_DATA: ReferentielRouteData[] = [
     createFields: [
       F('idCentre', 'Centre alpha', 'select', {
         required: true,
-        optionsApiPath: '/api/v1/alpha',
+        optionsApiPath: '/api/alpha',
         optionValueKey: 'idCentre',
         optionLabelKeys: ['codeType', 'libelle', 'codeCentre'],
       }),
@@ -336,7 +336,7 @@ export const REFERENTIEL_ROUTE_DATA: ReferentielRouteData[] = [
     createFields: [
       F('idCentre', 'Centre alpha', 'select', {
         required: true,
-        optionsApiPath: '/api/v1/alpha',
+        optionsApiPath: '/api/alpha',
         optionValueKey: 'idCentre',
         optionLabelKeys: ['codeType', 'libelle', 'codeCentre'],
       }),
@@ -365,7 +365,7 @@ export const REFERENTIEL_ROUTE_DATA: ReferentielRouteData[] = [
   {
     path: 'partenaire',
     title: 'Partenaires',
-    apiPath: '/api/v1/Partenaires',
+    apiPath: '/api/Partenaires',
     createFields: [
       F('libellePartenaire', 'Libellé', 'text', {
         required: true,
@@ -376,7 +376,7 @@ export const REFERENTIEL_ROUTE_DATA: ReferentielRouteData[] = [
   {
     path: 'periodeactivite',
     title: 'Périodes d’activité',
-    apiPath: '/api/v1/PeriodeActivites',
+    apiPath: '/api/PeriodeActivites',
     createFields: [
       F('libellePeriodeActivite', 'Libellé', 'text', {
         required: true,
@@ -387,7 +387,7 @@ export const REFERENTIEL_ROUTE_DATA: ReferentielRouteData[] = [
   {
     path: 'periodicite',
     title: 'Périodicités',
-    apiPath: '/api/v1/Periodicites',
+    apiPath: '/api/Periodicites',
     createFields: [
       F('libellePeriodicite', 'Libellé', 'text', {
         required: true,
@@ -398,7 +398,7 @@ export const REFERENTIEL_ROUTE_DATA: ReferentielRouteData[] = [
   {
     path: 'regimealpha',
     title: 'Régimes d’alphabétisation',
-    apiPath: '/api/v1/Regimealphabetisations',
+    apiPath: '/api/Regimealphabetisations',
     createFields: [
       F('libelleRegimeAlpha', 'Libellé', 'text', {
         required: true,
@@ -409,7 +409,7 @@ export const REFERENTIEL_ROUTE_DATA: ReferentielRouteData[] = [
   {
     path: 'statutpersonnel',
     title: 'Statuts personnel',
-    apiPath: '/api/v1/StatutPersonnels',
+    apiPath: '/api/StatutPersonnels',
     createFields: [
       F('libelleStatutPersonnel', 'Libellé', 'text', {
         required: true,
@@ -420,7 +420,7 @@ export const REFERENTIEL_ROUTE_DATA: ReferentielRouteData[] = [
   {
     path: 'supportdidactique',
     title: 'Supports didactiques',
-    apiPath: '/api/v1/SupportDidactiques',
+    apiPath: '/api/SupportDidactiques',
     createFields: [
       F('libelleSupportDidactique', 'Libellé', 'text', {
         required: true,
@@ -431,7 +431,7 @@ export const REFERENTIEL_ROUTE_DATA: ReferentielRouteData[] = [
   {
     path: 'typealpha',
     title: 'Types alpha',
-    apiPath: '/api/v1/TypeAlphas',
+    apiPath: '/api/TypeAlphas',
     createFields: [
       F('libelleTypeAlpha', 'Libellé', 'text', {
         required: true,
@@ -442,7 +442,7 @@ export const REFERENTIEL_ROUTE_DATA: ReferentielRouteData[] = [
   {
     path: 'typedocument',
     title: 'Types de document',
-    apiPath: '/api/v1/TypeDocuments',
+    apiPath: '/api/TypeDocuments',
     createFields: [
       F('libelleTypeDocument', 'Libellé', 'text', {
         required: true,

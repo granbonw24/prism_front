@@ -39,9 +39,9 @@ describe('VisitesListComponent', () => {
         req.flush(emptyPage);
       } else if (url.includes('/api/naturedocument')) {
         req.flush([]);
-      } else if (url.includes('/api/v1/TypeDocuments')) {
+      } else if (url.includes('/api/TypeDocuments')) {
         req.flush([]);
-      } else if (url.includes('/api/v1/alpha')) {
+      } else if (url.includes('/api/alpha')) {
         expect(req.request.params.get('size')).toBe('5000');
         req.flush(emptyPage);
       } else {

@@ -87,11 +87,11 @@ export class PersonnelComponent {
     this.errorMessage = null;
 
     forkJoin({
-      centres: this.http.get<any[]>(`${this.apiBaseUrl}/api/v1/centres`),
-      fonctions: this.http.get<any[]>(`${this.apiBaseUrl}/api/v1/fonctions`),
+      centres: this.http.get<any[]>(`${this.apiBaseUrl}/api/centres`),
+      fonctions: this.http.get<any[]>(`${this.apiBaseUrl}/api/fonctions`),
       civilites: this.http.get<any[]>(`${this.apiBaseUrl}/api/civilite`),
       niveaux: this.http.get<any[]>(`${this.apiBaseUrl}/api/niveau-personnel`),
-      statuts: this.http.get<any[]>(`${this.apiBaseUrl}/api/v1/StatutPersonnels`),
+      statuts: this.http.get<any[]>(`${this.apiBaseUrl}/api/StatutPersonnels`),
     }).subscribe({
       next: (res) => {
         this.centres = res.centres ?? [];

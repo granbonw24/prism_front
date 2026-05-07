@@ -90,8 +90,8 @@ export class VisitesListComponent implements OnInit {
     forkJoin({
       list: list$,
       natures: this.http.get<NatureDoc[]>(`${this.apiBaseUrl}/api/naturedocument`),
-      types: this.http.get<TypeDoc[]>(`${this.apiBaseUrl}/api/v1/TypeDocuments`),
-      alphas: this.http.get<SpringPage<AlphaListRow>>(`${this.apiBaseUrl}/api/v1/alpha`, {
+      types: this.http.get<TypeDoc[]>(`${this.apiBaseUrl}/api/TypeDocuments`),
+      alphas: this.http.get<SpringPage<AlphaListRow>>(`${this.apiBaseUrl}/api/alpha`, {
         params: new HttpParams().set('page', '0').set('size', '5000').set('sort', 'id,asc'),
       }),
     }).subscribe({

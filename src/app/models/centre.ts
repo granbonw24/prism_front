@@ -1,4 +1,33 @@
 export type RefOption = { id: number; libelle?: string; code?: string };
+export type TypePromoteur = 'PHYSIQUE' | 'MORALE';
+
+export type PromoteurPersonnePhysique = {
+  libellePersonnePhysique?: string | null;
+  nom?: string | null;
+  prenom?: string | null;
+  contact?: string | null;
+  fonction?: string | null;
+};
+
+export type PromoteurPersonneMorale = {
+  denomination?: string | null;
+  nomProgramme?: string | null;
+  nomRepresentant?: string | null;
+  contact?: string | null;
+  boitePostale?: string | null;
+  mail?: string | null;
+  idTypePersonneMorale?: number | null;
+  libelleTypePersonneMorale?: string | null;
+};
+
+export type PromoteurDetails = {
+  idPromoteur?: number | null;
+  codePromoteur?: string | null;
+  libellePromoteur?: string | null;
+  typePromoteur?: TypePromoteur | null;
+  personnePhysique?: PromoteurPersonnePhysique | null;
+  personneMorale?: PromoteurPersonneMorale | null;
+};
 
 /** Réponse Spring Data pour les listes paginées (`GET` centres). */
 export type SpringPage<T> = {
@@ -46,6 +75,7 @@ export type CentreRow = {
   nomMilieuImplentation?: string | null;
   encadreurNonMena?: string | null;
   encadrerParMena?: boolean | null;
+  promoteur?: PromoteurDetails | null;
 };
 
 /** Ligne liste Alpha (même forme que `CentreTypeListItem` côté API). */
@@ -83,7 +113,7 @@ export type AlphaFullCreatePayload = {
   typeAlphaId: number;
   regimeAlphaId: number;
   libelleAlpha: string;
-  promoteur: { libellePromoteur: string };
+  promoteur: PromoteurUpsertPayload;
   centre: {
     localiteId: number;
     periodiciteId?: number | null;
@@ -103,7 +133,7 @@ export type AlphaFullCreatePayload = {
 
 export type SimpleCentreFullCreatePayload = {
   libelle: string;
-  promoteur: { libellePromoteur: string };
+  promoteur: PromoteurUpsertPayload;
   centre: {
     localiteId: number;
     periodiciteId?: number | null;
@@ -119,6 +149,28 @@ export type SimpleCentreFullCreatePayload = {
     localisationCentre?: string | null;
     nomMilieuImplentation?: string | null;
   };
+};
+
+export type PromoteurUpsertPayload = {
+  id?: number | null;
+  libellePromoteur?: string | null;
+  typePromoteur?: TypePromoteur | null;
+  personnePhysique?: {
+    libellePersonnePhysique?: string | null;
+    nom?: string | null;
+    prenom?: string | null;
+    contact?: string | null;
+    fonction?: string | null;
+  } | null;
+  personneMorale?: {
+    denomination?: string | null;
+    nomProgramme?: string | null;
+    nomRepresentant?: string | null;
+    contact?: string | null;
+    boitePostale?: string | null;
+    mail?: string | null;
+    idTypePersonneMorale?: number | null;
+  } | null;
 };
 
 /** Libellés des listes déroulantes filtres (code — libellé). */

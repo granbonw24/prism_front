@@ -11,9 +11,9 @@ Document de pilotage : **objectifs**, **phases**, **liste des écrans**, et **jo
 
 | Champ | Valeur |
 |--------|--------|
-| **Dernière mise à jour** | 2026-03-26 |
-| **Phase active** | Phase 2–3 — référentiels CRUD + robustesse API (codes auto, sécurité reactive) ; Admin droits (acteur) + gestion utilisateurs ; **Admin personnel (par centre)** ; marque UI |
-| **Prochaine action suggérée** | Personnel: filtres avancés + pagination + KPI dashboard ; tests manuels 3.3 ; menu selon permissions (1.4) |
+| **Dernière mise à jour** | 2026-04-07 |
+| **Phase active** | Phase 2–3 — référentiels CRUD + robustesse API ; module Apprenant (effectifs + intégrations) ; placeholders métier (Performance, Visites, etc.) |
+| **Prochaine action suggérée** | Prioriser soit **menus placeholder** (brancher API métier ou documenter le périmètre v1), soit **Phase 4** (`environment.prod.ts`, CI). Optionnel : menu filtré par **permissions** (Phase 1.4). |
 
 ---
 
@@ -26,6 +26,23 @@ Le chantier est considéré **clos** lorsque :
 3. **Tableau de bord** : soit branché sur de vraies agrégations/API, soit défini comme « v1 statique » et documenté (**fait pour v1 statique**).
 4. **Production** : `environment.prod.ts` renseigné, build documenté, CORS / URL API validés en environnement cible.
 5. Aucune dette critique non tracée (fichiers morts, routes cassées).
+
+---
+
+## Conventions — listes paginées centres (Alpha, CEC, CP, SIE)
+
+À répliquer pour toute **nouvelle** liste exposée en API + front sur le même modèle :
+
+| Couche | Règle |
+|--------|--------|
+| **API** | `GET` renvoie un **`Page`** Spring (`content`, `totalElements`, `totalPages`, `number`, `size`, …) + `Pageable` (`page`, `size`, `sort`). |
+| **Filtres** | DTO `@ModelAttribute` avec **un champ par paramètre query** ; côté serveur, **ne pas appliquer** les filtres dont la valeur est vide / null (Specifications + `SpecificationSupport`). |
+| **Recherche rapide** | Paramètre **`q`** : recherche **globale** (OR sur colonnes texte pertinentes + égalité **`id`** si `q` est un entier). Les filtres nommés restent combinables en **ET** avec `q`. |
+| **Front (listes)** | `HttpParams` : n’envoyer que les clés non vides ; champ UI **« Recherche »** → `q`. Clients qui lisent une liste plate doivent utiliser un **unwrap** (`content` si `Page`). |
+| **Postman** | Les requêtes **GET liste** documentent `page`, `size`, `sort`, `q` (et mention des filtres optionnels). Réf. : `prism/postman/PRISM.postman_collection.json`. |
+| **Backend (détail)** | `prism/DOCS/ARCHITECTURE-LISTES-CENTRES.md`. |
+
+**Checklist anti-régression** avant merge : compilation Maven + build Angular ; vérifier un écran liste (pagination + recherche `q`) ; vérifier les écrans qui chargent les **options** centres (gros `size` ou endpoint dédié) pour éviter les régressions sur `Page`.
 
 ---
 
@@ -69,7 +86,7 @@ Pour **chaque** ligne : la colonne « Liste » est **faite** si l’API répond 
 | Année scolaire | `anneescolaire` | Générique JSON | — | [x] | [x] | Via `referentiel-routes.data` |
 | Ministère | `ministere` | Générique JSON | `ministere.service` (optionnel / legacy) | [x] | [~] | POST modal → `MinistereRequest` |
 | Document | `document` | Générique JSON | — | [x] | [~] | POST modal → `DocumentRequest` |
-| Partenaire | `partenaire` | Générique JSON | — | [x] | [~] | POST modal ; `/api/v1/Partenaires` |
+| Partenaire | `partenaire` | Générique JSON | — | [x] | [~] | POST modal ; `/api/Partenaires` |
 
 ### Lot B — Référentiels généraux
 
@@ -118,6 +135,20 @@ Pour **chaque** ligne : la colonne « Liste » est **faite** si l’API répond 
 |----------|--------|
 | Menu **Paramétrage** généré depuis `REFERENTIEL_ROUTE_DATA` (plus de liste en dur / doublons) | Fait |
 | Logo institutionnel : `brand.config.ts` — sidebar, login (mobile), topbar, `apple-touch-icon` | Fait |
+| Sous-menus **Administration** et **Paramétrage** regroupés par catégories + comportement dropdown | Fait |
+| Menu **Promoteurs** branché (liste API) | Fait |
+
+### Lot E — Menus 100% fonctionnels (priorité immédiate)
+
+| Livrable | Statut |
+|----------|--------|
+| Vérifier que chaque entrée visible du menu ouvre une route valide (pas de page vide / TODO) | Fait |
+| Vérifier que chaque route appelle une API existante (GET au minimum) | En cours (Apprenant : effectifs + abandon/handicap/passage/compétences + **intégrations & CEPE** ; reste : sections placeholder) |
+| Uniformiser les actions de liste (Détails / Modifier / Supprimer) sur tous les écrans admin | En cours |
+| Remplacer les IDs bruts par des libellés métier dans formulaires + tableaux | En cours (effectif dynamique engagé) |
+| Règle utilisateur: **un seul rôle** (UI + backend) | Fait |
+| Module Apprenant `Effectif` en CRUD complet (GET/POST/PUT/DELETE + formulaire) | Fait |
+| `Apprenant > Effectif` unifié : sélection type centre (Alpha/CEC/CP/SIE) + endpoint/formulaire dynamiques | Fait (frontend) |
 
 ---
 
@@ -126,7 +157,7 @@ Pour **chaque** ligne : la colonne « Liste » est **faite** si l’API répond 
 | # | Tâche | Statut |
 |---|--------|--------|
 | 3.1 | Chemins API : source de vérité `referentiel-routes.data.ts` (aligné sur les `@RequestMapping`) | Fait |
-| 3.2 | Entités avec relations **lazy** / cycles : `@JsonIgnoreProperties`, DTOs ou `@JsonIgnore` | En cours (ex. Ministère corrigé côté Java ; à étendre aux autres si 500) |
+| 3.2 | Entités avec relations **lazy** / cycles : `@JsonIgnoreProperties`, DTOs ou `@JsonIgnore` | En cours — effectifs / compétence-centre : JSON **plat** (`Map` + `toRow`) + `JpaAssociationIds` sur les FK (évite `LazyInitializationException` WebFlux + JPA) |
 | 3.3 | Tests manuels : login → 2–3 listes + cas 401 (token expiré) | À faire |
 | 3.4 | PUT partiel : ne pas écraser les champs **code** `@AutoCode` (null JSON) — `ReferentialPutHelper` + fusions DTO (`Ministere`, `Communaute`, `Document`, `NiveauAlpha`, `ModeAlpha`) | Fait (backend `prism`) |
 | 3.5 | WebFlux + JWT : pas de **double** `chain.filter` après succès (`Mono<Void>` + `switchIfEmpty`) — évite erreurs après **204 DELETE** | Fait (`JwtAuthFilter`) |
@@ -150,7 +181,23 @@ Ajouter **en haut** du tableau (dernier en premier).
 
 | Date | Auteur / contexte | Changement |
 |------|-------------------|------------|
-| 2026-03-26 | Assistant | **Administration** : séparation des écrans **Acteurs (rôles)** (CRUD rôle) et **Rôle permission** (matrice droits). Ajout écran **Personnel (par centre)** : filtre centre + CRUD + KPI total (endpoints dédiés `/api/admin/personnel`). UI: sous-menu actif coloré via `routerLinkActive` + style `.collapse-item.active`. Fix intégration: `/api/v1/fonctions` (remplace `/api/fonction` 404). |
+| 2026-04-07 | Assistant | **Listes centres** : paramètre API **`q`** (recherche globale OR + id si entier) pour Alpha, CEC, CP, SIE ; UI — champ « Recherche rapide » ; Postman — GET all documentés (`page`, `size`, `sort`, `q`). Roadmap : section **Conventions — listes paginées centres** ; backend : `prism/DOCS/ARCHITECTURE-LISTES-CENTRES.md`. |
+| 2026-04-05 | Assistant | **Suite roadmap après tests intégrations** : backend `prism` — utilitaire `JpaAssociationIds` appliqué à **tous** les `toRow` des contrôleurs effectif / compétence-centre (lecture d’id FK sans initialiser les proxies Hibernate). Front déjà livré : écran unifié **Apprenant → Effectif intégrations et CEPE** (`/apprenant/integrations`) + APIs CEPE / admis & formel CP / promu / reverse SIE. **Prochaine étape roadmap** : placeholders (Performance, Control, Visites, Évaluation) ou Phase 4 prod / CI. |
+| 2026-04-03 | Assistant | Alignement final avec la regle projet sur les services: recentralisation des services metier (`AdministrationService`, `AnneescolaireService`, `MinistereService`) dans `src/app/services`, recablage des imports des features, suppression des fichiers `features/*/data-access/*.service.ts` pour garantir une source unique des services. |
+| 2026-04-03 | Assistant | Normalisation des imports TypeScript vers alias (`@core`, `@models`, `@shared`, `@services`, `@features`) dans `src/app/**/*.ts` avec mise a jour des chemins `tsconfig.json`; compilation front validee apres conversion pour garantir l'absence d'import casse. |
+| 2026-04-03 | Assistant | Nettoyage de coherence des services: suppression des services referentiels legacy inutilises dans `src/app/services` et de leurs specs associees; conservation des seuls services transversaux utilises (`auth`, `token-storage`, `session-store`) avec maintien des services metier dans les dossiers `features/*/data-access`. |
+| 2026-04-03 | Assistant | Harmonisation des services d'integration: `AdministrationService` et `MinistereService` deplaces de `src/app/services` vers `src/app/features/*/data-access`, imports des composants feature recables, ancien doublon service retire pour garder une source metier unique par feature. |
+| 2026-04-03 | Assistant | Migration structure front terminee: pages features actives deplacees sous `src/app/features` (administration, apprenant, centres, dashboard, promoteurs, sections, ministere), dossiers referentiels legacy deplaces sous `src/app/features/referentiels-legacy/*`, imports/routes ajustes sans changement de paths de navigation. |
+| 2026-04-03 | Assistant | Harmonisation en lot des modeles vides de `src/app/models` vers un alias partage `ReferentielModel` (`referentiel.model.ts`) ; specs associees migrees de `new Model()` vers des objets types avec assertions de champs. |
+| 2026-04-03 | Assistant | **Harmonisation des modèles front** : `Anneescolaire` déplacé de `features/anneescolaire/domain` vers `src/app/models/anneescolaire.ts` (+ spec), imports mis à jour dans la feature. `Ministere` centralisé aussi dans `src/app/models/ministere.ts` (suppression de `core/models/ministere.model.ts`) et services/composants alignés sur le modèle unique. |
+| 2026-03-26 | Assistant | **Apprenant Effectif — Alpha niveau** : ajout de la relation backend `EffectifAlpha -> NiveauAlpha` (`ID_NIVEAU_ALPHA`) avec mapping API (`idNiveauAlpha`, `libelleNiveauAlpha`) et ajout du select **Niveau Alpha** dans le formulaire dynamique type `Alpha`. |
+| 2026-03-26 | Assistant | **Apprenant Effectif — UX unifiée** : un seul écran `apprenant/effectif` avec sélection du **type de centre** (Alpha/CEC/CP/SIE). Le formulaire et l’endpoint API s’alignent dynamiquement selon le type. Suppression du texte d’aide non souhaité dans la modal formulaire. |
+| 2026-03-26 | Assistant | **Module terminé: Apprenant > Effectif (Alpha)**. Backend: `EffectifAlphaController` passe sur DTO dédié `EffectifAlphaRequest` (IDs métier explicites `idPeriodeActivite`, `idCentre`), mapping create/update robuste, liste/détail en sortie lisible (libellés période/centre). Frontend: route `apprenant/effectif` branchée en CRUD complet via `ReferentielListPageComponent` avec formulaire complet (selects + champs quantitatifs). |
+| 2026-03-26 | Assistant | **Roadmap — exécution Lot E (menus -> API)** : menu `APPRENANT` branché sur endpoints réels via `ReferentielListPageComponent` (`/api/effectif-alpha`, `/api/effectif-abandon-alpha`, `/api/effectif-passage-alpha`, `/api/effectif-situation-handicap-alpha`, `/api/competence-centre`). Menu `PARTENAIRE` pointe vers la route métier existante `partenaire`. |
+| 2026-03-26 | Assistant | **Menus fonctionnels (routing)** : remplacement des liens morts (`utilities-color.html`, `charts.html`) par des routes Angular valides. Ajout des routes opérationnelles pour `Partenaire`, `Apprenant`, `Performance`, `Control`, `Visites`, `Évaluation périodique` avec écran d’atterrissage dédié (`SectionPlaceholderComponent`) pour garantir une navigation sans impasse. |
+| 2026-03-26 | Assistant | **Roadmap — prochaine étape menus** : phase active recentrée sur la mise en fonctionnement complète des menus (`Administration`, `Paramétrage`, `Centres`). Ajout d’un **Lot E** pour le suivi opérationnel (routes valides, branchement API, uniformisation actions, libellés lisibles). **Utilisateurs** : contrainte confirmée **1 utilisateur = 1 rôle** appliquée côté backend et UI. |
+| 2026-03-26 | Assistant | **Stabilité démarrage** : correction `MenuComponent` (import `RouterLinkActive`) pour lever `NG8002` sur `[routerLinkActiveOptions]`. Vérification des démarrages locaux : frontend `ng serve` opérationnel (`http://localhost:4200`) ; backend Spring actif sur `:8080` (réponse HTTP `401` attendue car API protégée JWT). Roadmap synchronisée avec ce point d’arrêt. |
+| 2026-03-26 | Assistant | **Administration** : séparation des écrans **Acteurs (rôles)** (CRUD rôle) et **Rôle permission** (matrice droits). Ajout écran **Personnel (par centre)** : filtre centre + CRUD + KPI total (endpoints dédiés `/api/admin/personnel`). UI: sous-menu actif coloré via `routerLinkActive` + style `.collapse-item.active`. Fix intégration: `/api/fonctions` (remplace `/api/fonction` 404). |
 | 2026-03-26 | Assistant | **Administration** : menu ADMINISTRATION avec page dédiée `utilisateurs` (`/administration/utilisateurs`) pour associer les rôles acteur à chaque compte ; backend `GET /api/app-users` + `PUT /api/app-users/{id}/roles` (DTO sans passwordHash). |
 | 2026-03-26 | Assistant | **Administration** : menu ADMINISTRATION fonctionnel (liens → `/administration/roles-acteurs`) + page de gestion des droits par acteur via `/api/role-fonctionnalite-permission` (checkbox add/remove). |
 | 2026-03-26 | Assistant | **Roadmap** : rappel explicite que le document **n’est pas auto-à-jour** ; ajout Phase **3.4** (PUT + codes `@AutoCode`), **3.5** (`JwtAuthFilter` / 204 DELETE), **Lot D** (menu data-driven, `brand.config.ts`). **Backend** (`prism`) : `AutoCodePutMerge`, `ReferentialPutHelper` sur les PUT entité ; fusions code sur DTO ; correction `switchIfEmpty` après `Mono<Void>` dans le filtre JWT. **Front** : menu Paramétrage = `REFERENTIEL_ROUTE_DATA` ; pastilles référentiels sur le dashboard ; logo `login.jpg` / `markSrc` centralisé (sidebar, login mobile, topbar, `index.html` apple-touch-icon). |

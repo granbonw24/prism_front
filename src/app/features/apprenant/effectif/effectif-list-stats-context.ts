@@ -9,7 +9,7 @@ export function effectifStatsByCentreType(
   t: 'alpha' | 'cp' | 'cec' | 'sie',
 ): ListStatsContext {
   const centresApiPath = {
-    alpha: '/api/v1/alpha',
+    alpha: '/api/alpha',
     cp: '/api/cp',
     cec: '/api/cec',
     sie: '/api/sie',
@@ -22,7 +22,7 @@ export function effectifStatsByCentreType(
     centreOptionValueKey: CENTRE_KEYS.optionValueKey,
     centreOptionLabelKeys: [...CENTRE_KEYS.optionLabelKeys],
     rowPeriodeIdKey: 'idPeriodeActivite',
-    periodesApiPath: '/api/v1/PeriodeActivites',
+    periodesApiPath: '/api/PeriodeActivites',
     periodeOptionValueKey: 'id',
     periodeOptionLabelKeys: ['codePeriodeActivite', 'libellePeriodeActivite'],
   };

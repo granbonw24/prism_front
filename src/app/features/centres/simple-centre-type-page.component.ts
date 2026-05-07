@@ -16,10 +16,13 @@ import {
   natureOptionLabel,
   PeriodiciteOption,
   periodiciteOptionLabel,
+  PromoteurDetails,
+  PromoteurUpsertPayload,
   RefOption,
   refOptionLabel,
   SimpleCentreFullCreatePayload as SimpleFullCreatePayload,
   SpringPage,
+  TypePromoteur,
 } from '@models/centre';
 import { API_BASE_URL } from '@core/tokens/api-base-url.token';
 
@@ -30,6 +33,7 @@ import { API_BASE_URL } from '@core/tokens/api-base-url.token';
   templateUrl: './simple-centre-type-page.component.html',
 })
 export class SimpleCentreTypePageComponent implements OnInit {
+  readonly typePromoteurOptions: TypePromoteur[] = ['PHYSIQUE', 'MORALE'];
   @Input({ required: true }) title!: string;
   @Input({ required: true }) apiPath!: string;
 
@@ -72,6 +76,8 @@ export class SimpleCentreTypePageComponent implements OnInit {
   periodicites: PeriodiciteOption[] = [];
   autorites: AutoriteOption[] = [];
   promoteurs: RefOption[] = [];
+  typePersonneMoraleOptions: RefOption[] = [];
+  promoteurMode: 'existing' | 'new' = 'existing';
 
   readonly refOptionLabel = refOptionLabel;
   readonly localiteOptionLabel = localiteOptionLabel;
@@ -84,7 +90,7 @@ export class SimpleCentreTypePageComponent implements OnInit {
 
   model: SimpleFullCreatePayload = {
     libelle: '',
-    promoteur: { libellePromoteur: '' },
+    promoteur: { id: null, typePromoteur: null, libellePromoteur: '', personnePhysique: null, personneMorale: null },
     centre: {
       localiteId: null as any,
       periodiciteId: null,
@@ -160,9 +166,10 @@ export class SimpleCentreTypePageComponent implements OnInit {
       localites: this.http.get<LocaliteOption[]>(`${this.apiBaseUrl}/api/localite-d-implantation`),
       ieps: this.http.get<IepOption[]>(`${this.apiBaseUrl}/api/iep`),
       natures: this.http.get<NatureOption[]>(`${this.apiBaseUrl}/api/naturecentre`),
-      periodicites: this.http.get<PeriodiciteOption[]>(`${this.apiBaseUrl}/api/v1/Periodicites`),
+      periodicites: this.http.get<PeriodiciteOption[]>(`${this.apiBaseUrl}/api/Periodicites`),
       autorites: this.http.get<AutoriteOption[]>(`${this.apiBaseUrl}/api/autoriteautorisation`),
       promoteurs: this.http.get<any[]>(`${this.apiBaseUrl}/api/promoteur`),
+      typePersonneMorales: this.http.get<any[]>(`${this.apiBaseUrl}/api/type-personne-morale`),
     }).subscribe({
       next: (res) => {
         const page = res.rows;
@@ -180,6 +187,11 @@ export class SimpleCentreTypePageComponent implements OnInit {
           code: x.codePromoteur ?? undefined,
           libelle: x.libellePromoteur ?? undefined,
         }));
+        this.typePersonneMoraleOptions = (res.typePersonneMorales ?? []).map((x: any) => ({
+          id: x.id,
+          code: undefined,
+          libelle: x.libelle ?? undefined,
+        }));
         this.loading = false;
       },
       error: (e) => {
@@ -192,7 +204,14 @@ export class SimpleCentreTypePageComponent implements OnInit {
   canGoNext(): boolean {
     if (this.saving) return false;
     if (this.stepIndex === 0) {
-      return String(this.model.promoteur.libellePromoteur ?? '').trim().length > 0;
+      if (this.promoteurMode === 'existing') {
+        return this.model.promoteur.id != null;
+      }
+      if (!this.model.promoteur.typePromoteur) return false;
+      if (this.model.promoteur.typePromoteur === 'MORALE') {
+        return (this.model.promoteur.personneMorale?.idTypePersonneMorale ?? null) != null;
+      }
+      return true;
     }
     if (this.stepIndex === 1) {
       const c = this.model.centre;
@@ -233,7 +252,7 @@ export class SimpleCentreTypePageComponent implements OnInit {
     this.stepIndex = 0;
     this.model = {
       libelle: '',
-      promoteur: { libellePromoteur: '' },
+      promoteur: { id: null, typePromoteur: null, libellePromoteur: '', personnePhysique: null, personneMorale: null },
       centre: {
         localiteId: null as any,
         periodiciteId: null,
@@ -250,6 +269,46 @@ export class SimpleCentreTypePageComponent implements OnInit {
         nomMilieuImplentation: '',
       },
     };
+    this.promoteurMode = 'existing';
+  }
+
+  onPromoteurModeChange(): void {
+    if (this.promoteurMode === 'existing') {
+      this.model.promoteur = { id: null, typePromoteur: null, libellePromoteur: '', personnePhysique: null, personneMorale: null };
+      return;
+    }
+    this.model.promoteur = {
+      id: null,
+      typePromoteur: 'PHYSIQUE',
+      libellePromoteur: '',
+      personnePhysique: { libellePersonnePhysique: '', nom: '', prenom: '', contact: '', fonction: '' },
+      personneMorale: null,
+    };
+  }
+
+  onTypePromoteurChange(): void {
+    const t = this.model.promoteur.typePromoteur;
+    if (t === 'MORALE') {
+      this.model.promoteur.personneMorale = this.model.promoteur.personneMorale ?? {
+        denomination: '',
+        nomProgramme: '',
+        nomRepresentant: '',
+        contact: '',
+        boitePostale: '',
+        mail: '',
+        idTypePersonneMorale: null,
+      };
+      this.model.promoteur.personnePhysique = null;
+      return;
+    }
+    this.model.promoteur.personnePhysique = this.model.promoteur.personnePhysique ?? {
+      libellePersonnePhysique: '',
+      nom: '',
+      prenom: '',
+      contact: '',
+      fonction: '',
+    };
+    this.model.promoteur.personneMorale = null;
   }
 
   localiteLabel(id: number | null | undefined): string {
@@ -354,12 +413,13 @@ export class SimpleCentreTypePageComponent implements OnInit {
     if (!this.canSubmit()) return;
     this.saving = true;
     this.errorMessage = null;
+    const promoteurPayload = this.buildPromoteurPayload();
     const payload: SimpleFullCreatePayload = {
       libelle: String(this.model.libelle ?? '').trim(),
-      promoteur: { libellePromoteur: String(this.model.promoteur.libellePromoteur ?? '').trim() },
+      promoteur: promoteurPayload,
       centre: { ...this.model.centre },
     };
-    this.http.post(`${this.apiBaseUrl}${this.apiPath}/full`, payload).subscribe({
+    this.http.post(`${this.apiBaseUrl}${this.apiPath}`, payload).subscribe({
       next: () => {
         this.saving = false;
         this.resetWizard();
@@ -399,6 +459,7 @@ export class SimpleCentreTypePageComponent implements OnInit {
   }
 
   private mapRow(x: Record<string, unknown>): Row {
+    const promoteur = this.toPromoteurDetails(x['promoteur']);
     return {
       idCentre: Number(x['idCentre'] ?? x['id'] ?? 0),
       codeCentre: (x['codeCentre'] as string | undefined) ?? null,
@@ -417,6 +478,55 @@ export class SimpleCentreTypePageComponent implements OnInit {
       nomMilieuImplentation: (x['nomMilieuImplentation'] as string | undefined) ?? null,
       encadreurNonMena: (x['encadreurNonMena'] as string | undefined) ?? null,
       encadrerParMena: (x['encadrerParMena'] as boolean | null | undefined) ?? null,
+      promoteur,
+    };
+  }
+
+  promoteurSummary(row: Row): string {
+    const p = row.promoteur;
+    if (!p) return '—';
+    const code = p.codePromoteur?.trim();
+    const libelle = p.libellePromoteur?.trim();
+    if (code && libelle) return `${code} — ${libelle}`;
+    return code || libelle || `#${p.idPromoteur ?? '-'}`;
+  }
+
+  recapWizardExistingPromoteurLabel(): string {
+    const id = this.model.promoteur?.id;
+    if (id == null) return '—';
+    const p = this.promoteurs.find((x) => x.id === id);
+    return p ? this.refOptionLabel(p) : `#${id}`;
+  }
+
+  recapWizardTypePersonneMoraleLabel(): string {
+    const id = this.model.promoteur?.personneMorale?.idTypePersonneMorale;
+    if (id == null) return '—';
+    const t = this.typePersonneMoraleOptions.find((x) => x.id === id);
+    return t ? this.refOptionLabel(t) : `#${id}`;
+  }
+
+  private buildPromoteurPayload(): PromoteurUpsertPayload {
+    if (this.promoteurMode === 'existing') {
+      return { id: this.model.promoteur.id ?? null };
+    }
+    return {
+      libellePromoteur: String(this.model.promoteur.libellePromoteur ?? '').trim() || null,
+      typePromoteur: this.model.promoteur.typePromoteur ?? null,
+      personnePhysique: this.model.promoteur.personnePhysique ?? null,
+      personneMorale: this.model.promoteur.personneMorale ?? null,
+    };
+  }
+
+  private toPromoteurDetails(value: unknown): PromoteurDetails | null {
+    if (!value || typeof value !== 'object') return null;
+    const p = value as any;
+    return {
+      idPromoteur: p.idPromoteur ?? null,
+      codePromoteur: p.codePromoteur ?? null,
+      libellePromoteur: p.libellePromoteur ?? null,
+      typePromoteur: p.typePromoteur ?? null,
+      personnePhysique: p.personnePhysique ?? null,
+      personneMorale: p.personneMorale ?? null,
     };
   }
 

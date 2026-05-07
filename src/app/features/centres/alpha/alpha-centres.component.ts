@@ -16,9 +16,12 @@ import {
   natureOptionLabel,
   PeriodiciteOption,
   periodiciteOptionLabel,
+  PromoteurDetails,
+  PromoteurUpsertPayload,
   RefOption,
   refOptionLabel,
   SpringPage,
+  TypePromoteur,
 } from '@models/centre';
 import { API_BASE_URL } from '@core/tokens/api-base-url.token';
 
@@ -29,6 +32,7 @@ import { API_BASE_URL } from '@core/tokens/api-base-url.token';
   templateUrl: './alpha-centres.component.html',
 })
 export class AlphaCentresComponent {
+  readonly typePromoteurOptions: TypePromoteur[] = ['PHYSIQUE', 'MORALE'];
   loading = false;
   saving = false;
   errorMessage: string | null = null;
@@ -45,6 +49,8 @@ export class AlphaCentresComponent {
   periodicites: PeriodiciteOption[] = [];
   autorites: AutoriteOption[] = [];
   promoteurs: RefOption[] = [];
+  typePersonneMoraleOptions: RefOption[] = [];
+  promoteurMode: 'existing' | 'new' = 'existing';
 
   /** Exposés au template pour les libellés des &lt;select&gt; filtres. */
   readonly refOptionLabel = refOptionLabel;
@@ -62,7 +68,7 @@ export class AlphaCentresComponent {
     typeAlphaId: null as any,
     regimeAlphaId: null as any,
     libelleAlpha: '',
-    promoteur: { libellePromoteur: '' },
+    promoteur: { id: null, typePromoteur: null, libellePromoteur: '', personnePhysique: null, personneMorale: null },
     centre: {
       localiteId: null as any,
       periodiciteId: null,
@@ -159,19 +165,20 @@ export class AlphaCentresComponent {
     this.loading = true;
     this.errorMessage = null;
     forkJoin({
-      rows: this.http.get<SpringPage<Record<string, unknown>>>(`${this.apiBaseUrl}/api/v1/alpha`, {
+      rows: this.http.get<SpringPage<Record<string, unknown>>>(`${this.apiBaseUrl}/api/alpha`, {
         params: this.buildAlphaListParams(),
       }),
       campagnes: this.http.get<any[]>(`${this.apiBaseUrl}/api/campagnes`),
       categories: this.http.get<any[]>(`${this.apiBaseUrl}/api/categorie-centre-alpha`),
-      typesAlpha: this.http.get<any[]>(`${this.apiBaseUrl}/api/v1/TypeAlphas`),
-      regimes: this.http.get<any[]>(`${this.apiBaseUrl}/api/v1/Regimealphabetisations`),
+      typesAlpha: this.http.get<any[]>(`${this.apiBaseUrl}/api/TypeAlphas`),
+      regimes: this.http.get<any[]>(`${this.apiBaseUrl}/api/Regimealphabetisations`),
       localites: this.http.get<LocaliteOption[]>(`${this.apiBaseUrl}/api/localite-d-implantation`),
       ieps: this.http.get<IepOption[]>(`${this.apiBaseUrl}/api/iep`),
       natures: this.http.get<NatureOption[]>(`${this.apiBaseUrl}/api/naturecentre`),
-      periodicites: this.http.get<PeriodiciteOption[]>(`${this.apiBaseUrl}/api/v1/Periodicites`),
+      periodicites: this.http.get<PeriodiciteOption[]>(`${this.apiBaseUrl}/api/Periodicites`),
       autorites: this.http.get<AutoriteOption[]>(`${this.apiBaseUrl}/api/autoriteautorisation`),
       promoteurs: this.http.get<any[]>(`${this.apiBaseUrl}/api/promoteur`),
+      typePersonneMorales: this.http.get<any[]>(`${this.apiBaseUrl}/api/type-personne-morale`),
     }).subscribe({
       next: (res) => {
         const page = res.rows;
@@ -212,6 +219,11 @@ export class AlphaCentresComponent {
           code: x.codePromoteur ?? undefined,
           libelle: x.libellePromoteur ?? undefined,
         }));
+        this.typePersonneMoraleOptions = (res.typePersonneMorales ?? []).map((x: any) => ({
+          id: x.id,
+          code: undefined,
+          libelle: x.libelle ?? undefined,
+        }));
         this.loading = false;
       },
       error: (e) => {
@@ -224,9 +236,14 @@ export class AlphaCentresComponent {
   canGoNext(): boolean {
     if (this.saving) return false;
     if (this.stepIndex === 0) {
-      return (
-        String(this.model.promoteur.libellePromoteur ?? '').trim().length > 0
-      );
+      if (this.promoteurMode === 'existing') {
+        return this.model.promoteur.id != null;
+      }
+      if (!this.model.promoteur.typePromoteur) return false;
+      if (this.model.promoteur.typePromoteur === 'MORALE') {
+        return (this.model.promoteur.personneMorale?.idTypePersonneMorale ?? null) != null;
+      }
+      return true;
     }
     if (this.stepIndex === 1) {
       const c = this.model.centre;
@@ -334,11 +351,11 @@ export class AlphaCentresComponent {
       typeAlphaId: this.model.typeAlphaId,
       regimeAlphaId: this.model.regimeAlphaId,
       libelleAlpha: this.model.libelleAlpha,
-      promoteur: { libellePromoteur: String(this.model.promoteur.libellePromoteur ?? '').trim() },
+      promoteur: this.buildPromoteurPayload(),
       centre: { ...this.model.centre },
     };
 
-    this.http.post(`${this.apiBaseUrl}/api/v1/alpha/full`, payload).subscribe({
+    this.http.post(`${this.apiBaseUrl}/api/alpha`, payload).subscribe({
       next: () => {
         this.saving = false;
         this.resetWizard();
@@ -391,7 +408,7 @@ export class AlphaCentresComponent {
     if (!this.canSaveEdit()) return;
     const id = this.editRowId!;
     this.saving = true;
-    this.http.put(`${this.apiBaseUrl}/api/v1/alpha/${id}/infos`, this.editForm).subscribe({
+    this.http.put(`${this.apiBaseUrl}/api/alpha/${id}/infos`, this.editForm).subscribe({
       next: () => {
         this.saving = false;
         this.closeEdit();
@@ -412,7 +429,7 @@ export class AlphaCentresComponent {
       typeAlphaId: null as any,
       regimeAlphaId: null as any,
       libelleAlpha: '',
-      promoteur: { libellePromoteur: '' },
+      promoteur: { id: null, typePromoteur: null, libellePromoteur: '', personnePhysique: null, personneMorale: null },
       centre: {
         localiteId: null as any,
         periodiciteId: null,
@@ -429,12 +446,52 @@ export class AlphaCentresComponent {
         nomMilieuImplentation: '',
       },
     };
+    this.promoteurMode = 'existing';
+  }
+
+  onPromoteurModeChange(): void {
+    if (this.promoteurMode === 'existing') {
+      this.model.promoteur = { id: null, typePromoteur: null, libellePromoteur: '', personnePhysique: null, personneMorale: null };
+      return;
+    }
+    this.model.promoteur = {
+      id: null,
+      typePromoteur: 'PHYSIQUE',
+      libellePromoteur: '',
+      personnePhysique: { libellePersonnePhysique: '', nom: '', prenom: '', contact: '', fonction: '' },
+      personneMorale: null,
+    };
+  }
+
+  onTypePromoteurChange(): void {
+    const t = this.model.promoteur.typePromoteur;
+    if (t === 'MORALE') {
+      this.model.promoteur.personneMorale = this.model.promoteur.personneMorale ?? {
+        denomination: '',
+        nomProgramme: '',
+        nomRepresentant: '',
+        contact: '',
+        boitePostale: '',
+        mail: '',
+        idTypePersonneMorale: null,
+      };
+      this.model.promoteur.personnePhysique = null;
+      return;
+    }
+    this.model.promoteur.personnePhysique = this.model.promoteur.personnePhysique ?? {
+      libellePersonnePhysique: '',
+      nom: '',
+      prenom: '',
+      contact: '',
+      fonction: '',
+    };
+    this.model.promoteur.personneMorale = null;
   }
 
   deleteRow(row: AlphaRow): void {
     if (!confirm('Supprimer ce centre Alpha ?')) return;
     this.saving = true;
-    this.http.delete(`${this.apiBaseUrl}/api/v1/alpha/${row.idCentre}`).subscribe({
+    this.http.delete(`${this.apiBaseUrl}/api/alpha/${row.idCentre}`).subscribe({
       next: () => {
         this.saving = false;
         this.loadAll();
@@ -465,6 +522,7 @@ export class AlphaCentresComponent {
   }
 
   private mapAlphaRow(x: Record<string, unknown>): AlphaRow {
+    const promoteur = this.toPromoteurDetails(x['promoteur']);
     return {
       idCentre: Number(x['idCentre'] ?? x['id'] ?? 0),
       codeCentre: (x['codeCentre'] as string | undefined) ?? null,
@@ -483,6 +541,57 @@ export class AlphaCentresComponent {
       nomMilieuImplentation: (x['nomMilieuImplentation'] as string | undefined) ?? null,
       encadreurNonMena: (x['encadreurNonMena'] as string | undefined) ?? null,
       encadrerParMena: (x['encadrerParMena'] as boolean | null | undefined) ?? null,
+      promoteur,
+    };
+  }
+
+  promoteurSummary(row: AlphaRow): string {
+    const p = row.promoteur;
+    if (!p) return '—';
+    const code = p.codePromoteur?.trim();
+    const libelle = p.libellePromoteur?.trim();
+    if (code && libelle) return `${code} — ${libelle}`;
+    return code || libelle || `#${p.idPromoteur ?? '-'}`;
+  }
+
+  /** Libellé du promoteur choisi à l’étape 1 (récap wizard). */
+  recapWizardExistingPromoteurLabel(): string {
+    const id = this.model.promoteur?.id;
+    if (id == null) return '—';
+    const p = this.promoteurs.find((x) => x.id === id);
+    return p ? this.refOptionLabel(p) : `#${id}`;
+  }
+
+  /** Libellé du type personne morale sélectionné (récap wizard). */
+  recapWizardTypePersonneMoraleLabel(): string {
+    const id = this.model.promoteur?.personneMorale?.idTypePersonneMorale;
+    if (id == null) return '—';
+    const t = this.typePersonneMoraleOptions.find((x) => x.id === id);
+    return t ? this.refOptionLabel(t) : `#${id}`;
+  }
+
+  private buildPromoteurPayload(): PromoteurUpsertPayload {
+    if (this.promoteurMode === 'existing') {
+      return { id: this.model.promoteur.id ?? null };
+    }
+    return {
+      libellePromoteur: String(this.model.promoteur.libellePromoteur ?? '').trim() || null,
+      typePromoteur: this.model.promoteur.typePromoteur ?? null,
+      personnePhysique: this.model.promoteur.personnePhysique ?? null,
+      personneMorale: this.model.promoteur.personneMorale ?? null,
+    };
+  }
+
+  private toPromoteurDetails(value: unknown): PromoteurDetails | null {
+    if (!value || typeof value !== 'object') return null;
+    const p = value as any;
+    return {
+      idPromoteur: p.idPromoteur ?? null,
+      codePromoteur: p.codePromoteur ?? null,
+      libellePromoteur: p.libellePromoteur ?? null,
+      typePromoteur: p.typePromoteur ?? null,
+      personnePhysique: p.personnePhysique ?? null,
+      personneMorale: p.personneMorale ?? null,
     };
   }
 

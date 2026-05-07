@@ -34,9 +34,91 @@
       <div *ngIf="stepIndex === 0">
         <div class="form-row">
           <div class="form-group col-md-12">
+            <label class="small text-muted">Mode promoteur</label>
+            <select class="form-control" [(ngModel)]="promoteurMode" (ngModelChange)="onPromoteurModeChange()" [disabled]="saving">
+              <option value="existing">Utiliser un promoteur existant</option>
+              <option value="new">Créer un nouveau promoteur</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group col-md-12" *ngIf="promoteurMode === 'existing'">
+            <label class="small text-muted">Promoteur existant</label>
+            <select class="form-control" [(ngModel)]="model.promoteur.id" [disabled]="saving">
+              <option [ngValue]="null">--</option>
+              <option *ngFor="let p of promoteurs" [ngValue]="p.id">{{ refOptionLabel(p) }}</option>
+            </select>
+          </div>
+          <div class="form-group col-md-4" *ngIf="promoteurMode === 'new'">
+            <label class="small text-muted">Type promoteur</label>
+            <select class="form-control" [(ngModel)]="model.promoteur.typePromoteur" (ngModelChange)="onTypePromoteurChange()" [disabled]="saving">
+              <option [ngValue]="null">--</option>
+              <option *ngFor="let t of typePromoteurOptions" [ngValue]="t">{{ t }}</option>
+            </select>
+          </div>
+          <div class="form-group col-md-8" *ngIf="promoteurMode === 'new'">
             <label class="small text-muted">Libellé promoteur</label>
             <input class="form-control" [(ngModel)]="model.promoteur.libellePromoteur" [disabled]="saving" />
             <div class="small text-muted mt-1">Le code promoteur est auto-généré.</div>
+          </div>
+        </div>
+        <div class="form-row" *ngIf="promoteurMode === 'new' && model.promoteur.typePromoteur === 'PHYSIQUE'">
+          <div class="form-group col-md-4">
+            <label class="small text-muted">Nom</label>
+            <input class="form-control" [(ngModel)]="model.promoteur.personnePhysique!.nom" [disabled]="saving" />
+          </div>
+          <div class="form-group col-md-4">
+            <label class="small text-muted">Prénom</label>
+            <input class="form-control" [(ngModel)]="model.promoteur.personnePhysique!.prenom" [disabled]="saving" />
+          </div>
+          <div class="form-group col-md-4">
+            <label class="small text-muted">Contact</label>
+            <input class="form-control" [(ngModel)]="model.promoteur.personnePhysique!.contact" [disabled]="saving" />
+          </div>
+        </div>
+        <div class="form-row" *ngIf="promoteurMode === 'new' && model.promoteur.typePromoteur === 'PHYSIQUE'">
+          <div class="form-group col-md-6">
+            <label class="small text-muted">Libellé personne physique</label>
+            <input class="form-control" [(ngModel)]="model.promoteur.personnePhysique!.libellePersonnePhysique" [disabled]="saving" />
+          </div>
+          <div class="form-group col-md-6">
+            <label class="small text-muted">Fonction</label>
+            <input class="form-control" [(ngModel)]="model.promoteur.personnePhysique!.fonction" [disabled]="saving" />
+          </div>
+        </div>
+        <div class="form-row" *ngIf="promoteurMode === 'new' && model.promoteur.typePromoteur === 'MORALE'">
+          <div class="form-group col-md-4">
+            <label class="small text-muted">Dénomination</label>
+            <input class="form-control" [(ngModel)]="model.promoteur.personneMorale!.denomination" [disabled]="saving" />
+          </div>
+          <div class="form-group col-md-4">
+            <label class="small text-muted">Nom programme</label>
+            <input class="form-control" [(ngModel)]="model.promoteur.personneMorale!.nomProgramme" [disabled]="saving" />
+          </div>
+          <div class="form-group col-md-4">
+            <label class="small text-muted">Type personne morale</label>
+            <select class="form-control" [(ngModel)]="model.promoteur.personneMorale!.idTypePersonneMorale" [disabled]="saving">
+              <option [ngValue]="null">--</option>
+              <option *ngFor="let t of typePersonneMoraleOptions" [ngValue]="t.id">{{ refOptionLabel(t) }}</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row" *ngIf="promoteurMode === 'new' && model.promoteur.typePromoteur === 'MORALE'">
+          <div class="form-group col-md-3">
+            <label class="small text-muted">Représentant</label>
+            <input class="form-control" [(ngModel)]="model.promoteur.personneMorale!.nomRepresentant" [disabled]="saving" />
+          </div>
+          <div class="form-group col-md-3">
+            <label class="small text-muted">Contact</label>
+            <input class="form-control" [(ngModel)]="model.promoteur.personneMorale!.contact" [disabled]="saving" />
+          </div>
+          <div class="form-group col-md-3">
+            <label class="small text-muted">Boîte postale</label>
+            <input class="form-control" [(ngModel)]="model.promoteur.personneMorale!.boitePostale" [disabled]="saving" />
+          </div>
+          <div class="form-group col-md-3">
+            <label class="small text-muted">E-mail</label>
+            <input class="form-control" type="email" [(ngModel)]="model.promoteur.personneMorale!.mail" [disabled]="saving" />
           </div>
         </div>
       </div>
@@ -170,7 +252,38 @@
             <tbody>
               <tr>
                 <th style="width: 220px">Promoteur</th>
-                <td>{{ model.promoteur.libellePromoteur || '—' }} <span class="text-muted">· code auto</span></td>
+                <td>
+                  <div><strong>Mode</strong>: {{ promoteurMode === 'existing' ? 'Promoteur existant' : 'Nouveau promoteur' }}</div>
+                  <ng-container *ngIf="promoteurMode === 'existing'">
+                    <div><strong>Identifiant</strong>: {{ model.promoteur.id ?? '—' }}</div>
+                    <div><strong>Sélection</strong>: {{ recapWizardExistingPromoteurLabel() }}</div>
+                  </ng-container>
+                  <ng-container *ngIf="promoteurMode === 'new'">
+                    <div><strong>Type promoteur</strong>: {{ model.promoteur.typePromoteur ?? '—' }}</div>
+                    <div><strong>Libellé promoteur</strong>: {{ model.promoteur.libellePromoteur?.trim() || '—' }}</div>
+                    <div class="text-muted small"><strong>Code promoteur</strong>: auto-généré à l’enregistrement</div>
+                    <ng-container *ngIf="model.promoteur.typePromoteur === 'PHYSIQUE'">
+                      <hr class="my-2" />
+                      <div class="font-weight-bold small text-secondary mb-1">Personne physique</div>
+                      <div><strong>Libellé</strong>: {{ model.promoteur.personnePhysique?.libellePersonnePhysique?.trim() || '—' }}</div>
+                      <div><strong>Nom</strong>: {{ model.promoteur.personnePhysique?.nom?.trim() || '—' }}</div>
+                      <div><strong>Prénom</strong>: {{ model.promoteur.personnePhysique?.prenom?.trim() || '—' }}</div>
+                      <div><strong>Contact</strong>: {{ model.promoteur.personnePhysique?.contact?.trim() || '—' }}</div>
+                      <div><strong>Fonction</strong>: {{ model.promoteur.personnePhysique?.fonction?.trim() || '—' }}</div>
+                    </ng-container>
+                    <ng-container *ngIf="model.promoteur.typePromoteur === 'MORALE'">
+                      <hr class="my-2" />
+                      <div class="font-weight-bold small text-secondary mb-1">Personne morale</div>
+                      <div><strong>Dénomination</strong>: {{ model.promoteur.personneMorale?.denomination?.trim() || '—' }}</div>
+                      <div><strong>Nom programme</strong>: {{ model.promoteur.personneMorale?.nomProgramme?.trim() || '—' }}</div>
+                      <div><strong>Représentant</strong>: {{ model.promoteur.personneMorale?.nomRepresentant?.trim() || '—' }}</div>
+                      <div><strong>Contact</strong>: {{ model.promoteur.personneMorale?.contact?.trim() || '—' }}</div>
+                      <div><strong>Boîte postale</strong>: {{ model.promoteur.personneMorale?.boitePostale?.trim() || '—' }}</div>
+                      <div><strong>E-mail</strong>: {{ model.promoteur.personneMorale?.mail?.trim() || '—' }}</div>
+                      <div><strong>Type personne morale</strong>: {{ recapWizardTypePersonneMoraleLabel() }}</div>
+                    </ng-container>
+                  </ng-container>
+                </td>
               </tr>
               <tr>
                 <th>Centre</th>
@@ -372,6 +485,7 @@
             <tr>
               <th>Centre</th>
               <th>Libellé</th>
+              <th>Promoteur</th>
               <th>Localité</th>
               <th>IEP</th>
               <th>Nature</th>
@@ -386,6 +500,7 @@
             <tr *ngFor="let r of rows">
               <td class="font-weight-bold">{{ r.codeCentre ?? r.idCentre }}</td>
               <td>{{ r.libelle ?? '—' }}</td>
+              <td>{{ promoteurSummary(r) }}</td>
               <td>{{ localiteLabel(r.idLocalite ?? null) }}</td>
               <td>{{ iepLabel(r.idIep ?? null) }}</td>
               <td>{{ natureLabel(r.idNaturecentre ?? null) }}</td>
@@ -429,7 +544,7 @@
               </td>
             </tr>
             <tr *ngIf="rows.length === 0">
-              <td colspan="10" class="text-center text-muted py-4">Aucun enregistrement.</td>
+              <td colspan="11" class="text-center text-muted py-4">Aucun enregistrement.</td>
             </tr>
           </tbody>
         </table>
@@ -496,6 +611,10 @@
               <tr>
                 <th>Libellé</th>
                 <td>{{ d.libelle ?? '—' }}</td>
+              </tr>
+              <tr>
+                <th>Promoteur</th>
+                <td>{{ promoteurSummary(d) }}</td>
               </tr>
               <tr>
                 <th>Localité</th>

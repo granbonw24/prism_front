@@ -1067,7 +1067,7 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
       if (field.type !== 'select' || !field.optionsApiPath) continue;
       const cacheKey = this.optionsCacheKey(field);
       if ((this.fieldOptions[cacheKey]?.length ?? 0) > 0) continue;
-      const centreOptionsPaths = new Set(['/api/v1/alpha', '/api/cec', '/api/cp', '/api/sie']);
+      const centreOptionsPaths = new Set(['/api/alpha', '/api/cec', '/api/cp', '/api/sie']);
       const optPath = field.optionsApiPath ?? '';
       const sub = this.http
         .get<unknown>(`${this.apiBaseUrl}${optPath}`, {
