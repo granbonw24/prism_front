@@ -36,6 +36,14 @@ export class AuthService {
     return !!this.tokens.getAccessToken();
   }
 
+  hasPermission(permission: string): boolean {
+    return this.currentSession?.permissions.includes(permission) ?? false;
+  }
+
+  hasAnyPermission(permissions: string[]): boolean {
+    return permissions.some((permission) => this.hasPermission(permission));
+  }
+
   login(body: LoginRequest): Observable<LoginResponse> {
     const url = `${this.apiBaseUrl}/api/auth/login`;
     return this.http.post<LoginResponse>(url, body).pipe(

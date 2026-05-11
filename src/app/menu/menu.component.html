@@ -105,57 +105,66 @@
           <span>CONTROL</span></a>
       </li>
 
-  <li class="nav-item" [class.active]="visitesSectionOpen()">
+      <li class="nav-item" [class.active]="activitesCentreSectionOpen()" *ngIf="canViewActivitesCentre()">
         <a
-          id="headingVisites"
+          id="headingActivitesCentre"
           class="nav-link"
-          [class.collapsed]="!visitesSectionOpen()"
+          [class.collapsed]="!activitesCentreSectionOpen()"
           href="#"
           (click)="$event.preventDefault()"
           data-toggle="collapse"
-          data-target="#collapseVisites"
-          [attr.aria-expanded]="visitesSectionOpen()"
-          aria-controls="collapseVisites"
+          data-target="#collapseActivitesCentre"
+          [attr.aria-expanded]="activitesCentreSectionOpen()"
+          aria-controls="collapseActivitesCentre"
         >
           <i class="fas fa-fw fa-clipboard-check" aria-hidden="true"></i>
-          <span>Visites</span>
+          <span>ACTIVITES CENTRE ALPHA</span>
         </a>
         <div
-          id="collapseVisites"
+          id="collapseActivitesCentre"
           class="collapse"
-          [class.show]="visitesSectionOpen()"
-          aria-labelledby="headingVisites"
+          [class.show]="activitesCentreSectionOpen()"
+          aria-labelledby="headingActivitesCentre"
           data-parent="#accordionSidebar"
         >
           <div class="bg-white py-2 collapse-inner rounded">
             <a
-              class="collapse-item"
-              routerLink="/visites/pointage"
-              routerLinkActive="active"
-              [routerLinkActiveOptions]="{ exact: true }"
-              >Point des visites</a
+              class="collapse-item mena-submenu-toggle"
+              [class.collapsed]="!activitesCentreVisiteSectionOpen()"
+              href="#"
+              (click)="$event.preventDefault()"
+              data-toggle="collapse"
+              data-target="#activites-centre-visite"
+              [attr.aria-expanded]="activitesCentreVisiteSectionOpen()"
+              aria-controls="activites-centre-visite"
+              >Visite</a
             >
-            <a
-              class="collapse-item"
-              routerLink="/visites/conseiller"
-              routerLinkActive="active"
-              [routerLinkActiveOptions]="{ exact: true }"
-              >Suivi du conseiller</a
-            >
-            <a
-              class="collapse-item"
-              routerLink="/visites/superviseur"
-              routerLinkActive="active"
-              [routerLinkActiveOptions]="{ exact: true }"
-              >Suivi par le superviseur</a
-            >
-            <a
-              class="collapse-item"
-              routerLink="/visites/iepp"
-              routerLinkActive="active"
-              [routerLinkActiveOptions]="{ exact: true }"
-              >Suivi par l’IEPP</a
-            >
+            <div id="activites-centre-visite" class="collapse" [class.show]="activitesCentreVisiteSectionOpen()">
+              <a
+                *ngIf="canViewSuiviConseiller()"
+                class="collapse-item pl-4"
+                routerLink="/activites-centre/visite/conseiller"
+                routerLinkActive="active"
+                [routerLinkActiveOptions]="{ exact: true }"
+                >Suivi du conseiller</a
+              >
+              <a
+                *ngIf="canViewSuiviSuperviseur()"
+                class="collapse-item pl-4"
+                routerLink="/activites-centre/visite/superviseur"
+                routerLinkActive="active"
+                [routerLinkActiveOptions]="{ exact: true }"
+                >Suivi par le superviseur</a
+              >
+              <a
+                *ngIf="canViewSuiviIepp()"
+                class="collapse-item pl-4"
+                routerLink="/activites-centre/visite/iepp"
+                routerLinkActive="active"
+                [routerLinkActiveOptions]="{ exact: true }"
+                >Suivi par l’IEPP</a
+              >
+            </div>
           </div>
         </div>
       </li>

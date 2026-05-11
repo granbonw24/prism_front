@@ -1,0 +1,71 @@
+:host {
+  display: block;
+}
+
+.gap-1 {
+  gap: 0.25rem;
+}
+
+.mena-table td,
+.mena-table th {
+  vertical-align: middle;
+}
+
+.mena-rating-grid {
+  row-gap: 0.5rem;
+}
+
+.mena-rating-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.mena-rating-option {
+  align-items: center;
+  background: #fff;
+  border: 1px solid #d1d3e2;
+  border-radius: 999px;
+  cursor: pointer;
+  display: inline-flex;
+  gap: 0.4rem;
+  min-width: 6.5rem;
+  padding: 0.4rem 0.7rem;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, color 0.15s ease;
+}
+
+.mena-rating-option input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.mena-rating-option.active {
+  border-color: #4e73df;
+  box-shadow: 0 0 0 0.12rem rgba(78, 115, 223, 0.15);
+  color: #2e59d9;
+  font-weight: 600;
+}
+
+.rating-dot {
+  border-radius: 999px;
+  display: inline-block;
+  height: 0.65rem;
+  width: 0.65rem;
+}
+
+.rating-bonne .rating-dot {
+  background: #1cc88a;
+}
+
+.rating-moyenne .rating-dot {
+  background: #f6c23e;
+}
+
+.rating-mauvaise .rating-dot {
+  background: #e74a3b;
+}
+
+.mena-rating-option:hover {
+  border-color: #858796;
+}

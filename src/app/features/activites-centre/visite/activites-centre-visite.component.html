@@ -1,0 +1,249 @@
+<div class="container-fluid">
+  <div class="d-sm-flex align-items-center justify-content-between mb-3">
+    <div>
+      <h1 class="h4 mb-1 text-gray-800">{{ pageTitle }}</h1>
+      <p class="small text-muted mb-0">{{ subtitle }}</p>
+    </div>
+    <div class="d-flex flex-wrap gap-1 mt-2 mt-sm-0">
+      <button
+        *ngIf="canCreatePoints"
+        class="btn btn-sm btn-outline-primary"
+        type="button"
+        (click)="openCreate('points')"
+        [disabled]="loading || saving"
+      >
+        Ajouter points des visites
+      </button>
+      <button
+        *ngIf="canManageSuivi"
+        class="btn btn-sm btn-primary"
+        type="button"
+        (click)="openCreate('suivi')"
+        [disabled]="loading || saving"
+      >
+        Ajouter suivi
+      </button>
+      <button class="btn btn-sm btn-outline-primary" type="button" (click)="reload()" [disabled]="loading">
+        Rafraîchir
+      </button>
+    </div>
+  </div>
+
+  <div *ngIf="errorMessage" class="alert alert-danger py-2">{{ errorMessage }}</div>
+  <div *ngIf="successMessage" class="alert alert-success py-2">{{ successMessage }}</div>
+
+  <div class="card border-0 shadow-sm mb-3">
+    <div class="card-body py-3">
+      <div class="form-row align-items-end">
+        <div class="form-group col-md-5 col-sm-12 mb-2 mb-md-0">
+          <label class="small text-muted mb-1">Recherche</label>
+          <input
+            class="form-control form-control-sm"
+            type="search"
+            [(ngModel)]="searchText"
+            placeholder="Centre, code, séance…"
+            autocomplete="off"
+          />
+        </div>
+        <div class="form-group col-md-5 col-sm-12 mb-2 mb-md-0">
+          <label class="small text-muted mb-1">Centre Alpha</label>
+          <select class="form-control form-control-sm" [(ngModel)]="filterAlphaId">
+            <option [ngValue]="''">Tous</option>
+            <option *ngFor="let alpha of alphas" [ngValue]="alphaOptionValue(alpha)">
+              {{ alphaOptionLabel(alpha) }}
+            </option>
+          </select>
+        </div>
+        <div class="form-group col-md-2 col-sm-12 mb-0">
+          <button type="button" class="btn btn-sm btn-outline-secondary btn-block" (click)="clearFilters()" [disabled]="loading">
+            Réinitialiser
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card border-0 shadow-sm">
+    <div class="card-header bg-white border-bottom-0 py-3">
+      <h6 class="m-0 font-weight-bold text-primary">Liste des suivis de visite</h6>
+    </div>
+    <div class="card-body pt-3">
+      <div *ngIf="loading" class="small text-muted py-3">Chargement…</div>
+      <div *ngIf="!loading" class="table-responsive">
+        <table class="table table-bordered table-sm align-middle mena-table">
+          <thead class="thead-light">
+            <tr>
+              <th style="width: 4rem">ID</th>
+              <th>Centre Alpha</th>
+              <th *ngFor="let field of suiviFields">{{ field.label }}</th>
+              <th>Lecture</th>
+              <th>Écriture</th>
+              <th>Calcul</th>
+              <th>CVC</th>
+              <th style="width: 12rem" class="text-center">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let row of filteredRows">
+              <td class="text-muted">{{ row.id }}</td>
+              <td>{{ alphaLabel(row) }}</td>
+              <td *ngFor="let field of suiviFields">{{ fieldValue(row, field.key) }}</td>
+              <td>{{ maitriseValue(row, 'maitriseSeanceLecture') }}</td>
+              <td>{{ maitriseValue(row, 'maitriseSeanceEcriture') }}</td>
+              <td>{{ maitriseValue(row, 'maitriseSeanceCalcul') }}</td>
+              <td>{{ maitriseValue(row, 'maitriseSeanceCvc') }}</td>
+              <td class="text-center text-nowrap">
+                <a
+                  class="btn btn-sm btn-outline-secondary mr-1"
+                  [routerLink]="['/activites-centre/visite/detail', row.id]"
+                  title="Voir le détail"
+                  aria-label="Voir le détail"
+                >
+                  <i class="fas fa-eye" aria-hidden="true"></i>
+                </a>
+                <button
+                  *ngIf="canUpdatePoints"
+                  class="btn btn-sm btn-outline-primary mr-1"
+                  type="button"
+                  [title]="isConseillerLocked(row) ? 'Verrouillé : le superviseur a déjà effectué son suivi' : 'Modifier les points des visites'"
+                  aria-label="Modifier les points des visites"
+                  (click)="openEdit(row, 'points')"
+                  [disabled]="saving || isConseillerLocked(row)"
+                >
+                  <i class="fas fa-clipboard-check" aria-hidden="true"></i>
+                </button>
+                <button
+                  *ngIf="canManageSuivi"
+                  class="btn btn-sm btn-outline-primary mr-1"
+                  type="button"
+                  [title]="lockReason(row) || 'Modifier le suivi'"
+                  aria-label="Modifier le suivi"
+                  (click)="openEdit(row, 'suivi')"
+                  [disabled]="saving || isSuiviLocked(row)"
+                >
+                  <i class="fas fa-pen" aria-hidden="true"></i>
+                </button>
+                <button
+                  class="btn btn-sm btn-outline-danger"
+                  type="button"
+                  title="Supprimer"
+                  aria-label="Supprimer"
+                  (click)="askDelete(row)"
+                  [disabled]="saving"
+                >
+                  <i class="fas fa-trash" aria-hidden="true"></i>
+                </button>
+              </td>
+            </tr>
+            <tr *ngIf="filteredRows.length === 0">
+              <td colspan="9" class="text-center text-muted py-4">Aucun suivi de visite pour ces critères.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div *ngIf="createOpen || editTarget" class="modal fade show d-block" tabindex="-1" role="dialog" aria-modal="true">
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content mena-modal">
+      <div class="modal-header">
+        <div>
+          <h5 class="modal-title">{{ formTitle }}</h5>
+          <div class="small text-muted">{{ formDescription }}</div>
+        </div>
+        <button type="button" class="close" aria-label="Fermer" (click)="closeForm()" [disabled]="saving">
+          <span aria-hidden="true">×</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="form-row">
+          <div class="form-group col-md-12">
+            <label class="small text-muted">Centre Alpha *</label>
+            <select class="form-control form-control-sm" [(ngModel)]="form.idAlpha">
+              <option [ngValue]="null">—</option>
+              <option *ngFor="let alpha of alphas" [ngValue]="alphaOptionValue(alpha)">
+                {{ alphaOptionLabel(alpha) }}
+              </option>
+            </select>
+          </div>
+        </div>
+
+        <ng-container *ngIf="formMode === 'points'">
+        <h6 class="font-weight-bold text-primary mt-2">Points des visites</h6>
+        <div class="form-row mena-rating-grid">
+          <div class="form-group col-md-6" *ngFor="let field of pointVisiteFields">
+            <label class="small text-muted d-block mb-1">{{ field.label }}</label>
+            <div class="mena-rating-group">
+              <label
+                class="mena-rating-option mb-0"
+                *ngFor="let option of maitriseOptions"
+                [class.active]="form[field.key] === option.value"
+                [ngClass]="optionClass(option.value)"
+                [title]="option.hint"
+              >
+                <input
+                  type="radio"
+                  [name]="field.key"
+                  [value]="option.value"
+                  [(ngModel)]="form[field.key]"
+                  [disabled]="saving"
+                />
+                <span class="rating-dot" aria-hidden="true"></span>
+                <span>{{ option.label }}</span>
+              </label>
+            </div>
+          </div>
+        </div>
+        </ng-container>
+
+        <ng-container *ngIf="formMode === 'suivi'">
+        <h6 class="font-weight-bold text-primary mt-2">{{ subtitle }}</h6>
+        <div class="form-row">
+          <div class="form-group col-md-6" *ngFor="let field of suiviFields">
+            <label class="small text-muted">{{ field.label }}</label>
+            <input
+              class="form-control form-control-sm"
+              [name]="field.key"
+              [type]="field.type"
+              min="0"
+              [(ngModel)]="form[field.key]"
+              autocomplete="off"
+            />
+          </div>
+        </div>
+        </ng-container>
+        <div class="small text-muted">* champs obligatoires</div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" (click)="closeForm()" [disabled]="saving">Annuler</button>
+        <button type="button" class="btn btn-primary" (click)="save()" [disabled]="saving">
+          {{ saving ? 'Enregistrement…' : 'Enregistrer' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+<div *ngIf="createOpen || editTarget" class="modal-backdrop fade show"></div>
+
+<div *ngIf="deleteTarget" class="modal fade show d-block" tabindex="-1" role="dialog" aria-modal="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content mena-modal">
+      <div class="modal-header">
+        <h5 class="modal-title">Supprimer le suivi de visite</h5>
+        <button type="button" class="close" aria-label="Fermer" (click)="closeDelete()" [disabled]="saving">
+          <span aria-hidden="true">×</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        Confirmer la suppression de <strong>{{ deleteTargetLabel() }}</strong> ?
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" (click)="closeDelete()" [disabled]="saving">Annuler</button>
+        <button type="button" class="btn btn-danger" (click)="deleteConfirmed()" [disabled]="saving">Supprimer</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div *ngIf="deleteTarget" class="modal-backdrop fade show"></div>

@@ -1,0 +1,92 @@
+<div class="container-fluid">
+  <div class="d-sm-flex align-items-center justify-content-between mb-3">
+    <div>
+      <h1 class="h4 mb-1 text-gray-800">Détail du suivi de visite</h1>
+      <p class="small text-muted mb-0">Vue complète des points de visite et des suivis conseiller, superviseur et IEPP.</p>
+    </div>
+    <a class="btn btn-sm btn-outline-secondary mt-2 mt-sm-0" routerLink="/activites-centre/visite/conseiller">
+      Retour aux visites
+    </a>
+  </div>
+
+  <div *ngIf="errorMessage" class="alert alert-danger py-2">{{ errorMessage }}</div>
+  <div *ngIf="loading" class="small text-muted py-3">Chargement…</div>
+
+  <ng-container *ngIf="!loading && row">
+    <div class="card border-0 shadow-sm mb-3">
+      <div class="card-header bg-white">
+        <h6 class="m-0 font-weight-bold text-primary">Centre concerné</h6>
+      </div>
+      <div class="card-body">
+        <div class="detail-grid">
+          <div>
+            <div class="small text-muted">ID visite</div>
+            <div class="font-weight-bold">{{ row.id ?? '—' }}</div>
+          </div>
+          <div>
+            <div class="small text-muted">Centre Alpha</div>
+            <div class="font-weight-bold">{{ alphaLabel() }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col-lg-6 mb-3">
+        <section class="card border-0 shadow-sm h-100">
+          <div class="card-header bg-white">
+            <h6 class="m-0 font-weight-bold text-primary">Points des visites</h6>
+          </div>
+          <div class="card-body">
+            <div class="detail-row" *ngFor="let field of fields('points')">
+              <span class="text-muted">{{ field.label }}</span>
+              <strong>{{ value(field.key) }}</strong>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <div class="col-lg-6 mb-3">
+        <section class="card border-0 shadow-sm h-100">
+          <div class="card-header bg-white">
+            <h6 class="m-0 font-weight-bold text-primary">Suivi du conseiller</h6>
+          </div>
+          <div class="card-body">
+            <div class="detail-row" *ngFor="let field of fields('conseiller')">
+              <span class="text-muted">{{ field.label }}</span>
+              <strong>{{ value(field.key) }}</strong>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <div class="col-lg-6 mb-3">
+        <section class="card border-0 shadow-sm h-100">
+          <div class="card-header bg-white">
+            <h6 class="m-0 font-weight-bold text-primary">Suivi par le superviseur</h6>
+          </div>
+          <div class="card-body">
+            <div class="detail-row" *ngFor="let field of fields('superviseur')">
+              <span class="text-muted">{{ field.label }}</span>
+              <strong>{{ value(field.key) }}</strong>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <div class="col-lg-6 mb-3">
+        <section class="card border-0 shadow-sm h-100">
+          <div class="card-header bg-white">
+            <h6 class="m-0 font-weight-bold text-primary">Suivi par l’IEPP</h6>
+          </div>
+          <div class="card-body">
+            <div class="detail-row" *ngFor="let field of fields('iepp')">
+              <span class="text-muted">{{ field.label }}</span>
+              <strong>{{ value(field.key) }}</strong>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+  </ng-container>
+</div>
