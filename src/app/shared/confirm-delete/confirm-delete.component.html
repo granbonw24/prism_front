@@ -1,0 +1,36 @@
+<div class="modal-backdrop fade mena-modal-backdrop" (click)="cancel()"></div>
+<div class="modal fade mena-modal show d-block" role="dialog" aria-modal="true">
+  <div class="modal-dialog modal-dialog-centered" (click)="$event.stopPropagation()">
+    <div class="modal-content mena-modal-content border-0 shadow">
+      <div class="modal-header border-0 mena-modal-header">
+        <h5 class="modal-title font-weight-bold text-danger">{{ title }}</h5>
+        <button type="button" class="close" aria-label="Fermer" (click)="cancel()" [disabled]="deleting">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p class="mb-2">
+          {{ message }}
+          <ng-container *ngIf="targetLabel; else fallbackTarget">
+            pour <strong>{{ targetLabel }}</strong>
+          </ng-container>
+          <ng-template #fallbackTarget>
+            <ng-container *ngIf="fallbackLabel">pour <strong>{{ fallbackLabel }}</strong></ng-container>
+          </ng-template>
+          .
+        </p>
+        <div *ngIf="errorMessage" class="alert alert-danger small mb-0">
+          {{ errorMessage }}
+        </div>
+      </div>
+      <div class="modal-footer border-0">
+        <button type="button" class="btn btn-light btn-sm" (click)="cancel()" [disabled]="deleting">
+          Annuler
+        </button>
+        <button type="button" class="btn btn-danger btn-sm" [disabled]="deleting" (click)="confirm()">
+          {{ deleting ? deletingLabel : confirmLabel }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

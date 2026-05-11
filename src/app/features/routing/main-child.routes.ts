@@ -8,7 +8,7 @@
  * - `features/routing/` : composition des routes par zone menu (lisible et évolutif).
  */
 import { Routes } from '@angular/router';
-import { anneeScolaireFeatureRoutes } from '@features/anneescolaire/anneescolaire.routes';
+import { anneeScolaireFeatureRoutes } from '@features/parametrage/others/anne-scolaire/anneescolaire.routes';
 import { administrationFeatureRoutes } from '@features/routing/administration.routes';
 import { apprenantFeatureRoutes } from '@features/routing/apprenant.routes';
 import { centresFeatureRoutes } from '@features/routing/centres.routes';

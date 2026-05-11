@@ -499,54 +499,12 @@
 </div>
 
 <!-- Modal confirmation suppression -->
-<div
-  class="modal-backdrop fade mena-modal-backdrop"
+<app-confirm-delete
   *ngIf="deleteModalOpen"
-  (click)="cancelDelete()"
-></div>
-<div
-  class="modal fade mena-modal"
-  role="dialog"
-  aria-modal="true"
-  [class.show]="deleteModalOpen"
-  [style.display]="deleteModalOpen ? 'block' : 'none'"
-  *ngIf="deleteModalOpen"
->
-  <div class="modal-dialog modal-dialog-centered" (click)="$event.stopPropagation()">
-    <div class="modal-content mena-modal-content border-0 shadow">
-      <div class="modal-header border-0 mena-modal-header">
-        <h5 class="modal-title font-weight-bold text-danger">Supprimer ?</h5>
-        <button type="button" class="close" aria-label="Fermer" (click)="cancelDelete()">
-          <span aria-hidden="true">&times;</span>
-        </button>
-      </div>
-      <div class="modal-body">
-        <p class="mb-2">
-          Cette action est définitive
-          <span *ngIf="deleteTargetLabel">
-            pour <strong>{{ deleteTargetLabel }}</strong>
-          </span>
-          <span *ngIf="!deleteTargetLabel">
-            pour l’enregistrement <strong>réf. {{ deleteTargetId }}</strong>
-          </span>.
-        </p>
-        <div *ngIf="deleteError" class="alert alert-danger small mb-0">
-          {{ deleteError }}
-        </div>
-      </div>
-      <div class="modal-footer border-0">
-        <button type="button" class="btn btn-light btn-sm" (click)="cancelDelete()">
-          Annuler
-        </button>
-        <button
-          type="button"
-          class="btn btn-danger btn-sm"
-          [disabled]="deleteSubmitting"
-          (click)="confirmDelete()"
-        >
-          {{ deleteSubmitting ? 'Suppression…' : 'Supprimer' }}
-        </button>
-      </div>
-    </div>
-  </div>
-</div>
+  [targetLabel]="deleteTargetLabel"
+  [fallbackLabel]="'l’enregistrement réf. ' + deleteTargetId"
+  [errorMessage]="deleteError"
+  [deleting]="deleteSubmitting"
+  (cancelled)="cancelDelete()"
+  (confirmed)="confirmDelete()"
+/>

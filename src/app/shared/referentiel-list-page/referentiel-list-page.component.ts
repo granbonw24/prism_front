@@ -16,6 +16,7 @@ import type { ContextChartPanel, ListStatsContext } from '@core/config/list-stat
 import { resolveColumnHeaderLabel } from '@core/config/referentiel-column-labels';
 import { API_BASE_URL } from '@core/tokens/api-base-url.token';
 import { formatHttpError } from '@core/utils/http-error.util';
+import { ConfirmDeleteComponent } from '@shared/confirm-delete/confirm-delete.component';
 import { MenaChartComponent } from '@shared/mena-chart/mena-chart.component';
 
 /**
@@ -27,7 +28,7 @@ const CENTRE_OPTIONS_PAGE_PARAMS = { page: '0', size: '2000' };
 @Component({
   selector: 'app-referentiel-list-page',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, FormsModule, MenaChartComponent],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule, MenaChartComponent, ConfirmDeleteComponent],
   templateUrl: './referentiel-list-page.component.html',
   styleUrl: './referentiel-list-page.component.css',
 })

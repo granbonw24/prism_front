@@ -1,5 +1,13 @@
 import type { ReferentielFormField } from '@core/config/referentiel-form.types';
 
+/** Regroupement menu Paramétrage + dossier `features/parametrage/<id>/…`. */
+export type ReferentielMenuGroupId =
+  | 'geographie'
+  | 'centres-autorisations'
+  | 'pedagogie'
+  | 'documents'
+  | 'others';
+
 /**
  * Correspondance routes Angular ↔ chemins API Spring (`@RequestMapping`).
  * `createFields` : formulaire « Ajouter » (POST JSON). Vide = modal d’information seulement.
@@ -8,6 +16,8 @@ import type { ReferentielFormField } from '@core/config/referentiel-form.types';
 export interface ReferentielRouteData {
   path: string;
   title: string;
+  /** Regroupement explicite du menu Paramétrage (remplace l’heuristique historique). */
+  menuGroup: ReferentielMenuGroupId;
   /** Chemin relatif depuis l’origine API (ex. `/api/anneescolaire`). */
   apiPath: string;
   createFields?: ReferentielFormField[];
@@ -41,6 +51,7 @@ export const REFERENTIEL_ROUTE_DATA: ReferentielRouteData[] = [
   {
     path: 'anneescolaire',
     title: 'Années scolaires',
+    menuGroup: 'others',
     apiPath: '/api/anneescolaire',
     createFields: [
       F('debutAnneeScolaire', 'Date début', 'date', { required: true }),
@@ -51,6 +62,7 @@ export const REFERENTIEL_ROUTE_DATA: ReferentielRouteData[] = [
   {
     path: 'autoriteautorisation',
     title: 'Autorités d’autorisation',
+    menuGroup: 'centres-autorisations',
     apiPath: '/api/autoriteautorisation',
     createFields: [
       F('libelleAutoriteAutorisation', 'Libellé', 'text', {
@@ -62,6 +74,7 @@ export const REFERENTIEL_ROUTE_DATA: ReferentielRouteData[] = [
   {
     path: 'campagne',
     title: 'Campagnes',
+    menuGroup: 'centres-autorisations',
     apiPath: '/api/campagnes',
     createFields: [
       F('dateDebutCampagne', 'Date début', 'date', { required: true }),
@@ -72,6 +85,7 @@ export const REFERENTIEL_ROUTE_DATA: ReferentielRouteData[] = [
   {
     path: 'categorieappui',
     title: 'Catégories d’appui',
+    menuGroup: 'others',
     apiPath: '/api/categorieappuis',
     createFields: [
       F('libelleCategorieAppui', 'Libellé', 'text', {
@@ -83,6 +97,7 @@ export const REFERENTIEL_ROUTE_DATA: ReferentielRouteData[] = [
   {
     path: 'civilite',
     title: 'Civilités',
+    menuGroup: 'others',
     apiPath: '/api/civilite',
     createFields: [
       F('libelleCivilite', 'Libellé', 'text', { required: true, maxLength: 10 }),
@@ -91,6 +106,7 @@ export const REFERENTIEL_ROUTE_DATA: ReferentielRouteData[] = [
   {
     path: 'communaute',
     title: 'Communautés',
+    menuGroup: 'others',
     apiPath: '/api/communautes',
     createFields: [
       F('idPromoteur', 'Personne morale (promoteur)', 'select', {
@@ -117,6 +133,7 @@ export const REFERENTIEL_ROUTE_DATA: ReferentielRouteData[] = [
   {
     path: 'competence',
     title: 'Compétences',
+    menuGroup: 'others',
     apiPath: '/api/competence',
     createFields: [
       F('libelleCompetence', 'Libellé', 'text', { required: true, maxLength: 20 }),
@@ -125,6 +142,7 @@ export const REFERENTIEL_ROUTE_DATA: ReferentielRouteData[] = [
   {
     path: 'designation',
     title: 'Désignations',
+    menuGroup: 'others',
     apiPath: '/api/designation',
     createFields: [
       F('libelleDesignation', 'Libellé', 'text', { required: true, maxLength: 50 }),
@@ -133,6 +151,7 @@ export const REFERENTIEL_ROUTE_DATA: ReferentielRouteData[] = [
   {
     path: 'difficulte',
     title: 'Difficultés',
+    menuGroup: 'others',
     apiPath: '/api/difficulte',
     createFields: [
       F('libelleDifficulte', 'Libellé', 'text', { required: true, maxLength: 50 }),
@@ -141,6 +160,7 @@ export const REFERENTIEL_ROUTE_DATA: ReferentielRouteData[] = [
   {
     path: 'diplome',
     title: 'Diplômes',
+    menuGroup: 'others',
     apiPath: '/api/diplome',
     createFields: [
       F('libelleDiplome', 'Libellé', 'text', { required: true, maxLength: 100 }),
@@ -149,6 +169,7 @@ export const REFERENTIEL_ROUTE_DATA: ReferentielRouteData[] = [
   {
     path: 'document',
     title: 'Documents',
+    menuGroup: 'documents',
     apiPath: '/api/documents',
     createFields: [
       F('idNatureDocument', 'Nature du document', 'select', {
@@ -179,6 +200,7 @@ export const REFERENTIEL_ROUTE_DATA: ReferentielRouteData[] = [
   {
     path: 'domaineactivite',
     title: 'Domaines d’activité',
+    menuGroup: 'others',
     apiPath: '/api/domaine-activite',
     createFields: [
       F('libelleDomaineActivite', 'Libellé', 'text', {
@@ -190,6 +212,7 @@ export const REFERENTIEL_ROUTE_DATA: ReferentielRouteData[] = [
   {
     path: 'fonction',
     title: 'Fonctions',
+    menuGroup: 'others',
     apiPath: '/api/fonctions',
     createFields: [
       F('libelleFonction', 'Libellé', 'text', { required: true, maxLength: 100 }),
@@ -198,6 +221,7 @@ export const REFERENTIEL_ROUTE_DATA: ReferentielRouteData[] = [
   {
     path: 'impact',
     title: 'Impacts',
+    menuGroup: 'others',
     apiPath: '/api/impact',
     createFields: [
       F('libelleImpact', 'Libellé', 'text', { required: true, maxLength: 50 }),
@@ -206,6 +230,7 @@ export const REFERENTIEL_ROUTE_DATA: ReferentielRouteData[] = [
   {
     path: 'infrastructure',
     title: 'Infrastructures',
+    menuGroup: 'others',
     apiPath: '/api/infrastructure',
     createFields: [
       F('libelleInfrastructure', 'Libellé', 'text', {
@@ -217,6 +242,7 @@ export const REFERENTIEL_ROUTE_DATA: ReferentielRouteData[] = [
   {
     path: 'langueapprentissage',
     title: 'Langues d’apprentissage',
+    menuGroup: 'pedagogie',
     apiPath: '/api/LangueApprentissages',
     createFields: [
       F('idCentre', 'Centre', 'select', {
@@ -234,6 +260,7 @@ export const REFERENTIEL_ROUTE_DATA: ReferentielRouteData[] = [
   {
     path: 'materielalpha',
     title: 'Matériel alpha',
+    menuGroup: 'pedagogie',
     apiPath: '/api/materielalpha',
     createFields: [
       F('idCentre', 'Centre alpha', 'select', {
@@ -256,6 +283,7 @@ export const REFERENTIEL_ROUTE_DATA: ReferentielRouteData[] = [
   {
     path: 'materielpedagogique',
     title: 'Matériel pédagogique',
+    menuGroup: 'pedagogie',
     apiPath: '/api/materielpedagogiques',
     createFields: [
       F('libelleMaterielPedagogique', 'Libellé', 'text', {
@@ -267,6 +295,7 @@ export const REFERENTIEL_ROUTE_DATA: ReferentielRouteData[] = [
   {
     path: 'ministere',
     title: 'Ministères',
+    menuGroup: 'others',
     apiPath: '/api/ministeres',
     createFields: [
       F('idPromoteur', 'Personne morale (promoteur)', 'select', {
@@ -293,6 +322,7 @@ export const REFERENTIEL_ROUTE_DATA: ReferentielRouteData[] = [
   {
     path: 'modealpha',
     title: 'Modes alpha',
+    menuGroup: 'pedagogie',
     apiPath: '/api/modealpha',
     createFields: [
       F('idCentre', 'Centre alpha', 'select', {
@@ -310,6 +340,7 @@ export const REFERENTIEL_ROUTE_DATA: ReferentielRouteData[] = [
   {
     path: 'naturecentre',
     title: 'Natures de centre',
+    menuGroup: 'centres-autorisations',
     apiPath: '/api/naturecentre',
     createFields: [
       F('libelleNatureCentre', 'Libellé', 'text', {
@@ -321,6 +352,7 @@ export const REFERENTIEL_ROUTE_DATA: ReferentielRouteData[] = [
   {
     path: 'naturedocument',
     title: 'Natures de document',
+    menuGroup: 'documents',
     apiPath: '/api/naturedocument',
     createFields: [
       F('libelleNatureDocument', 'Libellé', 'text', {
@@ -332,6 +364,7 @@ export const REFERENTIEL_ROUTE_DATA: ReferentielRouteData[] = [
   {
     path: 'niveaualpha',
     title: 'Niveaux alpha',
+    menuGroup: 'pedagogie',
     apiPath: '/api/niveaualpha',
     createFields: [
       F('idCentre', 'Centre alpha', 'select', {
@@ -349,6 +382,7 @@ export const REFERENTIEL_ROUTE_DATA: ReferentielRouteData[] = [
   {
     path: 'niveaucp',
     title: 'Niveaux CP',
+    menuGroup: 'pedagogie',
     apiPath: '/api/niveaucp',
     createFields: [
       F('libelleNiveauCp', 'Libellé', 'text', { required: true, maxLength: 100 }),
@@ -357,6 +391,7 @@ export const REFERENTIEL_ROUTE_DATA: ReferentielRouteData[] = [
   {
     path: 'niveausiecec',
     title: 'Niveaux SIE / CEC',
+    menuGroup: 'pedagogie',
     apiPath: '/api/niveausiecec',
     createFields: [
       F('libelleNiveauSie', 'Libellé', 'text', { required: true, maxLength: 100 }),
@@ -365,6 +400,7 @@ export const REFERENTIEL_ROUTE_DATA: ReferentielRouteData[] = [
   {
     path: 'partenaire',
     title: 'Partenaires',
+    menuGroup: 'others',
     apiPath: '/api/Partenaires',
     createFields: [
       F('libellePartenaire', 'Libellé', 'text', {
@@ -376,6 +412,7 @@ export const REFERENTIEL_ROUTE_DATA: ReferentielRouteData[] = [
   {
     path: 'periodeactivite',
     title: 'Périodes d’activité',
+    menuGroup: 'others',
     apiPath: '/api/PeriodeActivites',
     createFields: [
       F('libellePeriodeActivite', 'Libellé', 'text', {
@@ -387,6 +424,7 @@ export const REFERENTIEL_ROUTE_DATA: ReferentielRouteData[] = [
   {
     path: 'periodicite',
     title: 'Périodicités',
+    menuGroup: 'centres-autorisations',
     apiPath: '/api/Periodicites',
     createFields: [
       F('libellePeriodicite', 'Libellé', 'text', {
@@ -398,6 +436,7 @@ export const REFERENTIEL_ROUTE_DATA: ReferentielRouteData[] = [
   {
     path: 'regimealpha',
     title: 'Régimes d’alphabétisation',
+    menuGroup: 'pedagogie',
     apiPath: '/api/Regimealphabetisations',
     createFields: [
       F('libelleRegimeAlpha', 'Libellé', 'text', {
@@ -409,6 +448,7 @@ export const REFERENTIEL_ROUTE_DATA: ReferentielRouteData[] = [
   {
     path: 'statutpersonnel',
     title: 'Statuts personnel',
+    menuGroup: 'others',
     apiPath: '/api/StatutPersonnels',
     createFields: [
       F('libelleStatutPersonnel', 'Libellé', 'text', {
@@ -420,6 +460,7 @@ export const REFERENTIEL_ROUTE_DATA: ReferentielRouteData[] = [
   {
     path: 'supportdidactique',
     title: 'Supports didactiques',
+    menuGroup: 'pedagogie',
     apiPath: '/api/SupportDidactiques',
     createFields: [
       F('libelleSupportDidactique', 'Libellé', 'text', {
@@ -431,6 +472,7 @@ export const REFERENTIEL_ROUTE_DATA: ReferentielRouteData[] = [
   {
     path: 'typealpha',
     title: 'Types alpha',
+    menuGroup: 'pedagogie',
     apiPath: '/api/TypeAlphas',
     createFields: [
       F('libelleTypeAlpha', 'Libellé', 'text', {
@@ -442,6 +484,7 @@ export const REFERENTIEL_ROUTE_DATA: ReferentielRouteData[] = [
   {
     path: 'typedocument',
     title: 'Types de document',
+    menuGroup: 'documents',
     apiPath: '/api/TypeDocuments',
     createFields: [
       F('libelleTypeDocument', 'Libellé', 'text', {
@@ -453,6 +496,7 @@ export const REFERENTIEL_ROUTE_DATA: ReferentielRouteData[] = [
   {
     path: 'localite-d-implantation',
     title: 'Localités d’implantation',
+    menuGroup: 'geographie',
     apiPath: '/api/localite-d-implantation',
     createFields: [
       F('idSousPrefecture', 'Sous-préfecture', 'select', {

@@ -7,7 +7,8 @@
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
-    "test:visites": "ng test --no-watch --browsers=ChromeHeadless --include=src/app/features/visites/visites-list.component.spec.ts"
+    "test:visites": "ng test --no-watch --browsers=ChromeHeadless --include=src/app/features/visites/visites-list.component.spec.ts",
+    "test:parametrage": "ng test --no-watch --browsers=ChromeHeadless --include=src/app/features/parametrage/parametrage-routing.smoke.spec.ts"
   },
   "private": true,
   "dependencies": {
