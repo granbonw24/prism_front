@@ -51,7 +51,7 @@ export function tryEffectifColumnLabel(key: string): string | null {
   if (key === 'codeEffectifAbandonCp' || key === 'codeEffectifAbandonCec') {
     return 'Code fiche abandon';
   }
-  if (key === 'codeEffectifAbondanSie') {
+  if (key === 'codeEffectifAbondanSie' || key === 'codeAbandonEffectifSie') {
     return 'Code fiche abandon (SIE)';
   }
   return null;

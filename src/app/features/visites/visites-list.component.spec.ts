@@ -42,7 +42,7 @@ describe('VisitesListComponent', () => {
       } else if (url.includes('/api/TypeDocuments')) {
         req.flush([]);
       } else if (url.includes('/api/alpha')) {
-        expect(req.request.params.get('size')).toBe('5000');
+        expect(req.request.params.get('size')).toBe('500');
         req.flush(emptyPage);
       } else {
         fail(`Requête inattendue : ${url}`);

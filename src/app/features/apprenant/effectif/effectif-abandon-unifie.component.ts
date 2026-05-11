@@ -8,8 +8,6 @@ import {
   EFFECTIF_ABANDON_CP_CREATE_FIELDS,
   EFFECTIF_ABONDAN_SIE_CREATE_FIELDS,
 } from './effectif-satellite-forms.data';
-import { effectifStatsByCentreType } from './effectif-list-stats-context';
-import type { ListStatsContext } from '@core/config/list-stats-context.types';
 
 type AbandonCentreType = 'alpha' | 'cp' | 'cec' | 'sie';
 
@@ -19,11 +17,39 @@ type AbandonConfig = {
   createFields: ReferentielFormField[];
 };
 
-const ABANDON_STATS: Record<AbandonCentreType, ListStatsContext> = {
-  alpha: effectifStatsByCentreType('alpha'),
-  cp: effectifStatsByCentreType('cp'),
-  cec: effectifStatsByCentreType('cec'),
-  sie: effectifStatsByCentreType('sie'),
+/** Liste : fiche, contexte, totaux niveau, cause courte ; le détail démographique est dans le formulaire. */
+const ABANDON_LIST_SUMMARY_COLUMNS: Record<AbandonCentreType, string[]> = {
+  alpha: [
+    'codeEffectifAbandonAlpha',
+    'periodeActivite',
+    'centre',
+    'effectifAbandonAlphaNiveauHomme',
+    'effectifAbandonAlphaNiveauFemme',
+    'causeAbandonAlpha',
+  ],
+  cp: [
+    'codeEffectifAbandonCp',
+    'anneeScolaire',
+    'centre',
+    'niveauCp',
+    'effectifAbandonCpNiveauCp',
+    'causeAbandonCp',
+  ],
+  cec: [
+    'codeEffectifAbandonCec',
+    'anneeScolaire',
+    'centre',
+    'niveauSie',
+    'effectifAbandonCecNiveauCec',
+    'causeAbandonCec',
+  ],
+  sie: [
+    'codeAbandonEffectifSie',
+    'anneeScolaire',
+    'niveauSie',
+    'effectifAbandonSieNiveauSie',
+    'causeAbandonSie',
+  ],
 };
 
 const ABANDON_TYPE_CONFIG: Record<AbandonCentreType, AbandonConfig> = {
@@ -58,7 +84,7 @@ const ABANDON_TYPE_CONFIG: Record<AbandonCentreType, AbandonConfig> = {
       [inputTitle]="activeConfig.title"
       [inputApiPath]="activeConfig.apiPath"
       [inputCreateFields]="activeConfig.createFields"
-      [inputStatsContext]="listStatsContext"
+      [inputListColumnKeys]="listColumnKeys"
       [addFormContextLabel]="'Type de centre'"
       [addFormContextValue]="selectedType"
       [addFormContextOptions]="centreTypeOptions"
@@ -85,7 +111,7 @@ export class EffectifAbandonUnifieComponent {
     return ABANDON_TYPE_CONFIG[this.selectedType];
   }
 
-  get listStatsContext(): ListStatsContext {
-    return ABANDON_STATS[this.selectedType];
+  get listColumnKeys(): string[] {
+    return ABANDON_LIST_SUMMARY_COLUMNS[this.selectedType];
   }
 }

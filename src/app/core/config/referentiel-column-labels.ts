@@ -83,6 +83,33 @@ export const REFERENTIEL_COLUMN_LABELS: Record<string, string> = {
   codeCommune: 'Code commune',
   codeMilieuImplentation: 'Code milieu',
   libelleTypeImplentation: 'Milieu d’implantation',
+  /** Références enrichies (effectif, format B API) */
+  periodeActivite: 'Période d’activité',
+  alpha: 'Centre Alpha',
+  niveauAlpha: 'Niveau Alpha',
+  centre: 'Centre',
+  anneeScolaire: 'Année scolaire',
+  niveauCp: 'Niveau CP',
+  niveauSie: 'Niveau SIE / CEC',
+  codeEffectifAlpha: 'Code fiche',
+  codeEffectifCec: 'Code fiche',
+  codeEffectifCp: 'Code fiche',
+  codeEffectifSie: 'Code fiche',
+  effectifAlphaNiveauH: 'Effectif niveau (H)',
+  effectifAlphaNiveauF: 'Effectif niveau (F)',
+  effectifCecNiveauCec: 'Effectif niveau CEC',
+  effectifCpNiveauCp: 'Effectif niveau CP',
+  effectifSieNiveauSie: 'Effectif niveau SIE',
+  /** Abandons — colonnes résumé liste */
+  effectifAbandonAlphaNiveauHomme: 'Abandon — eff. niveau (H)',
+  effectifAbandonAlphaNiveauFemme: 'Abandon — eff. niveau (F)',
+  effectifAbandonCpNiveauCp: 'Abandon — eff. niveau CP',
+  effectifAbandonCecNiveauCec: 'Abandon — eff. niveau CEC',
+  effectifAbandonSieNiveauSie: 'Abandon — eff. niveau SIE',
+  causeAbandonCp: 'Cause abandon',
+  causeAbandonCec: 'Cause abandon',
+  causeAbandonSie: 'Cause abandon',
+  codeAbandonEffectifSie: 'Code fiche',
 };
 
 /**

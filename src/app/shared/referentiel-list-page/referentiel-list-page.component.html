@@ -282,7 +282,13 @@
           <tbody>
             <tr *ngFor="let row of filteredRows; let i = index">
               <td>{{ i + 1 }}</td>
-              <td *ngFor="let col of columns">{{ formatCell(row[col], col) }}</td>
+              <td
+                *ngFor="let col of columns"
+                class="mena-table-cell text-truncate"
+                [title]="formatCell(row[col], col)"
+              >
+                {{ formatCell(row[col], col) }}
+              </td>
               <td *ngIf="canUseRowActions" class="text-right text-nowrap mena-col-actions">
                 <div class="mena-row-actions">
                   <button

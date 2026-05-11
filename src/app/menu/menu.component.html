@@ -39,7 +39,7 @@
 
       <!-- Nav Item - Pages Collapse Menu -->
       <li class="nav-item">
-        <a class="nav-link collapsed" routerLink="#" data-toggle="collapse" data-target="#collapseTwo" aria-expanded="true" aria-controls="collapseTwo">
+        <a class="nav-link collapsed" href="#" (click)="$event.preventDefault()" data-toggle="collapse" data-target="#collapseTwo" aria-expanded="true" aria-controls="collapseTwo">
           <i class="fas fa-fw fa-cog"></i>
           <span>CENTRES</span>
         </a>
@@ -63,7 +63,7 @@
       
 
      <li class="nav-item">
-        <a class="nav-link collapsed" routerLink="#" data-toggle="collapse" data-target="#collapseUtilities1" aria-expanded="true" aria-controls="collapseUtilities">
+        <a class="nav-link collapsed" href="#" (click)="$event.preventDefault()" data-toggle="collapse" data-target="#collapseUtilities1" aria-expanded="true" aria-controls="collapseUtilities">
           <i class="fas fa-fw fa-wrench"></i>
           <span>PARTENAIRE</span>
         </a>
@@ -76,7 +76,7 @@
       </li>
 
       <li class="nav-item">
-        <a class="nav-link collapsed" routerLink="#" data-toggle="collapse" data-target="#collapseUtilities2" aria-expanded="true" aria-controls="collapseUtilities">
+        <a class="nav-link collapsed" href="#" (click)="$event.preventDefault()" data-toggle="collapse" data-target="#collapseUtilities2" aria-expanded="true" aria-controls="collapseUtilities">
           <i class="fas fa-fw fa-wrench"></i>
           <span>APPRENANT</span>
         </a>
@@ -110,7 +110,8 @@
           id="headingVisites"
           class="nav-link"
           [class.collapsed]="!visitesSectionOpen()"
-          routerLink="#"
+          href="#"
+          (click)="$event.preventDefault()"
           data-toggle="collapse"
           data-target="#collapseVisites"
           [attr.aria-expanded]="visitesSectionOpen()"
@@ -185,7 +186,8 @@
         <a
           id="headingAdministration"
           class="nav-link collapsed"
-          routerLink="#"
+          href="#"
+          (click)="$event.preventDefault()"
           data-toggle="collapse"
           data-target="#collapseAdministration"
           aria-expanded="false"
@@ -203,7 +205,8 @@
           <div class="bg-white py-2 collapse-inner rounded">
             <a
               class="collapse-item mena-submenu-toggle collapsed"
-              routerLink="#"
+              href="#"
+              (click)="$event.preventDefault()"
               data-toggle="collapse"
               data-target="#admin-gestion"
               aria-expanded="false"
@@ -223,7 +226,8 @@
 
             <a
               class="collapse-item mena-submenu-toggle collapsed"
-              routerLink="#"
+              href="#"
+              (click)="$event.preventDefault()"
               data-toggle="collapse"
               data-target="#admin-securite"
               aria-expanded="false"
@@ -247,7 +251,7 @@
       </li>
 
       <li class="nav-item">
-        <a class="nav-link collapsed" routerLink="#" data-toggle="collapse" data-target="#collapseUtilities5" aria-expanded="true" aria-controls="collapseUtilities5">
+        <a class="nav-link collapsed" href="#" (click)="$event.preventDefault()" data-toggle="collapse" data-target="#collapseUtilities5" aria-expanded="true" aria-controls="collapseUtilities5">
           <i class="fas fa-fw fa-wrench"></i>
           <span>PARAMETRAGE</span>
         </a>
@@ -256,7 +260,8 @@
             <ng-container *ngFor="let g of referentielGroups">
               <a
                 class="collapse-item mena-submenu-toggle collapsed"
-                routerLink="#"
+                href="#"
+                (click)="$event.preventDefault()"
                 data-toggle="collapse"
                 [attr.data-target]="'#' + groupCollapseId('ref', g.title)"
                 aria-expanded="false"

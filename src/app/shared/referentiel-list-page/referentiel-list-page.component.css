@@ -27,14 +27,14 @@
 .mena-modal-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 1040;
+  z-index: 2000;
   background: rgba(42, 37, 32, 0.45);
 }
 
 .mena-modal {
   position: fixed;
   inset: 0;
-  z-index: 1050;
+  z-index: 2010;
   overflow-y: auto;
   padding: 1rem;
 }
@@ -73,4 +73,9 @@
   align-items: center;
   justify-content: flex-end;
   gap: 0.35rem;
+}
+
+.mena-table .mena-table-cell {
+  max-width: 11rem;
+  vertical-align: middle;
 }

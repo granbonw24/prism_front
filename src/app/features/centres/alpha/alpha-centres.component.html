@@ -669,7 +669,7 @@
 
 <!-- Modal Détails -->
 <div *ngIf="detailsModalOpen" class="modal fade show d-block" tabindex="-1" role="dialog" aria-modal="true">
-  <div class="modal-dialog modal-lg" role="document">
+  <div class="modal-dialog modal-lg mena-modal-detail-dialog" role="document">
     <div class="modal-content mena-modal">
       <div class="modal-header">
         <h5 class="modal-title">Détails centre Alpha</h5>
@@ -677,7 +677,7 @@
           <span aria-hidden="true">×</span>
         </button>
       </div>
-      <div class="modal-body">
+      <div class="modal-body mena-modal-body-scroll">
         <div *ngIf="detailsLoading" class="text-center text-muted py-5">Chargement du détail…</div>
         <div *ngIf="!detailsLoading && detailsRow as d" class="table-responsive">
           <table class="table table-sm table-bordered mb-0">

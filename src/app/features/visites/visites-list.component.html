@@ -45,16 +45,14 @@
           <label class="small text-muted mb-1">Nature document</label>
           <select class="form-control form-control-sm" [(ngModel)]="filterIdNatureDocument">
             <option [ngValue]="''">Toutes</option>
-            <option *ngFor="let n of natures" [ngValue]="n.id">{{ n.libelleNatureDocument ?? '—' }}</option>
+            <option *ngFor="let n of natures" [ngValue]="n.id">{{ natureOptionLabel(n) }}</option>
           </select>
         </div>
         <div class="form-group col-md-2 col-sm-6 mb-2 mb-md-0">
           <label class="small text-muted mb-1">Type document</label>
           <select class="form-control form-control-sm" [(ngModel)]="filterIdTypeDocument">
             <option [ngValue]="''">Tous</option>
-            <option *ngFor="let t of types" [ngValue]="t.id">
-              {{ (t.codeTypeDocument ?? '') + (t.libelleTypeDocument ? ' — ' + t.libelleTypeDocument : '') || '—' }}
-            </option>
+            <option *ngFor="let t of types" [ngValue]="t.id">{{ typeOptionLabel(t) }}</option>
           </select>
         </div>
         <div class="form-group col-md-2 col-sm-12 mb-0 d-flex flex-wrap gap-1">
@@ -83,7 +81,7 @@
           <thead class="thead-light">
             <tr>
               <th>ID</th>
-              <th>Code doc.</th>
+              <th>Document</th>
               <th>Centre</th>
               <th>Nature</th>
               <th>Type</th>
@@ -98,7 +96,10 @@
           <tbody>
             <tr *ngFor="let r of rows">
               <td class="text-muted">{{ r.id }}</td>
-              <td class="font-weight-bold">{{ r.codeDocument ?? '—' }}</td>
+              <td>
+                <div>{{ documentDisplayLabel(r) }}</div>
+                <div class="small text-muted" *ngIf="r.codeDocument">{{ r.codeDocument }}</div>
+              </td>
               <td>
                 <div>{{ r.libelleAlpha ?? '—' }}</div>
                 <div class="small text-muted">{{ r.codeCentre ?? '' }}</div>
@@ -195,16 +196,14 @@
             <label class="small text-muted">Nature *</label>
             <select class="form-control form-control-sm" [(ngModel)]="createForm.idNatureDocument">
               <option [ngValue]="null">—</option>
-              <option *ngFor="let n of natures" [ngValue]="n.id">{{ n.libelleNatureDocument ?? '—' }}</option>
+              <option *ngFor="let n of natures" [ngValue]="n.id">{{ natureOptionLabel(n) }}</option>
             </select>
           </div>
           <div class="form-group col-md-3">
             <label class="small text-muted">Type *</label>
             <select class="form-control form-control-sm" [(ngModel)]="createForm.idTypeDocument">
               <option [ngValue]="null">—</option>
-              <option *ngFor="let t of types" [ngValue]="t.id">
-                {{ (t.codeTypeDocument ?? '') + (t.libelleTypeDocument ? ' — ' + t.libelleTypeDocument : '') || '—' }}
-              </option>
+              <option *ngFor="let t of types" [ngValue]="t.id">{{ typeOptionLabel(t) }}</option>
             </select>
           </div>
         </div>
@@ -274,6 +273,10 @@
         </button>
       </div>
       <div class="modal-body">
+        <div class="form-group mb-3" *ngIf="editSourceRow">
+          <label class="small text-muted mb-1">Document (libellé)</label>
+          <div class="rounded border bg-light px-2 py-2 small">{{ editDocumentPreview }}</div>
+        </div>
         <div class="form-row">
           <div class="form-group col-md-6">
             <label class="small text-muted">Centre Alpha *</label>
@@ -286,24 +289,23 @@
             <label class="small text-muted">Nature *</label>
             <select class="form-control form-control-sm" [(ngModel)]="editForm.idNatureDocument">
               <option [ngValue]="null">—</option>
-              <option *ngFor="let n of natures" [ngValue]="n.id">{{ n.libelleNatureDocument ?? '—' }}</option>
+              <option *ngFor="let n of natures" [ngValue]="n.id">{{ natureOptionLabel(n) }}</option>
             </select>
           </div>
           <div class="form-group col-md-3">
             <label class="small text-muted">Type *</label>
             <select class="form-control form-control-sm" [(ngModel)]="editForm.idTypeDocument">
               <option [ngValue]="null">—</option>
-              <option *ngFor="let t of types" [ngValue]="t.id">
-                {{ (t.codeTypeDocument ?? '') + (t.libelleTypeDocument ? ' — ' + t.libelleTypeDocument : '') || '—' }}
-              </option>
+              <option *ngFor="let t of types" [ngValue]="t.id">{{ typeOptionLabel(t) }}</option>
             </select>
           </div>
         </div>
 
         <div class="form-row">
           <div class="form-group col-md-4">
-            <label class="small text-muted">Code document</label>
-            <input class="form-control form-control-sm" [(ngModel)]="editForm.codeDocument" />
+            <label class="small text-muted">Code référence (optionnel)</label>
+            <input class="form-control form-control-sm" [(ngModel)]="editForm.codeDocument" autocomplete="off" />
+            <span class="small text-muted">Affichage principal : type et nature du document ci‑dessus.</span>
           </div>
           <div class="form-group col-md-2">
             <label class="small text-muted">Existe</label>
@@ -367,9 +369,10 @@
       <div class="modal-body">
         <p class="mb-2">Confirmer la suppression de la fiche :</p>
         <ul class="mb-0 small">
-          <li><strong>ID</strong> : {{ d.id }}</li>
-          <li><strong>Code</strong> : {{ d.codeDocument ?? '—' }}</li>
+          <li><strong>Document</strong> : {{ documentDisplayLabel(d) }}</li>
+          <li *ngIf="d.codeDocument"><strong>Code</strong> : {{ d.codeDocument }}</li>
           <li><strong>Centre</strong> : {{ d.libelleAlpha ?? '—' }}</li>
+          <li><strong>ID</strong> : {{ d.id }}</li>
         </ul>
       </div>
       <div class="modal-footer">

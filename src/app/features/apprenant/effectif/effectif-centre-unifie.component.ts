@@ -1,9 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
 import type { ReferentielFormField } from '@core/config/referentiel-form.types';
-import type { ListStatsContext } from '@core/config/list-stats-context.types';
 import { ReferentielListPageComponent } from '@shared/referentiel-list-page/referentiel-list-page.component';
-import { effectifStatsByCentreType } from './effectif-list-stats-context';
 
 type CentreType = 'alpha' | 'cec' | 'cp' | 'sie';
 type EffectifTypeConfig = {
@@ -12,11 +10,34 @@ type EffectifTypeConfig = {
   createFields: ReferentielFormField[];
 };
 
-const EFFECTIF_CENTRE_STATS: Record<CentreType, ListStatsContext> = {
-  alpha: effectifStatsByCentreType('alpha'),
-  cec: effectifStatsByCentreType('cec'),
-  cp: effectifStatsByCentreType('cp'),
-  sie: effectifStatsByCentreType('sie'),
+/**
+ * Colonnes liste : identifiants métier, rattachements et totaux principaux.
+ * Le détail par tranches d’âge / handicap reste dans le formulaire (édition).
+ */
+const EFFECTIF_LIST_SUMMARY_COLUMNS: Record<CentreType, string[]> = {
+  alpha: [
+    'codeEffectifAlpha',
+    'periodeActivite',
+    'alpha',
+    'niveauAlpha',
+    'effectifAlphaNiveauH',
+    'effectifAlphaNiveauF',
+  ],
+  cec: [
+    'codeEffectifCec',
+    'periodeActivite',
+    'centre',
+    'niveauSie',
+    'effectifCecNiveauCec',
+  ],
+  cp: [
+    'codeEffectifCp',
+    'anneeScolaire',
+    'centre',
+    'niveauCp',
+    'effectifCpNiveauCp',
+  ],
+  sie: ['codeEffectifSie', 'anneeScolaire', 'niveauSie', 'effectifSieNiveauSie'],
 };
 
 @Component({
@@ -28,7 +49,7 @@ const EFFECTIF_CENTRE_STATS: Record<CentreType, ListStatsContext> = {
       [inputTitle]="activeConfig.title"
       [inputApiPath]="activeConfig.apiPath"
       [inputCreateFields]="activeConfig.createFields"
-      [inputStatsContext]="listStatsContext"
+      [inputListColumnKeys]="listColumnKeys"
       [addFormContextLabel]="'Type de centre'"
       [addFormContextValue]="selectedType"
       [addFormContextOptions]="centreTypeOptions"
@@ -55,8 +76,8 @@ export class EffectifCentreUnifieComponent {
     return EFFECTIF_TYPE_CONFIG[this.selectedType];
   }
 
-  get listStatsContext(): ListStatsContext {
-    return EFFECTIF_CENTRE_STATS[this.selectedType];
+  get listColumnKeys(): string[] {
+    return EFFECTIF_LIST_SUMMARY_COLUMNS[this.selectedType];
   }
 }
 

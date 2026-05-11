@@ -18,8 +18,8 @@ import {
   natureOptionLabel,
   PeriodiciteOption,
   periodiciteOptionLabel,
-  PromoteurDetails,
   PromoteurUpsertPayload,
+  promoteurDetailsFromApi,
   RefOption,
   refOptionLabel,
   SpringPage,
@@ -560,7 +560,7 @@ export class AlphaCentresComponent {
   }
 
   private mapAlphaRow(x: Record<string, unknown>): AlphaRow {
-    const promoteur = this.toPromoteurDetails(x['promoteur']);
+    const promoteur = promoteurDetailsFromApi(x['promoteur']);
     let idPromoteur: number | null = null;
     const rawPid = x['idPromoteur'];
     if (typeof rawPid === 'number' && Number.isFinite(rawPid)) {
@@ -599,6 +599,10 @@ export class AlphaCentresComponent {
     const base = this.mapAlphaRow(x);
     return {
       ...base,
+      idCompagne: this.optionalPositiveInt(x['idCompagne']),
+      idCategorieCentreAlpha: this.optionalPositiveInt(x['idCategorieCentreAlpha']),
+      idTypeAlpha: this.optionalPositiveInt(x['idTypeAlpha']),
+      idRegimeAlpha: this.optionalPositiveInt(x['idRegimeAlpha']),
       localite: this.asCentreRef(x['localite']),
       iep: this.asCentreRef(x['iep']),
       naturecentre: this.asCentreRef(x['naturecentre']),
@@ -643,25 +647,34 @@ export class AlphaCentresComponent {
   }
 
   detailCampagneLabel(d: CentreDetailRow): string {
-    return this.refCentreLabel(d.campagne, () => '—');
+    return this.refCentreLabel(d.campagne, () => this.campagneLabel(d.idCompagne ?? null));
   }
 
   detailCategorieAlphaLabel(d: CentreDetailRow): string {
-    return this.refCentreLabel(d.categorieCentreAlpha, () => '—');
+    return this.refCentreLabel(d.categorieCentreAlpha, () => this.categorieLabel(d.idCategorieCentreAlpha ?? null));
   }
 
   detailTypeAlphaLabel(d: CentreDetailRow): string {
-    return this.refCentreLabel(d.typeAlpha, () => '—');
+    return this.refCentreLabel(d.typeAlpha, () => this.typeAlphaLabel(d.idTypeAlpha ?? null));
   }
 
   detailRegimeAlphaLabel(d: CentreDetailRow): string {
-    return this.refCentreLabel(d.regimeAlpha, () => '—');
+    return this.refCentreLabel(d.regimeAlpha, () => this.regimeLabel(d.idRegimeAlpha ?? null));
   }
 
   private pickBool(obj: Record<string, unknown>, ...keys: string[]): boolean | null {
     for (const k of keys) {
       const v = obj[k];
       if (v === true || v === false) return v;
+    }
+    return null;
+  }
+
+  private optionalPositiveInt(v: unknown): number | null {
+    if (typeof v === 'number' && Number.isFinite(v)) return v;
+    if (typeof v === 'string' && v.trim() !== '') {
+      const n = Number(v);
+      return Number.isFinite(n) ? n : null;
     }
     return null;
   }
@@ -720,19 +733,6 @@ export class AlphaCentresComponent {
       typePromoteur: this.model.promoteur.typePromoteur ?? null,
       personnePhysique: this.model.promoteur.personnePhysique ?? null,
       personneMorale: this.model.promoteur.personneMorale ?? null,
-    };
-  }
-
-  private toPromoteurDetails(value: unknown): PromoteurDetails | null {
-    if (!value || typeof value !== 'object') return null;
-    const p = value as any;
-    return {
-      idPromoteur: p.idPromoteur ?? null,
-      codePromoteur: p.codePromoteur ?? null,
-      libellePromoteur: p.libellePromoteur ?? null,
-      typePromoteur: p.typePromoteur ?? null,
-      personnePhysique: p.personnePhysique ?? null,
-      personneMorale: p.personneMorale ?? null,
     };
   }
 

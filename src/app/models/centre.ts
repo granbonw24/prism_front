@@ -29,6 +29,52 @@ export type PromoteurDetails = {
   personneMorale?: PromoteurPersonneMorale | null;
 };
 
+function normalizeTypePromoteur(raw: unknown): TypePromoteur | null {
+  if (raw === 'PHYSIQUE' || raw === 'MORALE') return raw;
+  if (typeof raw === 'string') {
+    const u = raw.trim().toUpperCase();
+    if (u === 'PHYSIQUE' || u === 'MORALE') return u;
+    return null;
+  }
+  if (typeof raw === 'object' && raw !== null) {
+    const o = raw as Record<string, unknown>;
+    const nested = o['name'];
+    if (nested !== undefined) return normalizeTypePromoteur(nested);
+  }
+  return null;
+}
+
+/** Détails promoteur renvoyés par l’API (normalise l’énum et déduit le type si absent). */
+export function promoteurDetailsFromApi(value: unknown): PromoteurDetails | null {
+  if (!value || typeof value !== 'object') return null;
+  const p = value as Record<string, unknown>;
+  const personnePhysique = (p['personnePhysique'] as PromoteurPersonnePhysique | null | undefined) ?? null;
+  const personneMorale = (p['personneMorale'] as PromoteurPersonneMorale | null | undefined) ?? null;
+  let typePromoteur = normalizeTypePromoteur(p['typePromoteur']);
+  if (typePromoteur == null && personneMorale != null && typeof personneMorale === 'object') {
+    typePromoteur = 'MORALE';
+  }
+  if (typePromoteur == null && personnePhysique != null && typeof personnePhysique === 'object') {
+    typePromoteur = 'PHYSIQUE';
+  }
+  const idRaw = p['idPromoteur'];
+  let idPromoteur: number | null = null;
+  if (typeof idRaw === 'number' && Number.isFinite(idRaw)) {
+    idPromoteur = idRaw;
+  } else if (idRaw != null && String(idRaw).trim() !== '') {
+    const n = Number(idRaw);
+    if (Number.isFinite(n)) idPromoteur = n;
+  }
+  return {
+    idPromoteur,
+    codePromoteur: (p['codePromoteur'] as string | undefined) ?? null,
+    libellePromoteur: (p['libellePromoteur'] as string | undefined) ?? null,
+    typePromoteur,
+    personnePhysique,
+    personneMorale,
+  };
+}
+
 /** Réponse Spring Data pour les listes paginées (`GET` centres). */
 export type SpringPage<T> = {
   content: T[];
@@ -65,6 +111,11 @@ export type CentreRefDetails = {
 
 /** Ligne liste + détail enrichi (`GET …/:id`). */
 export type CentreDetailRow = CentreRow & {
+  /** Détail Alpha : IDs FK (affichage de secours). */
+  idCompagne?: number | null;
+  idCategorieCentreAlpha?: number | null;
+  idTypeAlpha?: number | null;
+  idRegimeAlpha?: number | null;
   localite?: CentreRefDetails | null;
   iep?: CentreRefDetails | null;
   naturecentre?: CentreRefDetails | null;

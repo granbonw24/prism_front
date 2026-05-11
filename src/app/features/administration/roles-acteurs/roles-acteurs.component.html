@@ -22,7 +22,7 @@
           >
             <option [ngValue]="null">-- Sélectionner --</option>
             <option *ngFor="let r of roles" [ngValue]="r.id">
-              {{ r.libelleRole ?? r.codeRole ?? r.id }}
+              {{ roleOptionLabel(r) }}
             </option>
           </select>
         </div>
@@ -41,8 +41,8 @@
           <thead class="thead-light">
             <tr>
               <th style="min-width: 260px;">Fonctionnalité</th>
-              <th *ngFor="let p of permissions" class="text-center">
-                {{ p.codePermission ?? p.libellePermission ?? p.id }}
+              <th *ngFor="let p of permissions" class="text-center small">
+                {{ permissionColumnLabel(p) }}
               </th>
             </tr>
           </thead>
@@ -50,7 +50,7 @@
             <tr *ngFor="let f of fonctionnalites">
               <td>
                 <div class="font-weight-bold">
-                  {{ f.libelleFonctionnalite ?? f.codeFonctionnalite ?? f.id }}
+                  {{ fonctionnaliteRowLabel(f) }}
                 </div>
                 <div class="small text-muted" *ngIf="f.module">
                   {{ f.module }}

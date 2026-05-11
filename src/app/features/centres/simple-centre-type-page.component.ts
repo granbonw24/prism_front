@@ -18,8 +18,8 @@ import {
   natureOptionLabel,
   PeriodiciteOption,
   periodiciteOptionLabel,
-  PromoteurDetails,
   PromoteurUpsertPayload,
+  promoteurDetailsFromApi,
   RefOption,
   refOptionLabel,
   SimpleCentreFullCreatePayload as SimpleFullCreatePayload,
@@ -497,7 +497,7 @@ export class SimpleCentreTypePageComponent implements OnInit {
   }
 
   private mapRow(x: Record<string, unknown>): Row {
-    const promoteur = this.toPromoteurDetails(x['promoteur']);
+    const promoteur = promoteurDetailsFromApi(x['promoteur']);
     let idPromoteur: number | null = null;
     const rawPid = x['idPromoteur'];
     if (typeof rawPid === 'number' && Number.isFinite(rawPid)) {
@@ -635,19 +635,6 @@ export class SimpleCentreTypePageComponent implements OnInit {
       typePromoteur: this.model.promoteur.typePromoteur ?? null,
       personnePhysique: this.model.promoteur.personnePhysique ?? null,
       personneMorale: this.model.promoteur.personneMorale ?? null,
-    };
-  }
-
-  private toPromoteurDetails(value: unknown): PromoteurDetails | null {
-    if (!value || typeof value !== 'object') return null;
-    const p = value as any;
-    return {
-      idPromoteur: p.idPromoteur ?? null,
-      codePromoteur: p.codePromoteur ?? null,
-      libellePromoteur: p.libellePromoteur ?? null,
-      typePromoteur: p.typePromoteur ?? null,
-      personnePhysique: p.personnePhysique ?? null,
-      personneMorale: p.personneMorale ?? null,
     };
   }
 

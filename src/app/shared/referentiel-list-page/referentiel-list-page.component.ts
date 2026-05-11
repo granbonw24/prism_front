@@ -18,8 +18,11 @@ import { API_BASE_URL } from '@core/tokens/api-base-url.token';
 import { formatHttpError } from '@core/utils/http-error.util';
 import { MenaChartComponent } from '@shared/mena-chart/mena-chart.component';
 
-/** Paramètres pour charger toutes les options centre (listes paginées côté API). */
-const CENTRE_OPTIONS_PAGE_PARAMS = { page: '0', size: '5000' };
+/**
+ * Paramètres pour les listes déroulantes « centre » (API paginée).
+ * Plafonné comme côté serveur (PageableUtils.MAX_PAGE_SIZE = 2000).
+ */
+const CENTRE_OPTIONS_PAGE_PARAMS = { page: '0', size: '2000' };
 
 @Component({
   selector: 'app-referentiel-list-page',
@@ -44,6 +47,11 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
    * Null = comportement liste simple (référentiel générique).
    */
   @Input() inputStatsContext: ListStatsContext | null = null;
+  /**
+   * Colonnes affichées dans le tableau (ordre conservé). Si absent, comportement par défaut
+   * (échantillon des clés API, max 18). Les autres champs restent visibles dans le formulaire détail.
+   */
+  @Input() inputListColumnKeys?: string[];
 
   title = '';
   subtitle = '';
@@ -103,10 +111,20 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
   deleteError: string | null = null;
   fieldOptions: Record<string, Array<{ value: string | number; label: string }>> = {};
 
+  /** Évite de relancer les GET d’options quand le cache est déjà rempli par l’API. */
+  private readonly fieldOptionsApiLoaded = new Set<string>();
+  /**
+   * Libellés issus des objets référence de la ligne en édition (évite d’afficher un nu­mérique seul
+   * avant/arrière chargement de la liste complète).
+   */
+  private optionSeeds: Record<string, { value: string | number; label: string }> = {};
+
   private dataSub?: Subscription;
   private loadSub?: Subscription;
   private statsLoadSub?: Subscription;
   private optionSubs: Subscription[] = [];
+  /** Clés utilisées pour le filtre texte (toutes les colonnes « métier », pas seulement l’affichage). */
+  private filterableKeys: string[] = [];
 
   constructor(
     private readonly route: ActivatedRoute,
@@ -125,30 +143,40 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
       this.title = this.inputTitle ?? routeTitle;
       this.subtitle = this.inputSubtitle ?? routeSubtitle;
       this.apiPath = this.inputApiPath ?? routeApiPath;
-      this.createFields = this.inputCreateFields ?? routeCreateFields;
+      this.createFields =
+        this.inputCreateFields != null ? this.inputCreateFields : routeCreateFields;
       this.columnLabels = routeColumnLabels;
       this.fetch();
     });
   }
 
   ngOnChanges(changes: SimpleChanges): void {
-    // Supporte une utilisation en composant imbriqué avec config dynamique.
+    // Toujours synchroniser les @Input (le 1er ngOnChanges a lieu avant ngOnInit / route.data).
+    this.syncInputsFromParent();
     if (!this.dataSub) {
       return;
     }
     if (changes['inputStatsContext'] || changes['inputApiPath']) {
       this.clearStructuredFilters();
     }
-    if (this.inputTitle != null) this.title = this.inputTitle;
-    if (this.inputSubtitle != null) this.subtitle = this.inputSubtitle;
-    if (this.inputApiPath != null) this.apiPath = this.inputApiPath;
-    if (this.inputCreateFields != null) this.createFields = this.inputCreateFields;
+    if (changes['inputCreateFields']) {
+      this.fieldOptions = {};
+      this.fieldOptionsApiLoaded.clear();
+    }
     if (this.formModalOpen && this.formMode === 'create' && this.hasCreateForm) {
       this.recordForm = this.buildRecordForm();
       // Si le contexte (ex: type de centre) change dans la modal, recharge les listes liées.
       this.loadFieldOptions();
     }
     this.fetch();
+  }
+
+  /** Aligne titre, apiPath et champs formulaire sur les @Input du parent (composant imbriqué). */
+  private syncInputsFromParent(): void {
+    if (this.inputTitle != null) this.title = this.inputTitle;
+    if (this.inputSubtitle != null) this.subtitle = this.inputSubtitle;
+    if (this.inputApiPath != null) this.apiPath = this.inputApiPath;
+    if (this.inputCreateFields != null) this.createFields = this.inputCreateFields;
   }
 
   onAddFormContextChange(ev: Event): void {
@@ -235,7 +263,7 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
       const typeMap = new Map<string, number>();
       for (const row of fr) {
         const centreIdVal: unknown = row[ctx.rowCentreIdKey!];
-        const sid = centreIdVal != null ? String(centreIdVal) : '';
+        const sid = this.scalarIdFromCell(centreIdVal);
         const ct = sid ? (this.centreIdToCodeType[sid] ?? '—') : '—';
         typeMap.set(ct, (typeMap.get(ct) ?? 0) + 1);
       }
@@ -350,6 +378,10 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
     if (value === null || value === undefined) {
       return '—';
     }
+    const refLabel = this.tryFormatApiRef(value);
+    if (refLabel != null) {
+      return refLabel;
+    }
     if (typeof value === 'boolean') {
       return value ? 'Oui' : 'Non';
     }
@@ -381,6 +413,63 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
       return s.length > 120 ? `${s.slice(0, 117)}…` : s;
     }
     return String(value);
+  }
+
+  /**
+   * Objet référence API typique `{ id, code?, libelle? }` (format B) → libellé tableau / recherche.
+   */
+  private tryFormatApiRef(value: unknown): string | null {
+    if (value == null || typeof value !== 'object' || Array.isArray(value)) {
+      return null;
+    }
+    const o = value as Record<string, unknown>;
+    if (!('id' in o)) {
+      return null;
+    }
+    const parts: string[] = [];
+    const code = o['code'];
+    const libelle = o['libelle'];
+    if (typeof code === 'string' && code.trim()) {
+      parts.push(code.trim());
+    }
+    if (typeof libelle === 'string' && libelle.trim()) {
+      parts.push(libelle.trim());
+    }
+    if (parts.length) {
+      return parts.join(' — ');
+    }
+    const id = o['id'];
+    if (typeof id === 'number' && Number.isFinite(id)) {
+      return `#${id}`;
+    }
+    if (typeof id === 'string' && id.trim() !== '') {
+      return `#${id.trim()}`;
+    }
+    return null;
+  }
+
+  /** Extrait un identifiant scalaire pour filtres / agrégations (ref `{ id }` ou nombre / chaîne). */
+  private scalarIdFromCell(value: unknown): string {
+    if (value == null || value === '') {
+      return '';
+    }
+    if (typeof value === 'number' && Number.isFinite(value)) {
+      return String(value);
+    }
+    if (typeof value === 'string') {
+      return value.trim();
+    }
+    if (typeof value === 'object' && !Array.isArray(value)) {
+      const o = value as Record<string, unknown>;
+      const id = o['id'];
+      if (typeof id === 'number' && Number.isFinite(id)) {
+        return String(id);
+      }
+      if (typeof id === 'string' && id.trim() !== '') {
+        return id.trim();
+      }
+    }
+    return '';
   }
 
   getFieldOptions(field: ReferentielFormField): Array<{ value: string | number; label: string }> {
@@ -435,6 +524,8 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
     this.formError = null;
     this.formMode = 'create';
     this.editingId = null;
+    this.optionSeeds = {};
+    this.syncInputsFromParent();
     if (!this.hasCreateForm) {
       this.recordForm = null;
       this.formModalOpen = true;
@@ -456,6 +547,7 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
     this.formError = null;
     this.formMode = 'edit';
     this.editingId = id;
+    this.captureOptionSeedsFromRow(row);
     this.loadFieldOptions();
     this.recordForm = this.buildRecordForm(this.rowToFormValues(row));
     this.formModalOpen = true;
@@ -467,6 +559,7 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
     this.formError = null;
     this.formSubmitting = false;
     this.editingId = null;
+    this.optionSeeds = {};
   }
 
   submitRecord(): void {
@@ -566,9 +659,9 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
         continue;
       }
       const v = row[col];
-      if (v !== null && v !== undefined && typeof v !== 'object') {
-        const s = String(v).trim();
-        if (s) {
+      if (v !== null && v !== undefined) {
+        const s = this.formatCell(v, col).trim();
+        if (s && s !== '—') {
           return s.length > 80 ? `${s.slice(0, 77)}…` : s;
         }
       }
@@ -594,15 +687,44 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
       } else {
         val = f.type === 'checkbox' ? false : (f.type === 'number' || f.type === 'select') ? null : '';
       }
-      controls[f.key] = [val, validators];
+      if (validators.length > 0) {
+        controls[f.key] = [val, validators];
+      } else {
+        controls[f.key] = [val];
+      }
     }
     return this.fb.group(controls);
+  }
+
+  /**
+   * Valeur brute pour préremplir le formulaire : clé formulaire ou alias JSON enrichi (effectif, etc.).
+   */
+  private rowValueForFormField(row: Record<string, unknown>, fieldKey: string): unknown {
+    const direct = row[fieldKey];
+    if (direct !== undefined && direct !== null) {
+      return direct;
+    }
+    const fallbacks: Record<string, string[]> = {
+      idCentre: ['Alpha', 'Centre', 'alpha', 'centre'],
+      idPeriodeActivite: ['PeriodeActivite', 'periodeActivite'],
+      idNiveauAlpha: ['NiveauAlpha', 'niveauAlpha'],
+      idNiveauCp: ['NiveauCp', 'niveauCp'],
+      idNiveauSie: ['NiveauSie', 'niveauSie'],
+      idAnneeScolaire: ['AnneeScolaire', 'anneeScolaire'],
+    };
+    for (const alt of fallbacks[fieldKey] ?? []) {
+      const v = row[alt];
+      if (v !== undefined && v !== null) {
+        return v;
+      }
+    }
+    return direct;
   }
 
   private rowToFormValues(row: Record<string, unknown>): Record<string, unknown> {
     const out: Record<string, unknown> = {};
     for (const f of this.fieldsForForm) {
-      let v = row[f.key];
+      let v = this.rowValueForFormField(row, f.key);
       if (v !== null && typeof v === 'object' && !Array.isArray(v)) {
         const o = v as Record<string, unknown>;
         if ('id' in o && (typeof o['id'] === 'number' || typeof o['id'] === 'string')) {
@@ -665,27 +787,27 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
       return true;
     }
     if (ctx.rowCentreIdKey && this.filterCentreId) {
-      if (String(row[ctx.rowCentreIdKey] ?? '') !== this.filterCentreId) {
+      if (this.scalarIdFromCell(row[ctx.rowCentreIdKey]) !== this.filterCentreId) {
         return false;
       }
     }
     if (ctx.secondaryRowCentreIdKey && this.filterSecondaryCentreId) {
-      if (String(row[ctx.secondaryRowCentreIdKey] ?? '') !== this.filterSecondaryCentreId) {
+      if (this.scalarIdFromCell(row[ctx.secondaryRowCentreIdKey]) !== this.filterSecondaryCentreId) {
         return false;
       }
     }
     if (ctx.rowPeriodeIdKey && this.filterPeriodeId) {
-      if (String(row[ctx.rowPeriodeIdKey] ?? '') !== this.filterPeriodeId) {
+      if (this.scalarIdFromCell(row[ctx.rowPeriodeIdKey]) !== this.filterPeriodeId) {
         return false;
       }
     }
     if (ctx.rowAnneeIdKey && this.filterAnneeId) {
-      if (String(row[ctx.rowAnneeIdKey] ?? '') !== this.filterAnneeId) {
+      if (this.scalarIdFromCell(row[ctx.rowAnneeIdKey]) !== this.filterAnneeId) {
         return false;
       }
     }
     if (ctx.rowNiveauIdKey && this.filterNiveauId) {
-      if (String(row[ctx.rowNiveauIdKey] ?? '') !== this.filterNiveauId) {
+      if (this.scalarIdFromCell(row[ctx.rowNiveauIdKey]) !== this.filterNiveauId) {
         return false;
       }
     }
@@ -701,7 +823,7 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
     const map = new Map<string, number>();
     for (const row of rows) {
       const cellVal: unknown = row[rowKey];
-      const sid = cellVal != null && cellVal !== '' ? String(cellVal) : '';
+      const sid = this.scalarIdFromCell(cellVal);
       const label = sid ? (labelById[sid] ?? `Id ${sid}`) : unknownLabel;
       map.set(label, (map.get(label) ?? 0) + 1);
     }
@@ -891,6 +1013,8 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
           );
           this.niveauFilterOptions = this.buildOptionsFromMap(this.niveauIdToLabel);
         }
+        /** Évite un 2ᵉ GET (ex. `/api/alpha`) pour les mêmes options que les filtres / graphiques. */
+        this.hydrateSelectOptionsFromStatsData(ctx);
       },
       error: () => {
         /* silencieux : les graphiques resteront vides */
@@ -898,12 +1022,61 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
     });
   }
 
+  /**
+   * Préremplit les listes déroulantes du formulaire à partir des réponses déjà chargées pour les
+   * filtres statistiques, pour ne pas doubler les requêtes (limite ~6 connexions HTTP/1.1 par origine).
+   */
+  private hydrateSelectOptionsFromStatsData(ctx: ListStatsContext): void {
+    for (const field of this.fieldsForForm) {
+      if (field.type !== 'select' || !field.optionsApiPath) {
+        continue;
+      }
+      const cacheKey = this.optionsCacheKey(field);
+      if (this.fieldOptionsApiLoaded.has(cacheKey)) {
+        continue;
+      }
+      const path = field.optionsApiPath;
+      let source: Array<{ value: string; label: string }> | null = null;
+      if (ctx.centresApiPath === path && this.centreFilterOptions.length) {
+        source = this.centreFilterOptions;
+      } else if (
+        ctx.secondaryCentresApiPath != null &&
+        ctx.secondaryCentresApiPath === path &&
+        this.secondaryCentreFilterOptions.length
+      ) {
+        source = this.secondaryCentreFilterOptions;
+      } else if (ctx.periodesApiPath === path && this.periodeFilterOptions.length) {
+        source = this.periodeFilterOptions;
+      } else if (ctx.anneesApiPath === path && this.anneeFilterOptions.length) {
+        source = this.anneeFilterOptions;
+      } else if (ctx.niveauxApiPath === path && this.niveauFilterOptions.length) {
+        source = this.niveauFilterOptions;
+      }
+      if (source) {
+        this.fieldOptions[cacheKey] = source.map((o) => ({
+          value: this.coerceSelectOptionId(o.value),
+          label: o.label,
+        }));
+        this.fieldOptionsApiLoaded.add(cacheKey);
+      }
+    }
+  }
+
+  private coerceSelectOptionId(raw: string): string | number {
+    const n = Number(raw);
+    if (Number.isFinite(n) && raw.trim() !== '' && String(n) === raw.trim()) {
+      return n;
+    }
+    return raw;
+  }
+
   private rowMatchesFilter(row: Record<string, unknown>, q: string): boolean {
     const id = this.resolveRowId(row);
     if (id != null && String(id).toLowerCase().includes(q)) {
       return true;
     }
-    for (const col of this.columns) {
+    const keys = this.filterableKeys.length ? this.filterableKeys : this.columns;
+    for (const col of keys) {
       if (this.formatCell(row[col], col).toLowerCase().includes(q)) {
         return true;
       }
@@ -1021,6 +1194,7 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
         this.loading = false;
         this.rows = [];
         this.columns = [];
+        this.filterableKeys = [];
         this.etatStatsColumn = null;
       },
     });
@@ -1029,6 +1203,7 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
   private buildColumns(): void {
     if (!this.rows.length) {
       this.columns = [];
+      this.filterableKeys = [];
       return;
     }
     const first = this.rows[0];
@@ -1044,6 +1219,13 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
     }
     const visibleKeys = keys.filter((k) => !hiddenIds.has(k));
     visibleKeys.sort();
+    this.filterableKeys = visibleKeys;
+
+    const preferred = this.inputListColumnKeys;
+    if (preferred != null && preferred.length > 0) {
+      this.columns = preferred.filter((k) => k in first);
+      return;
+    }
     this.columns = visibleKeys.slice(0, 18);
   }
 
@@ -1066,7 +1248,10 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
     for (const field of this.fieldsForForm) {
       if (field.type !== 'select' || !field.optionsApiPath) continue;
       const cacheKey = this.optionsCacheKey(field);
-      if ((this.fieldOptions[cacheKey]?.length ?? 0) > 0) continue;
+      if (this.fieldOptionsApiLoaded.has(cacheKey)) {
+        this.mergeSeedIntoFieldOptions(cacheKey);
+        continue;
+      }
       const centreOptionsPaths = new Set(['/api/alpha', '/api/cec', '/api/cp', '/api/sie']);
       const optPath = field.optionsApiPath ?? '';
       const sub = this.http
@@ -1076,15 +1261,27 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
         .subscribe({
         next: (rows) => {
           const list = unwrapListBody(rows);
-          this.fieldOptions[cacheKey] = list
+          let built = list
             .map((row) => this.toOption(field, row as Record<string, unknown>))
             .filter((x): x is { value: string | number; label: string } => x != null);
+          built = this.mergeSeedIntoOptionsList(cacheKey, built);
+          this.fieldOptions[cacheKey] = built;
+          this.fieldOptionsApiLoaded.add(cacheKey);
         },
         error: () => {
-          this.fieldOptions[cacheKey] = [];
+          const seedOnly = this.optionSeeds[cacheKey] ? [this.optionSeeds[cacheKey]] : [];
+          this.fieldOptions[cacheKey] = seedOnly;
+          this.fieldOptionsApiLoaded.add(cacheKey);
         },
       });
       this.optionSubs.push(sub);
+    }
+    for (const field of this.fieldsForForm) {
+      if (field.type !== 'select' || !field.optionsApiPath) continue;
+      const cacheKey = this.optionsCacheKey(field);
+      if (!this.fieldOptionsApiLoaded.has(cacheKey) && this.optionSeeds[cacheKey]) {
+        this.fieldOptions[cacheKey] = [this.optionSeeds[cacheKey]];
+      }
     }
   }
 
@@ -1094,7 +1291,16 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
 
   private toOption(field: ReferentielFormField, row: Record<string, unknown>): { value: string | number; label: string } | null {
     const valueKey = field.optionValueKey ?? 'id';
-    const valueRaw = row[valueKey];
+    let valueRaw: unknown = row[valueKey];
+    if (valueRaw == null && 'id' in row) {
+      valueRaw = row['id'];
+    }
+    if (valueRaw != null && typeof valueRaw === 'object' && !Array.isArray(valueRaw)) {
+      const nid = (valueRaw as Record<string, unknown>)['id'];
+      if (typeof nid === 'number' || typeof nid === 'string') {
+        valueRaw = nid;
+      }
+    }
     if (typeof valueRaw !== 'string' && typeof valueRaw !== 'number') return null;
 
     const labelKeys = field.optionLabelKeys ?? ['libelle', 'nom', 'label', 'code', 'id'];
@@ -1105,6 +1311,58 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
       const s = String(v).trim();
       if (s) parts.push(s);
     }
-    return { value: valueRaw, label: parts.length ? parts.join(' - ') : String(valueRaw) };
+    if (parts.length === 0) {
+      for (const k of ['libelle', 'code', 'label', 'nom']) {
+        const v = row[k];
+        if (v != null && String(v).trim()) {
+          parts.push(String(v).trim());
+        }
+      }
+    }
+    return {
+      value: valueRaw,
+      label: parts.length ? parts.join(' — ') : String(valueRaw),
+    };
+  }
+
+  private captureOptionSeedsFromRow(row: Record<string, unknown>): void {
+    this.optionSeeds = {};
+    for (const f of this.fieldsForForm) {
+      if (f.type !== 'select') continue;
+      const cacheKey = this.optionsCacheKey(f);
+      const raw = this.rowValueForFormField(row, f.key);
+      if (raw != null && typeof raw === 'object' && !Array.isArray(raw)) {
+        const opt = this.toOption(f, raw as Record<string, unknown>);
+        if (opt) {
+          this.optionSeeds[cacheKey] = opt;
+        }
+      }
+    }
+  }
+
+  private mergeSeedIntoOptionsList(
+    cacheKey: string,
+    list: Array<{ value: string | number; label: string }>,
+  ): Array<{ value: string | number; label: string }> {
+    const seed = this.optionSeeds[cacheKey];
+    if (!seed) {
+      return list;
+    }
+    if (list.some((x) => String(x.value) === String(seed.value))) {
+      return list;
+    }
+    return [seed, ...list];
+  }
+
+  private mergeSeedIntoFieldOptions(cacheKey: string): void {
+    const seed = this.optionSeeds[cacheKey];
+    if (!seed) {
+      return;
+    }
+    const cur = this.fieldOptions[cacheKey] ?? [];
+    if (cur.some((x) => String(x.value) === String(seed.value))) {
+      return;
+    }
+    this.fieldOptions[cacheKey] = [seed, ...cur];
   }
 }

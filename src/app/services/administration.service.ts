@@ -1,6 +1,15 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
+import {
+  normalizeAppRole,
+  normalizeAppRoleList,
+  normalizeFonctionnaliteList,
+  normalizePermissionList,
+  normalizeRoleFonctionnalitePermission,
+  normalizeRfpList,
+} from '@features/administration/administration-api-normalize';
 import { API_BASE_URL } from '@core/tokens/api-base-url.token';
 import { SpringPage } from '@models/centre';
 import {
@@ -32,15 +41,21 @@ export class AdministrationService {
   ) {}
 
   getRoles(): Observable<AppRole[]> {
-    return this.http.get<AppRole[]>(`${this.apiBaseUrl}/api/app-role`);
+    return this.http
+      .get<unknown>(`${this.apiBaseUrl}/api/app-role`)
+      .pipe(map((body) => normalizeAppRoleList(body)));
   }
 
   createRole(payload: Partial<AppRole>): Observable<AppRole> {
-    return this.http.post<AppRole>(`${this.apiBaseUrl}/api/app-role`, payload);
+    return this.http
+      .post<unknown>(`${this.apiBaseUrl}/api/app-role`, payload)
+      .pipe(map((body) => normalizeAppRole(body as Record<string, unknown>)));
   }
 
   updateRole(id: number, payload: Partial<AppRole>): Observable<AppRole> {
-    return this.http.put<AppRole>(`${this.apiBaseUrl}/api/app-role/${id}`, payload);
+    return this.http
+      .put<unknown>(`${this.apiBaseUrl}/api/app-role/${id}`, payload)
+      .pipe(map((body) => normalizeAppRole(body as Record<string, unknown>)));
   }
 
   deleteRole(id: number): Observable<void> {
@@ -48,26 +63,29 @@ export class AdministrationService {
   }
 
   getFonctionnalites(): Observable<Fonctionnalite[]> {
-    return this.http.get<Fonctionnalite[]>(`${this.apiBaseUrl}/api/fonctionnalite`);
+    return this.http
+      .get<unknown>(`${this.apiBaseUrl}/api/fonctionnalite`)
+      .pipe(map((body) => normalizeFonctionnaliteList(body)));
   }
 
   getPermissions(): Observable<Permission[]> {
-    return this.http.get<Permission[]>(`${this.apiBaseUrl}/api/permission`);
+    return this.http
+      .get<unknown>(`${this.apiBaseUrl}/api/permission`)
+      .pipe(map((body) => normalizePermissionList(body)));
   }
 
   getRoleFonctionnalitePermissions(): Observable<RoleFonctionnalitePermission[]> {
-    return this.http.get<RoleFonctionnalitePermission[]>(
-      `${this.apiBaseUrl}/api/role-fonctionnalite-permission`,
-    );
+    return this.http
+      .get<unknown>(`${this.apiBaseUrl}/api/role-fonctionnalite-permission`)
+      .pipe(map((body) => normalizeRfpList(body)));
   }
 
   addRoleFonctionnalitePermission(
     payload: Partial<RoleFonctionnalitePermission>,
   ): Observable<RoleFonctionnalitePermission> {
-    return this.http.post<RoleFonctionnalitePermission>(
-      `${this.apiBaseUrl}/api/role-fonctionnalite-permission`,
-      payload,
-    );
+    return this.http
+      .post<unknown>(`${this.apiBaseUrl}/api/role-fonctionnalite-permission`, payload)
+      .pipe(map((body) => normalizeRoleFonctionnalitePermission(body as Record<string, unknown>)));
   }
 
   removeRoleFonctionnalitePermission(id: number): Observable<void> {

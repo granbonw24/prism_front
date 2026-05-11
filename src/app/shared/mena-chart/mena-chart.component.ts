@@ -4,6 +4,7 @@ import {
   Component,
   ElementRef,
   Input,
+  NgZone,
   OnChanges,
   OnDestroy,
   SimpleChanges,
@@ -72,6 +73,10 @@ export class MenaChartComponent implements AfterViewInit, OnChanges, OnDestroy {
   @Input() data: number[] = [];
 
   private chart: Chart | null = null;
+  /** Évite destroy/recreate à chaque CD quand le parent recrée des tableaux identiques (getters). */
+  private lastRenderSignature = '';
+
+  constructor(private readonly ngZone: NgZone) {}
 
   ngAfterViewInit(): void {
     this.scheduleRender();
@@ -84,6 +89,7 @@ export class MenaChartComponent implements AfterViewInit, OnChanges, OnDestroy {
   ngOnDestroy(): void {
     this.chart?.destroy();
     this.chart = null;
+    this.lastRenderSignature = '';
   }
 
   private scheduleRender(): void {
@@ -91,15 +97,32 @@ export class MenaChartComponent implements AfterViewInit, OnChanges, OnDestroy {
   }
 
   private render(): void {
-    this.chart?.destroy();
-    this.chart = null;
     const canvas = this.canvasRef?.nativeElement;
     if (!canvas || !this.labels.length || !this.data.length) {
+      this.chart?.destroy();
+      this.chart = null;
+      this.lastRenderSignature = '';
       return;
     }
     const n = Math.min(this.labels.length, this.data.length);
+    const signature = `${this.chartKind}\0${JSON.stringify(this.labels.slice(0, n))}\0${JSON.stringify(
+      this.data.slice(0, n).map((v) => {
+        const x = Number(v);
+        return Number.isFinite(x) ? x : 0;
+      }),
+    )}`;
+    if (signature === this.lastRenderSignature && this.chart) {
+      return;
+    }
+    this.lastRenderSignature = signature;
+
+    this.chart?.destroy();
+    this.chart = null;
     const labels = this.labels.slice(0, n);
-    const data = this.data.slice(0, n);
+    const data = this.data.slice(0, n).map((v) => {
+      const x = Number(v);
+      return Number.isFinite(x) ? x : 0;
+    });
 
     const palette =
       this.chartKind === 'doughnut'
@@ -150,6 +173,8 @@ export class MenaChartComponent implements AfterViewInit, OnChanges, OnDestroy {
             : {},
       },
     };
-    this.chart = new Chart(canvas, cfg as never);
+    this.ngZone.runOutsideAngular(() => {
+      this.chart = new Chart(canvas, cfg as never);
+    });
   }
 }

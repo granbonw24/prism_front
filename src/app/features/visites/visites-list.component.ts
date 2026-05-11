@@ -4,11 +4,20 @@ import { Component, Inject, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { forkJoin } from 'rxjs';
+import { unwrapListBody } from '@core/http/unwrap-spring-page';
 import { API_BASE_URL } from '@core/tokens/api-base-url.token';
 import { SpringPage, VisiteDocumentRow } from '@models/centre';
 
-type NatureDoc = { id: number; libelleNatureDocument?: string | null };
-type TypeDoc = { id: number; codeTypeDocument?: string | null; libelleTypeDocument?: string | null };
+/**
+ * Référentiels nature / type : l’API renvoie le format B (`{ id, libelle }`, `{ id, code, libelle }`),
+ * pas les noms de propriétés entité JPA.
+ */
+type NatureDoc = { id: number; libelleNatureDocument: string };
+type TypeDoc = {
+  id: number;
+  codeTypeDocument: string | null;
+  libelleTypeDocument: string | null;
+};
 type AlphaListRow = { idCentre: number; codeCentre?: string | null; libelle?: string | null; codeType?: string | null };
 type DocumentUpsertPayload = {
   idNatureDocument: number | null;
@@ -55,6 +64,8 @@ export class VisitesListComponent implements OnInit {
 
   createOpen = false;
   editId: number | null = null;
+  /** Ligne ouverte en édition (aperçu libellé document). */
+  editSourceRow: VisiteDocumentRow | null = null;
   deleteTarget: VisiteDocumentRow | null = null;
 
   createForm: DocumentUpsertPayload = this.emptyUpsertForm();
@@ -92,12 +103,12 @@ export class VisitesListComponent implements OnInit {
       natures: this.http.get<NatureDoc[]>(`${this.apiBaseUrl}/api/naturedocument`),
       types: this.http.get<TypeDoc[]>(`${this.apiBaseUrl}/api/TypeDocuments`),
       alphas: this.http.get<SpringPage<AlphaListRow>>(`${this.apiBaseUrl}/api/alpha`, {
-        params: new HttpParams().set('page', '0').set('size', '5000').set('sort', 'id,asc'),
+        params: new HttpParams().set('page', '0').set('size', '500').set('sort', 'id,asc'),
       }),
     }).subscribe({
       next: (res) => {
-        this.natures = res.natures ?? [];
-        this.types = res.types ?? [];
+        this.natures = this.normalizeNatureDocs(res.natures);
+        this.types = this.normalizeTypeDocs(res.types);
         this.alphas = res.alphas.content ?? [];
         this.refsLoaded = true;
         this.applyPage(res.list);
@@ -196,11 +207,12 @@ export class VisitesListComponent implements OnInit {
 
   openEdit(row: VisiteDocumentRow): void {
     this.errorMessage = null;
+    this.editSourceRow = row;
     this.editId = row.id ?? null;
     this.editForm = this.normalizePayload({
-      idCentre: row.idCentreAlpha ?? null,
-      idNatureDocument: row.idNatureDocument ?? null,
-      idTypeDocument: row.idTypeDocument ?? null,
+      idCentre: this.coerceId(row.idCentreAlpha),
+      idNatureDocument: this.coerceId(row.idNatureDocument),
+      idTypeDocument: this.coerceId(row.idTypeDocument),
       codeDocument: row.codeDocument ?? null,
       existe: row.existe ?? null,
       ajour: row.ajour ?? null,
@@ -213,6 +225,7 @@ export class VisitesListComponent implements OnInit {
   closeEdit(): void {
     if (this.saving) return;
     this.editId = null;
+    this.editSourceRow = null;
   }
 
   saveEdit(): void {
@@ -304,6 +317,84 @@ export class VisitesListComponent implements OnInit {
     if (typ && lib) return `${typ} — ${lib}${code ? ` (${code})` : ''}`;
     if (lib) return lib + (code ? ` (${code})` : '');
     return code || `Alpha #${a.idCentre}`;
+  }
+
+  /** Libellé lisible pour la fiche (priorité type + nature ; le code reste en secours). */
+  documentDisplayLabel(row: VisiteDocumentRow): string {
+    const typeL = (row.libelleTypeDocument ?? '').trim();
+    const natL = (row.libelleNatureDocument ?? '').trim();
+    if (typeL && natL) return `${typeL} — ${natL}`;
+    if (typeL) return typeL;
+    if (natL) return natL;
+    const code = (row.codeDocument ?? '').trim();
+    return code || '—';
+  }
+
+  /** Aperçu dans le modal édition à partir des listes + formulaire. */
+  get editDocumentPreview(): string {
+    const n = this.natures.find((x) => Number(x.id) === Number(this.editForm.idNatureDocument));
+    const t = this.types.find((x) => Number(x.id) === Number(this.editForm.idTypeDocument));
+    const typeL = (t?.libelleTypeDocument ?? '').trim() || (t?.codeTypeDocument ?? '').trim();
+    const natL = (n?.libelleNatureDocument ?? '').trim();
+    if (typeL && natL) return `${typeL} — ${natL}`;
+    if (typeL) return typeL;
+    if (natL) return natL;
+    return this.editSourceRow ? this.documentDisplayLabel(this.editSourceRow) : '—';
+  }
+
+  natureOptionLabel(n: NatureDoc): string {
+    return (n.libelleNatureDocument ?? '').trim() || `Nature #${n.id}`;
+  }
+
+  typeOptionLabel(t: TypeDoc): string {
+    const code = (t.codeTypeDocument ?? '').trim();
+    const lib = (t.libelleTypeDocument ?? '').trim();
+    if (code && lib) return `${code} — ${lib}`;
+    return lib || code || `Type #${t.id}`;
+  }
+
+  private coerceId(v: unknown): number | null {
+    if (v === null || v === undefined || v === '') return null;
+    const n = typeof v === 'number' ? v : Number(v);
+    return Number.isFinite(n) ? n : null;
+  }
+
+  private normalizeNatureDocs(body: unknown): NatureDoc[] {
+    const list = unwrapListBody(body);
+    return list
+      .map((raw) => {
+        const r = raw as Record<string, unknown>;
+        const idRaw = r['id'];
+        const id = typeof idRaw === 'number' ? idRaw : Number(idRaw);
+        if (!Number.isFinite(id)) return null;
+        const lib =
+          (typeof r['libelleNatureDocument'] === 'string' ? r['libelleNatureDocument'] : null) ??
+          (typeof r['libelle'] === 'string' ? r['libelle'] : null) ??
+          '—';
+        return { id, libelleNatureDocument: lib };
+      })
+      .filter((x): x is NatureDoc => x != null);
+  }
+
+  private normalizeTypeDocs(body: unknown): TypeDoc[] {
+    const list = unwrapListBody(body);
+    return list
+      .map((raw) => {
+        const r = raw as Record<string, unknown>;
+        const idRaw = r['id'];
+        const id = typeof idRaw === 'number' ? idRaw : Number(idRaw);
+        if (!Number.isFinite(id)) return null;
+        const code =
+          (typeof r['codeTypeDocument'] === 'string' ? r['codeTypeDocument'] : null) ??
+          (typeof r['code'] === 'string' ? r['code'] : null) ??
+          null;
+        const lib =
+          (typeof r['libelleTypeDocument'] === 'string' ? r['libelleTypeDocument'] : null) ??
+          (typeof r['libelle'] === 'string' ? r['libelle'] : null) ??
+          null;
+        return { id, codeTypeDocument: code, libelleTypeDocument: lib };
+      })
+      .filter((x): x is TypeDoc => x != null);
   }
 
   private emptyUpsertForm(): DocumentUpsertPayload {

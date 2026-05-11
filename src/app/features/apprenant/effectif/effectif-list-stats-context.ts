@@ -8,23 +8,77 @@ const CENTRE_KEYS = {
 export function effectifStatsByCentreType(
   t: 'alpha' | 'cp' | 'cec' | 'sie',
 ): ListStatsContext {
+  const scopeLabel = { alpha: 'Alpha', cp: 'CP', cec: 'CEC', sie: 'SIE' }[t];
+
+  /** Effectif SIE : pas de rattachement centre dans le JSON liste. */
+  if (t === 'sie') {
+    return {
+      scopeLabel,
+      rowAnneeIdKey: 'anneeScolaire',
+      anneesApiPath: '/api/anneescolaire',
+      anneeOptionValueKey: 'id',
+      anneeOptionLabelKeys: ['debutAnneeScolaire', 'finAnneeScolaire'],
+      rowNiveauIdKey: 'niveauSie',
+      niveauxApiPath: '/api/niveausiecec',
+      niveauOptionValueKey: 'id',
+      niveauOptionLabelKeys: ['libelleNiveauSie'],
+    };
+  }
+
   const centresApiPath = {
     alpha: '/api/alpha',
     cp: '/api/cp',
     cec: '/api/cec',
-    sie: '/api/sie',
   }[t];
-  const scopeLabel = { alpha: 'Alpha', cp: 'CP', cec: 'CEC', sie: 'SIE' }[t];
-  return {
+
+  const base: ListStatsContext = {
     scopeLabel,
     centresApiPath,
-    rowCentreIdKey: 'idCentre',
+    /** Réponses enrichies (`ReferentielEnricher`) : ref sous `alpha` ou `centre`, pas `idCentre` scalaire. */
+    rowCentreIdKey: t === 'alpha' ? 'alpha' : 'centre',
     centreOptionValueKey: CENTRE_KEYS.optionValueKey,
     centreOptionLabelKeys: [...CENTRE_KEYS.optionLabelKeys],
-    rowPeriodeIdKey: 'idPeriodeActivite',
-    periodesApiPath: '/api/PeriodeActivites',
-    periodeOptionValueKey: 'id',
-    periodeOptionLabelKeys: ['codePeriodeActivite', 'libellePeriodeActivite'],
+  };
+
+  if (t === 'alpha') {
+    return {
+      ...base,
+      rowPeriodeIdKey: 'periodeActivite',
+      periodesApiPath: '/api/PeriodeActivites',
+      periodeOptionValueKey: 'id',
+      periodeOptionLabelKeys: ['codePeriodeActivite', 'libellePeriodeActivite'],
+      rowNiveauIdKey: 'niveauAlpha',
+      niveauxApiPath: '/api/niveaualpha',
+      niveauOptionValueKey: 'id',
+      niveauOptionLabelKeys: ['codeNiveauAlpha', 'libelleNiveauAlpha'],
+    };
+  }
+
+  if (t === 'cec') {
+    return {
+      ...base,
+      rowPeriodeIdKey: 'periodeActivite',
+      periodesApiPath: '/api/PeriodeActivites',
+      periodeOptionValueKey: 'id',
+      periodeOptionLabelKeys: ['codePeriodeActivite', 'libellePeriodeActivite'],
+      rowNiveauIdKey: 'niveauSie',
+      niveauxApiPath: '/api/niveausiecec',
+      niveauOptionValueKey: 'id',
+      niveauOptionLabelKeys: ['libelleNiveauSie'],
+    };
+  }
+
+  // CP : année scolaire + niveau CP (pas de période d’activité)
+  return {
+    ...base,
+    rowAnneeIdKey: 'anneeScolaire',
+    anneesApiPath: '/api/anneescolaire',
+    anneeOptionValueKey: 'id',
+    anneeOptionLabelKeys: ['debutAnneeScolaire', 'finAnneeScolaire'],
+    rowNiveauIdKey: 'niveauCp',
+    niveauxApiPath: '/api/niveaucp',
+    niveauOptionValueKey: 'id',
+    niveauOptionLabelKeys: ['libelleNiveauCp'],
   };
 }
 

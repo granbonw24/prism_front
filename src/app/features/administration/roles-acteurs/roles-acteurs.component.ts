@@ -149,5 +149,26 @@ export class RolesActeursComponent {
     }
     return e instanceof Error ? e.message : 'Erreur inconnue';
   }
+
+  roleOptionLabel(r: AppRole): string {
+    const lib = (r.libelleRole ?? '').trim();
+    const code = (r.codeRole ?? '').trim();
+    if (lib && code) return `${lib} (${code})`;
+    return lib || code || String(r.id);
+  }
+
+  permissionColumnLabel(p: Permission): string {
+    const lib = (p.libellePermission ?? '').trim();
+    const code = (p.codePermission ?? '').trim();
+    if (lib && code) return `${lib} · ${code}`;
+    return lib || code || String(p.id);
+  }
+
+  fonctionnaliteRowLabel(f: Fonctionnalite): string {
+    const lib = (f.libelleFonctionnalite ?? '').trim();
+    const code = (f.codeFonctionnalite ?? '').trim();
+    if (lib && code) return `${lib} (${code})`;
+    return lib || code || String(f.id);
+  }
 }
 
