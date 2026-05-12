@@ -9,6 +9,8 @@ export interface ReferentielFormField {
   maxLength?: number;
   /** Source d'options pour les champs `select` (chemin API relatif). */
   optionsApiPath?: string;
+  /** Options statiques pour les champs `select` simples. */
+  options?: Array<{ value: string | number; label: string }>;
   /** Clé valeur des options (défaut: `id`). */
   optionValueKey?: string;
   /** Clés utilisées pour construire le libellé affiché. */

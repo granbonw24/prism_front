@@ -1,7 +1,9 @@
 import { CommonModule } from '@angular/common';
-import { Component } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import type { ReferentielFormField } from '@core/config/referentiel-form.types';
+import { ActivatedRoute } from '@angular/router';
 import { ReferentielListPageComponent } from '@shared/referentiel-list-page/referentiel-list-page.component';
+import { Subscription } from 'rxjs';
 import {
   EFFECTIF_ADMIS_INTEGRATION_CP_CREATE_FIELDS,
   EFFECTIF_CEPE_CEC_CREATE_FIELDS,
@@ -28,6 +30,8 @@ type IntegrationConfig = {
   apiPath: string;
   createFields: ReferentielFormField[];
 };
+
+type KindOption = { value: IntegrationKind; label: string };
 
 const INTEGRATION_CONFIG: Record<IntegrationKind, IntegrationConfig> = {
   cepeCp: {
@@ -87,6 +91,7 @@ const INTEGRATION_STATS: Record<IntegrationKind, ListStatsContext> = {
       [inputSubtitle]="pageSubtitle"
       [inputApiPath]="activeConfig.apiPath"
       [inputCreateFields]="activeConfig.createFields"
+      [inputStatsContext]="listStatsContext"
       [addFormContextLabel]="'Type d’effectif'"
       [addFormContextValue]="selectedKind"
       [addFormContextOptions]="kindOptions"
@@ -94,12 +99,15 @@ const INTEGRATION_STATS: Record<IntegrationKind, ListStatsContext> = {
     ></app-referentiel-list-page>
   `,
 })
-export class EffectifIntegrationUnifieComponent {
-  readonly pageSubtitle =
+export class EffectifIntegrationUnifieComponent implements OnInit, OnDestroy {
+  pageSubtitle =
     'CEPE, intégrations CP, promu SIE/CEC et reverse formel SIE — choisissez le type ci-dessous pour charger le bon formulaire et la bonne API.';
 
   selectedKind: IntegrationKind = 'cepeCp';
-  readonly kindOptions = [
+  kindOptions: KindOption[] = [];
+  private routeSub?: Subscription;
+
+  private readonly allKindOptions: KindOption[] = [
     { value: 'cepeCp', label: 'CEPE — centre CP' },
     { value: 'cepeCec', label: 'CEPE — centres CEC' },
     { value: 'admisCp', label: 'Admis intégration — CP' },
@@ -109,9 +117,33 @@ export class EffectifIntegrationUnifieComponent {
     { value: 'reverseSie', label: 'Reverse formel — SIE' },
   ];
 
+  constructor(private readonly route: ActivatedRoute) {}
+
+  ngOnInit(): void {
+    this.routeSub = this.route.data.subscribe((data) => {
+      const kinds = this.normalizeKinds(data['kinds']);
+      this.kindOptions = kinds.length
+        ? this.allKindOptions.filter((option) => kinds.includes(option.value))
+        : [...this.allKindOptions];
+      const initialKind = this.normalizeKind(data['initialKind']) ?? this.kindOptions[0]?.value ?? 'cepeCp';
+      this.selectedKind = this.kindOptions.some((option) => option.value === initialKind)
+        ? initialKind
+        : (this.kindOptions[0]?.value ?? 'cepeCp');
+      this.pageSubtitle =
+        typeof data['subtitle'] === 'string' && data['subtitle'].trim()
+          ? data['subtitle']
+          : 'CEPE, intégrations CP, promu SIE/CEC et reverse formel SIE — choisissez le type ci-dessous pour charger le bon formulaire et la bonne API.';
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.routeSub?.unsubscribe();
+  }
+
   onKindChanged(v: string): void {
-    if (v in INTEGRATION_CONFIG) {
-      this.selectedKind = v as IntegrationKind;
+    const kind = this.normalizeKind(v);
+    if (kind && this.kindOptions.some((option) => option.value === kind)) {
+      this.selectedKind = kind;
     }
   }
 
@@ -121,5 +153,20 @@ export class EffectifIntegrationUnifieComponent {
 
   get listStatsContext(): ListStatsContext {
     return INTEGRATION_STATS[this.selectedKind];
+  }
+
+  private normalizeKind(value: unknown): IntegrationKind | null {
+    return typeof value === 'string' && value in INTEGRATION_CONFIG
+      ? (value as IntegrationKind)
+      : null;
+  }
+
+  private normalizeKinds(value: unknown): IntegrationKind[] {
+    if (!Array.isArray(value)) {
+      return [];
+    }
+    return value
+      .map((item) => this.normalizeKind(item))
+      .filter((item): item is IntegrationKind => item != null);
   }
 }

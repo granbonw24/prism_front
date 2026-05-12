@@ -55,6 +55,13 @@ export class AuthService {
           email: res.email,
           roles: res.roles ?? [],
           permissions: res.permissions ?? [],
+          idRegion: res.idRegion ?? null,
+          idDrena: res.idDrena ?? null,
+          idIep: res.idIep ?? null,
+          idDepartement: res.idDepartement ?? null,
+          idSousPrefecture: res.idSousPrefecture ?? null,
+          idCommune: res.idCommune ?? null,
+          idLocalite: res.idLocalite ?? null,
         });
       }),
     );
@@ -71,6 +78,13 @@ export class AuthService {
           email: prev?.email,
           roles: prev?.roles ?? [],
           permissions: me.permissions ?? [],
+          idRegion: me.idRegion ?? prev?.idRegion ?? null,
+          idDrena: me.idDrena ?? prev?.idDrena ?? null,
+          idIep: me.idIep ?? prev?.idIep ?? null,
+          idDepartement: me.idDepartement ?? prev?.idDepartement ?? null,
+          idSousPrefecture: me.idSousPrefecture ?? prev?.idSousPrefecture ?? null,
+          idCommune: me.idCommune ?? prev?.idCommune ?? null,
+          idLocalite: me.idLocalite ?? prev?.idLocalite ?? null,
         });
       }),
     );

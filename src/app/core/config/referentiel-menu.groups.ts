@@ -5,6 +5,7 @@ export const REFERENTIEL_MENU_GROUP_ORDER: ReferentielMenuGroupId[] = [
   'geographie',
   'centres-autorisations',
   'pedagogie',
+  'activites-centre',
   'documents',
   'others',
 ];
@@ -14,6 +15,7 @@ export const REFERENTIEL_MENU_GROUP_LABEL: Record<ReferentielMenuGroupId, string
   geographie: 'Géographie',
   'centres-autorisations': 'Centres & autorisations',
   pedagogie: 'Pédagogie',
+  'activites-centre': 'Activités centre',
   documents: 'Documents',
   others: 'Autres',
 };

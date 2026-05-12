@@ -3,7 +3,7 @@
     <div>
       <h1 class="h4 mb-1 text-gray-800">ACTIVITES CENTRE — Évaluation périodique</h1>
       <p class="small text-muted mb-0">
-        Les thèmes visibles dépendent du niveau : formative/sommative pour Niveau 1, certificative/sommative pour Niveau 2 et Post Alpha.
+        Choisir le type d’évaluation puis saisir le taux de chaque thème compatible avec le niveau.
       </p>
     </div>
     <div class="d-flex flex-wrap gap-1 mt-2 mt-sm-0">
@@ -38,8 +38,8 @@
               <th>Centre Alpha</th>
               <th>Période</th>
               <th>Niveau</th>
-              <th>Thème / type d’évaluation</th>
-              <th>Taux</th>
+              <th>Type d’évaluation</th>
+              <th>Thèmes et taux</th>
               <th class="text-center">Actions</th>
             </tr>
           </thead>
@@ -49,8 +49,8 @@
               <td>{{ refLabel(row.alpha) }}</td>
               <td>{{ refLabel(row.periodeEvaluation) }}</td>
               <td>{{ refLabel(row.niveauEvaluation) }}</td>
-              <td>{{ refLabel(row.themeEvaluation) }}</td>
-              <td>{{ refLabel(row.tauxEvaluation) }}</td>
+              <td>{{ typeLabel(row.typeEvaluation) }}</td>
+              <td>{{ themesTauxLabel(row) }}</td>
               <td class="text-center text-nowrap">
                 <button *ngIf="canEdit" class="btn btn-sm btn-outline-primary mr-1" type="button" (click)="openEdit(row)">Modifier</button>
                 <button *ngIf="canEdit" class="btn btn-sm btn-outline-danger" type="button" (click)="deleteRow(row)">Supprimer</button>
@@ -91,29 +91,44 @@
           </div>
         </div>
         <div class="form-row">
-          <div class="form-group col-md-4">
+          <div class="form-group col-md-6">
             <label>Niveau</label>
             <select class="form-control" [(ngModel)]="form.idNiveauEvaluation" (ngModelChange)="onNiveauChange()">
               <option [ngValue]="null">Sélectionner</option>
               <option *ngFor="let niveau of niveaux" [ngValue]="niveau.id ?? null">{{ refLabel(niveau) }}</option>
             </select>
           </div>
-          <div class="form-group col-md-5">
-            <label>Thème / type d’évaluation</label>
-            <select class="form-control" [(ngModel)]="form.idThemeEvaluation" [disabled]="!form.idNiveauEvaluation">
+          <div class="form-group col-md-6">
+            <label>Type d’évaluation</label>
+            <select class="form-control" [(ngModel)]="form.typeEvaluation" (ngModelChange)="onTypeChange()" [disabled]="!form.idNiveauEvaluation">
               <option [ngValue]="null">Sélectionner</option>
-              <option *ngFor="let theme of filteredThemes" [ngValue]="theme.id ?? null">
-                {{ themeOptionLabel(theme) }}
+              <option *ngFor="let type of availableTypeOptions" [ngValue]="type">
+                {{ typeLabel(type) }}
               </option>
             </select>
-            <small class="form-text text-muted">Choisir d’abord le niveau pour filtrer les thèmes.</small>
+            <small class="form-text text-muted">Niveau 1 : formative ou sommative. Niveau 2/Post Alpha : sommative ou certificative.</small>
           </div>
-          <div class="form-group col-md-3">
-            <label>Taux</label>
-            <select class="form-control" [(ngModel)]="form.idTauxEvaluation">
-              <option [ngValue]="null">Sélectionner</option>
-              <option *ngFor="let item of taux" [ngValue]="item.id ?? null">{{ refLabel(item) }}</option>
-            </select>
+        </div>
+        <div class="theme-taux-box">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <h6 class="mb-0 text-primary">Taux par thème</h6>
+            <span class="small text-muted">{{ form.themesTaux.length }} thème(s)</span>
+          </div>
+          <div *ngIf="!form.idNiveauEvaluation || !form.typeEvaluation" class="small text-muted py-2">
+            Sélectionner le niveau et le type d’évaluation pour afficher les thèmes.
+          </div>
+          <div *ngIf="form.idNiveauEvaluation && form.typeEvaluation && form.themesTaux.length === 0" class="alert alert-warning py-2 mb-0">
+            Aucun thème compatible trouvé pour cette combinaison.
+          </div>
+          <div *ngFor="let item of form.themesTaux" class="form-row align-items-center" [class.d-none]="!form.idNiveauEvaluation || !form.typeEvaluation">
+            <div class="form-group col-md-8 mb-2">
+              <label class="small text-muted mb-1">Thème</label>
+              <div class="form-control-plaintext py-1">{{ themeOptionLabel(themeForForm(item)) }}</div>
+            </div>
+            <div class="form-group col-md-4 mb-2">
+              <label class="small text-muted mb-1">Taux (%)</label>
+              <input class="form-control" type="number" min="0" max="100" [(ngModel)]="item.taux" placeholder="0 à 100" />
+            </div>
           </div>
         </div>
       </div>

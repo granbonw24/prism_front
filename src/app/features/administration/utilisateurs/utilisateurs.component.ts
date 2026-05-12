@@ -3,8 +3,23 @@ import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
-import { AppRole, AppUserAdmin, AppUserAdminUpsertRequest } from '@models/administration';
+import {
+  AdminReference,
+  AdminScopeOption,
+  AppRole,
+  AppUserAdmin,
+  AppUserAdminUpsertRequest,
+} from '@models/administration';
 import { AdministrationService } from '@services/administration.service';
+
+type ScopeKey =
+  | 'idRegion'
+  | 'idDrena'
+  | 'idIep'
+  | 'idDepartement'
+  | 'idSousPrefecture'
+  | 'idCommune'
+  | 'idLocalite';
 
 @Component({
   selector: 'app-utilisateurs',
@@ -20,6 +35,27 @@ export class UtilisateursComponent implements OnInit {
 
   roles: AppRole[] = [];
   users: AppUserAdmin[] = [];
+  regions: AdminScopeOption[] = [];
+  drenas: AdminScopeOption[] = [];
+  ieps: AdminScopeOption[] = [];
+  departements: AdminScopeOption[] = [];
+  sousPrefectures: AdminScopeOption[] = [];
+  communes: AdminScopeOption[] = [];
+  localites: AdminScopeOption[] = [];
+
+  readonly scopeConfigs: Array<{
+    key: ScopeKey;
+    label: string;
+    options: () => AdminScopeOption[];
+  }> = [
+    { key: 'idRegion', label: 'Région', options: () => this.regions },
+    { key: 'idDrena', label: 'DRENA', options: () => this.drenas },
+    { key: 'idIep', label: 'IEPP', options: () => this.ieps },
+    { key: 'idDepartement', label: 'Département', options: () => this.departements },
+    { key: 'idSousPrefecture', label: 'Sous-préfecture', options: () => this.sousPrefectures },
+    { key: 'idCommune', label: 'Commune', options: () => this.communes },
+    { key: 'idLocalite', label: 'Localité', options: () => this.localites },
+  ];
 
   pageIndex = 0;
   pageSize = 20;
@@ -35,6 +71,13 @@ export class UtilisateursComponent implements OnInit {
     actif: true,
     password: '',
     roleIds: [],
+    idRegion: null,
+    idDrena: null,
+    idIep: null,
+    idDepartement: null,
+    idSousPrefecture: null,
+    idCommune: null,
+    idLocalite: null,
   };
   editForm: AppUserAdminUpsertRequest = {
     username: '',
@@ -42,6 +85,13 @@ export class UtilisateursComponent implements OnInit {
     actif: true,
     password: '',
     roleIds: [],
+    idRegion: null,
+    idDrena: null,
+    idIep: null,
+    idDepartement: null,
+    idSousPrefecture: null,
+    idCommune: null,
+    idLocalite: null,
   };
 
   roleFilterCreate = '';
@@ -59,14 +109,37 @@ export class UtilisateursComponent implements OnInit {
     this.loading = true;
     this.errorMessage = null;
     try {
-      const roles = await firstValueFrom(this.admin.getRoles());
-      this.roles = roles;
+      await Promise.all([this.loadRoles(), this.loadScopeOptions()]);
       await this.loadUsersPage();
     } catch (e) {
       this.errorMessage = this.formatError(e);
     } finally {
       this.loading = false;
     }
+  }
+
+  private async loadRoles(): Promise<void> {
+    this.roles = await firstValueFrom(this.admin.getRoles());
+  }
+
+  private async loadScopeOptions(): Promise<void> {
+    const [regions, drenas, ieps, departements, sousPrefectures, communes, localites] =
+      await Promise.all([
+        firstValueFrom(this.admin.getScopeOptions('/api/region')),
+        firstValueFrom(this.admin.getScopeOptions('/api/drena')),
+        firstValueFrom(this.admin.getScopeOptions('/api/iep')),
+        firstValueFrom(this.admin.getScopeOptions('/api/departement')),
+        firstValueFrom(this.admin.getScopeOptions('/api/sous-prefecture')),
+        firstValueFrom(this.admin.getScopeOptions('/api/commune')),
+        firstValueFrom(this.admin.getScopeOptions('/api/localite-d-implantation')),
+      ]);
+    this.regions = regions;
+    this.drenas = drenas;
+    this.ieps = ieps;
+    this.departements = departements;
+    this.sousPrefectures = sousPrefectures;
+    this.communes = communes;
+    this.localites = localites;
   }
 
   private async loadUsersPage(): Promise<void> {
@@ -140,6 +213,13 @@ export class UtilisateursComponent implements OnInit {
       actif: true,
       password: '',
       roleIds: [],
+      idRegion: null,
+      idDrena: null,
+      idIep: null,
+      idDepartement: null,
+      idSousPrefecture: null,
+      idCommune: null,
+      idLocalite: null,
     };
     this.createSelectedRoleId = null;
   }
@@ -152,7 +232,8 @@ export class UtilisateursComponent implements OnInit {
     return (
       !this.saving &&
       String(this.createForm.username ?? '').trim().length > 0 &&
-      String(this.createForm.password ?? '').trim().length > 0
+      String(this.createForm.password ?? '').trim().length > 0 &&
+      this.scopeIsValid(this.createSelectedRoleId, this.createForm)
     );
   }
 
@@ -168,6 +249,7 @@ export class UtilisateursComponent implements OnInit {
           actif: !!this.createForm.actif,
           password: String(this.createForm.password ?? ''),
           roleIds: this.createSelectedRoleId != null ? [this.createSelectedRoleId] : [],
+          ...this.scopePayload(this.createForm),
         }),
       );
       this.closeCreate();
@@ -197,6 +279,13 @@ export class UtilisateursComponent implements OnInit {
       actif: !!u.actif,
       password: '',
       roleIds: [...(u.roleIds ?? [])],
+      idRegion: u.idRegion ?? null,
+      idDrena: u.idDrena ?? null,
+      idIep: u.idIep ?? null,
+      idDepartement: u.idDepartement ?? null,
+      idSousPrefecture: u.idSousPrefecture ?? null,
+      idCommune: u.idCommune ?? null,
+      idLocalite: u.idLocalite ?? null,
     };
     this.editSelectedRoleId = (u.roleIds ?? [])[0] ?? null;
   }
@@ -206,7 +295,12 @@ export class UtilisateursComponent implements OnInit {
   }
 
   canSaveEdit(): boolean {
-    return !this.saving && this.editUserId != null && String(this.editForm.username ?? '').trim().length > 0;
+    return (
+      !this.saving &&
+      this.editUserId != null &&
+      String(this.editForm.username ?? '').trim().length > 0 &&
+      this.scopeIsValid(this.editSelectedRoleId, this.editForm)
+    );
   }
 
   async saveEdit(): Promise<void> {
@@ -222,6 +316,7 @@ export class UtilisateursComponent implements OnInit {
           actif: !!this.editForm.actif,
           password: String(this.editForm.password ?? '').trim() || null,
           roleIds: this.editSelectedRoleId != null ? [this.editSelectedRoleId] : [],
+          ...this.scopePayload(this.editForm),
         }),
       );
       this.closeEdit();
@@ -253,6 +348,59 @@ export class UtilisateursComponent implements OnInit {
     return String(r?.libelleRole ?? r?.codeRole ?? roleId);
   }
 
+  roleCode(roleId: number | null): string {
+    if (roleId == null) return '';
+    const role = this.roles.find((x) => x.id === roleId);
+    return String(role?.codeRole ?? '').trim().toUpperCase();
+  }
+
+  requiresScope(roleId: number | null): boolean {
+    return ['CONSEILLER', 'COORDONNATEUR', 'SUPERVISEUR', 'IEPP'].includes(this.roleCode(roleId));
+  }
+
+  isIeppRole(roleId: number | null): boolean {
+    return this.roleCode(roleId) === 'IEPP';
+  }
+
+  scopeIsValid(roleId: number | null, form: AppUserAdminUpsertRequest): boolean {
+    if (!this.requiresScope(roleId)) {
+      return true;
+    }
+    if (this.isIeppRole(roleId)) {
+      return form.idIep != null;
+    }
+    return this.scopeConfigs.some((scope) => form[scope.key] != null);
+  }
+
+  scopeValidationMessage(roleId: number | null): string {
+    if (this.isIeppRole(roleId)) {
+      return 'Le rôle IEPP doit être rattaché à une IEPP.';
+    }
+    return 'Sélectionner au moins une circonscription pour ce rôle.';
+  }
+
+  scopeLabel(ref?: AdminReference | null): string {
+    if (!ref) return '—';
+    return [ref.code, ref.libelle].filter((v) => v != null && String(v).trim()).join(' — ') || String(ref.id ?? '—');
+  }
+
+  userScopeSummary(user: AppUserAdmin): string {
+    const labels = [
+      user.region ? `Région: ${this.scopeLabel(user.region)}` : '',
+      user.drena ? `DRENA: ${this.scopeLabel(user.drena)}` : '',
+      user.iep ? `IEPP: ${this.scopeLabel(user.iep)}` : '',
+      user.departement ? `Département: ${this.scopeLabel(user.departement)}` : '',
+      user.sousPrefecture ? `Sous-préfecture: ${this.scopeLabel(user.sousPrefecture)}` : '',
+      user.commune ? `Commune: ${this.scopeLabel(user.commune)}` : '',
+      user.localite ? `Localité: ${this.scopeLabel(user.localite)}` : '',
+    ].filter(Boolean);
+    return labels.length ? labels.join(' | ') : '—';
+  }
+
+  optionLabel(option: AdminScopeOption): string {
+    return [option.code, option.libelle].filter((v) => v != null && String(v).trim()).join(' — ') || String(option.id);
+  }
+
   filteredRoles(q: string): AppRole[] {
     const s = String(q ?? '').trim().toLowerCase();
     if (!s) return this.roles;
@@ -263,6 +411,25 @@ export class UtilisateursComponent implements OnInit {
 
   trackRoleById(_idx: number, r: AppRole): number {
     return r.id;
+  }
+
+  trackScopeById(_idx: number, option: AdminScopeOption): number {
+    return option.id;
+  }
+
+  private scopePayload(form: AppUserAdminUpsertRequest): Pick<
+    AppUserAdminUpsertRequest,
+    ScopeKey
+  > {
+    return {
+      idRegion: form.idRegion ?? null,
+      idDrena: form.idDrena ?? null,
+      idIep: form.idIep ?? null,
+      idDepartement: form.idDepartement ?? null,
+      idSousPrefecture: form.idSousPrefecture ?? null,
+      idCommune: form.idCommune ?? null,
+      idLocalite: form.idLocalite ?? null,
+    };
   }
 
   private formatError(e: unknown): string {

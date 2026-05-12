@@ -28,6 +28,7 @@
               <tr>
                 <th style="min-width: 260px;">Utilisateur</th>
                 <th style="min-width: 220px;">Rôle associé</th>
+                <th style="min-width: 320px;">Circonscription</th>
               </tr>
             </thead>
             <tbody>
@@ -84,9 +85,12 @@
                     {{ u.roleIds.length > 0 ? roleLabel(u.roleIds[0]) : '—' }}
                   </span>
                 </td>
+                <td class="small text-muted">
+                  {{ userScopeSummary(u) }}
+                </td>
               </tr>
               <tr *ngIf="users.length === 0">
-                <td [attr.colspan]="2" class="text-center text-muted py-4">
+                <td [attr.colspan]="3" class="text-center text-muted py-4">
                   Aucun utilisateur.
                 </td>
               </tr>
@@ -196,6 +200,30 @@
             </option>
           </select>
         </div>
+
+        <div class="mt-3">
+          <div class="small text-muted mb-2">
+            Circonscription
+            <span *ngIf="requiresScope(createSelectedRoleId)" class="text-danger">*</span>
+          </div>
+          <div class="alert alert-info py-2 small" *ngIf="requiresScope(createSelectedRoleId)">
+            Renseigner la zone couverte par l’utilisateur pour filtrer les données qui le concernent.
+          </div>
+          <div class="form-row">
+            <div class="form-group col-md-6" *ngFor="let scope of scopeConfigs">
+              <label class="small text-muted">{{ scope.label }}</label>
+              <select class="form-control" [(ngModel)]="createForm[scope.key]" [disabled]="saving">
+                <option [ngValue]="null">— Non rattaché —</option>
+                <option *ngFor="let option of scope.options(); trackBy: trackScopeById" [ngValue]="option.id">
+                  {{ optionLabel(option) }}
+                </option>
+              </select>
+            </div>
+          </div>
+          <div class="text-danger small" *ngIf="!scopeIsValid(createSelectedRoleId, createForm)">
+            {{ scopeValidationMessage(createSelectedRoleId) }}
+          </div>
+        </div>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-outline-secondary" (click)="closeCreate()" [disabled]="saving">Annuler</button>
@@ -241,6 +269,34 @@
             <tr>
               <th>Rôle</th>
               <td>{{ d.roleIds.length ? roleLabel(d.roleIds[0]) : '—' }}</td>
+            </tr>
+            <tr>
+              <th>Région</th>
+              <td>{{ scopeLabel(d.region) }}</td>
+            </tr>
+            <tr>
+              <th>DRENA</th>
+              <td>{{ scopeLabel(d.drena) }}</td>
+            </tr>
+            <tr>
+              <th>IEPP</th>
+              <td>{{ scopeLabel(d.iep) }}</td>
+            </tr>
+            <tr>
+              <th>Département</th>
+              <td>{{ scopeLabel(d.departement) }}</td>
+            </tr>
+            <tr>
+              <th>Sous-préfecture</th>
+              <td>{{ scopeLabel(d.sousPrefecture) }}</td>
+            </tr>
+            <tr>
+              <th>Commune</th>
+              <td>{{ scopeLabel(d.commune) }}</td>
+            </tr>
+            <tr>
+              <th>Localité</th>
+              <td>{{ scopeLabel(d.localite) }}</td>
             </tr>
           </tbody>
         </table>
@@ -312,6 +368,30 @@
               {{ r.libelleRole ?? r.codeRole ?? r.id }}
             </option>
           </select>
+        </div>
+
+        <div class="mt-3">
+          <div class="small text-muted mb-2">
+            Circonscription
+            <span *ngIf="requiresScope(editSelectedRoleId)" class="text-danger">*</span>
+          </div>
+          <div class="alert alert-info py-2 small" *ngIf="requiresScope(editSelectedRoleId)">
+            Renseigner la zone couverte par l’utilisateur pour filtrer les données qui le concernent.
+          </div>
+          <div class="form-row">
+            <div class="form-group col-md-6" *ngFor="let scope of scopeConfigs">
+              <label class="small text-muted">{{ scope.label }}</label>
+              <select class="form-control" [(ngModel)]="editForm[scope.key]" [disabled]="saving">
+                <option [ngValue]="null">— Non rattaché —</option>
+                <option *ngFor="let option of scope.options(); trackBy: trackScopeById" [ngValue]="option.id">
+                  {{ optionLabel(option) }}
+                </option>
+              </select>
+            </div>
+          </div>
+          <div class="text-danger small" *ngIf="!scopeIsValid(editSelectedRoleId, editForm)">
+            {{ scopeValidationMessage(editSelectedRoleId) }}
+          </div>
         </div>
       </div>
       <div class="modal-footer">

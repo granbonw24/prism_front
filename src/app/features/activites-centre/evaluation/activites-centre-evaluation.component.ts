@@ -29,14 +29,29 @@ type EvaluationRow = {
   niveauEvaluation?: Ref | null;
   themeEvaluation?: Ref | null;
   tauxEvaluation?: Ref | null;
+  typeEvaluation?: TypeEvaluation | string | null;
+  themesTaux?: ThemeTauxRow[] | null;
+};
+
+type TypeEvaluation = 'FORMATIVE' | 'SOMMATIVE' | 'CERTIFICATIVE';
+
+type ThemeTauxRow = {
+  id?: number | null;
+  themeEvaluation?: Ref | null;
+  taux?: number | null;
+};
+
+type ThemeTauxForm = {
+  idThemeEvaluation: number;
+  taux: number | null;
 };
 
 type EvaluationForm = {
   idAlpha: number | null;
   idPeriodeEvaluation: number | null;
   idNiveauEvaluation: number | null;
-  idThemeEvaluation: number | null;
-  idTauxEvaluation: number | null;
+  typeEvaluation: TypeEvaluation | null;
+  themesTaux: ThemeTauxForm[];
 };
 
 @Component({
@@ -47,12 +62,13 @@ type EvaluationForm = {
   styleUrl: './activites-centre-evaluation.component.css',
 })
 export class ActivitesCentreEvaluationComponent implements OnInit {
+  readonly typeOptions: TypeEvaluation[] = ['FORMATIVE', 'SOMMATIVE', 'CERTIFICATIVE'];
+
   rows: EvaluationRow[] = [];
   alphas: AlphaOption[] = [];
   periodes: Ref[] = [];
   niveaux: Ref[] = [];
   themes: Ref[] = [];
-  taux: Ref[] = [];
 
   loading = false;
   saving = false;
@@ -91,8 +107,8 @@ export class ActivitesCentreEvaluationComponent implements OnInit {
         this.refLabel(row.alpha),
         this.refLabel(row.periodeEvaluation),
         this.refLabel(row.niveauEvaluation),
-        this.refLabel(row.themeEvaluation),
-        this.refLabel(row.tauxEvaluation),
+        this.typeLabel(row.typeEvaluation),
+        this.themesTauxLabel(row),
       ]
         .join(' ')
         .toLowerCase()
@@ -104,7 +120,13 @@ export class ActivitesCentreEvaluationComponent implements OnInit {
     const selected = this.niveaux.find((niveau) => niveau.id === this.form.idNiveauEvaluation);
     const niveauCode = this.normalizeNiveau(selected);
     if (!niveauCode) return this.themes;
-    return this.themes.filter((theme) => this.themeMatchesNiveau(theme, niveauCode));
+    return this.themes.filter((theme) => this.themeMatchesNiveau(theme, niveauCode, this.form.typeEvaluation));
+  }
+
+  get availableTypeOptions(): TypeEvaluation[] {
+    const selected = this.niveaux.find((niveau) => niveau.id === this.form.idNiveauEvaluation);
+    const niveauCode = this.normalizeNiveau(selected);
+    return this.typeOptions.filter((type) => this.typeAllowedForNiveau(type, niveauCode));
   }
 
   reload(): void {
@@ -116,15 +138,13 @@ export class ActivitesCentreEvaluationComponent implements OnInit {
       periodes: this.http.get<unknown>(`${this.apiBaseUrl}/api/periodes-evaluation`),
       niveaux: this.http.get<unknown>(`${this.apiBaseUrl}/api/niveaux-evaluation`),
       themes: this.http.get<unknown>(`${this.apiBaseUrl}/api/themes-evaluation`),
-      taux: this.http.get<unknown>(`${this.apiBaseUrl}/api/taux-evaluation`),
     }).subscribe({
-      next: ({ evaluations, alphas, periodes, niveaux, themes, taux }) => {
+      next: ({ evaluations, alphas, periodes, niveaux, themes }) => {
         this.rows = unwrapListBody(evaluations) as EvaluationRow[];
         this.alphas = unwrapListBody(alphas) as AlphaOption[];
         this.periodes = unwrapListBody(periodes) as Ref[];
         this.niveaux = unwrapListBody(niveaux) as Ref[];
         this.themes = unwrapListBody(themes) as Ref[];
-        this.taux = unwrapListBody(taux) as Ref[];
         this.loading = false;
       },
       error: (err: HttpErrorResponse) => {
@@ -151,9 +171,14 @@ export class ActivitesCentreEvaluationComponent implements OnInit {
       idAlpha: row.alpha?.id ?? null,
       idPeriodeEvaluation: row.periodeEvaluation?.id ?? null,
       idNiveauEvaluation: row.niveauEvaluation?.id ?? null,
-      idThemeEvaluation: row.themeEvaluation?.id ?? null,
-      idTauxEvaluation: row.tauxEvaluation?.id ?? null,
+      typeEvaluation: this.asTypeEvaluation(row.typeEvaluation),
+      themesTaux:
+        row.themesTaux?.map((item) => ({
+          idThemeEvaluation: item.themeEvaluation?.id ?? 0,
+          taux: item.taux ?? null,
+        })).filter((item) => item.idThemeEvaluation > 0) ?? [],
     };
+    this.syncThemeTauxRows();
     this.formOpen = true;
     this.errorMessage = null;
     this.successMessage = null;
@@ -164,9 +189,14 @@ export class ActivitesCentreEvaluationComponent implements OnInit {
   }
 
   onNiveauChange(): void {
-    if (!this.filteredThemes.some((theme) => theme.id === this.form.idThemeEvaluation)) {
-      this.form.idThemeEvaluation = null;
+    if (!this.availableTypeOptions.some((type) => type === this.form.typeEvaluation)) {
+      this.form.typeEvaluation = null;
     }
+    this.syncThemeTauxRows();
+  }
+
+  onTypeChange(): void {
+    this.syncThemeTauxRows();
   }
 
   save(): void {
@@ -178,16 +208,32 @@ export class ActivitesCentreEvaluationComponent implements OnInit {
       this.errorMessage = 'Le niveau d’évaluation est obligatoire.';
       return;
     }
-    if (!this.form.idThemeEvaluation) {
-      this.errorMessage = 'Le thème/type d’évaluation est obligatoire.';
+    if (!this.form.typeEvaluation) {
+      this.errorMessage = 'Le type d’évaluation est obligatoire.';
+      return;
+    }
+    if (this.form.themesTaux.length === 0) {
+      this.errorMessage = 'Aucun thème compatible avec ce niveau et ce type.';
+      return;
+    }
+    const invalidTheme = this.form.themesTaux.find((item) => item.taux == null || item.taux < 0 || item.taux > 100);
+    if (invalidTheme) {
+      this.errorMessage = 'Chaque thème doit avoir un taux compris entre 0 et 100.';
       return;
     }
 
     this.saving = true;
+    const payload = {
+      ...this.form,
+      themesTaux: this.form.themesTaux.map((item) => ({
+        idThemeEvaluation: item.idThemeEvaluation,
+        taux: item.taux,
+      })),
+    };
     const request =
       this.formMode === 'edit' && this.editingId != null
-        ? this.http.put(`${this.apiBaseUrl}/api/evaluation/${this.editingId}`, this.form)
-        : this.http.post(`${this.apiBaseUrl}/api/evaluation`, this.form);
+        ? this.http.put(`${this.apiBaseUrl}/api/evaluation/${this.editingId}`, payload)
+        : this.http.post(`${this.apiBaseUrl}/api/evaluation`, payload);
 
     request.subscribe({
       next: () => {
@@ -230,15 +276,37 @@ export class ActivitesCentreEvaluationComponent implements OnInit {
     return [ref.code, ref.libelle].filter(Boolean).join(' — ') || `#${ref.id ?? ''}`;
   }
 
-  themeNiveauHint(theme: Ref): string {
-    const niveau = this.normalizeText(theme.niveau);
+  typeLabel(type: TypeEvaluation | string | null | undefined): string {
+    if (type === 'FORMATIVE') return 'Formative';
+    if (type === 'SOMMATIVE') return 'Sommative';
+    if (type === 'CERTIFICATIVE') return 'Certificative';
+    return '-';
+  }
+
+  themesTauxLabel(row: EvaluationRow): string {
+    const rows = row.themesTaux ?? [];
+    if (rows.length > 0) {
+      return rows.map((item) => `${this.refLabel(item.themeEvaluation)} : ${item.taux ?? '-'}%`).join(' | ');
+    }
+    if (row.themeEvaluation) {
+      return `${this.refLabel(row.themeEvaluation)}${row.tauxEvaluation ? ` : ${this.refLabel(row.tauxEvaluation)}` : ''}`;
+    }
+    return '-';
+  }
+
+  themeForForm(item: ThemeTauxForm): Ref | null {
+    return this.themes.find((theme) => theme.id === item.idThemeEvaluation) ?? null;
+  }
+
+  themeNiveauHint(theme: Ref | null): string {
+    const niveau = this.normalizeText(theme?.niveau);
     if (niveau === 'NIVEAU_1') return 'Niveau 1';
     if (niveau === 'NIVEAU_2') return 'Niveau 2';
     if (niveau === 'POST_ALPHA') return 'Post Alpha';
     return '';
   }
 
-  themeOptionLabel(theme: Ref): string {
+  themeOptionLabel(theme: Ref | null): string {
     const hint = this.themeNiveauHint(theme);
     return hint ? `${this.refLabel(theme)} (${hint})` : this.refLabel(theme);
   }
@@ -248,8 +316,8 @@ export class ActivitesCentreEvaluationComponent implements OnInit {
       idAlpha: null,
       idPeriodeEvaluation: null,
       idNiveauEvaluation: null,
-      idThemeEvaluation: null,
-      idTauxEvaluation: null,
+      typeEvaluation: null,
+      themesTaux: [],
     };
   }
 
@@ -261,16 +329,40 @@ export class ActivitesCentreEvaluationComponent implements OnInit {
     return null;
   }
 
-  private themeMatchesNiveau(theme: Ref, niveau: 'NIVEAU_1' | 'NIVEAU_2' | 'POST_ALPHA'): boolean {
+  private themeMatchesNiveau(theme: Ref, niveau: 'NIVEAU_1' | 'NIVEAU_2' | 'POST_ALPHA', type: TypeEvaluation | null): boolean {
     const themeNiveau = this.normalizeText(theme.niveau);
     if (themeNiveau && themeNiveau !== niveau) {
       return false;
     }
     const label = this.normalizeText(`${theme.code ?? ''} ${theme.libelle ?? ''}`);
-    if (label.includes('FORMATIVE')) return niveau === 'NIVEAU_1';
-    if (label.includes('CERTIFICATIVE')) return niveau === 'NIVEAU_2' || niveau === 'POST_ALPHA';
-    if (label.includes('SOMMATIVE')) return true;
+    if (label.includes('FORMATIVE')) return type === 'FORMATIVE' && niveau === 'NIVEAU_1';
+    if (label.includes('CERTIFICATIVE')) return type === 'CERTIFICATIVE' && (niveau === 'NIVEAU_2' || niveau === 'POST_ALPHA');
+    if (label.includes('SOMMATIVE')) return !type || type === 'SOMMATIVE';
     return true;
+  }
+
+  private typeAllowedForNiveau(type: TypeEvaluation, niveau: 'NIVEAU_1' | 'NIVEAU_2' | 'POST_ALPHA' | null): boolean {
+    if (!niveau) return true;
+    if (type === 'FORMATIVE') return niveau === 'NIVEAU_1';
+    if (type === 'CERTIFICATIVE') return niveau === 'NIVEAU_2' || niveau === 'POST_ALPHA';
+    return true;
+  }
+
+  private syncThemeTauxRows(): void {
+    const previous = new Map(this.form.themesTaux.map((item) => [item.idThemeEvaluation, item.taux]));
+    this.form.themesTaux = this.filteredThemes
+      .map((theme) => theme.id)
+      .filter((id): id is number => id != null)
+      .map((id) => ({
+        idThemeEvaluation: id,
+        taux: previous.get(id) ?? null,
+      }));
+  }
+
+  private asTypeEvaluation(type: TypeEvaluation | string | null | undefined): TypeEvaluation | null {
+    const value = this.normalizeText(type);
+    if (value === 'FORMATIVE' || value === 'SOMMATIVE' || value === 'CERTIFICATIVE') return value;
+    return null;
   }
 
   private normalizeText(value: string | null | undefined): string {

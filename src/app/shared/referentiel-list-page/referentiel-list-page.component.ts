@@ -69,6 +69,9 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
 
   /** Filtre texte client sur les colonnes affichées */
   listFilter = '';
+  listPageIndex = 0;
+  listPageSize = 20;
+  readonly listPageSizeOptions = [10, 20, 50, 100, 200];
 
   /** Filtres structurés (centre, période, année, niveau) */
   filterCentreId = '';
@@ -226,6 +229,14 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
     return this.hasActiveStructuredFilter || !!this.listFilter?.trim();
   }
 
+  get canGoPrevListPage(): boolean {
+    return this.currentListPageIndex > 0;
+  }
+
+  get canGoNextListPage(): boolean {
+    return this.currentListPageIndex < this.listPageCount - 1;
+  }
+
   get filteredRows(): Record<string, unknown>[] {
     let list = this.rows;
     if (this.inputStatsContext) {
@@ -236,6 +247,30 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
       return list;
     }
     return list.filter((row) => this.rowMatchesFilter(row, q));
+  }
+
+  get filteredRowCount(): number {
+    return this.filteredRows.length;
+  }
+
+  get listPageCount(): number {
+    return Math.max(1, Math.ceil(this.filteredRowCount / this.listPageSize));
+  }
+
+  get currentListPageIndex(): number {
+    return Math.min(Math.max(this.listPageIndex, 0), this.listPageCount - 1);
+  }
+
+  get listPageStart(): number {
+    return this.filteredRowCount === 0 ? 0 : this.currentListPageIndex * this.listPageSize;
+  }
+
+  get listPageEnd(): number {
+    return Math.min(this.listPageStart + this.listPageSize, this.filteredRowCount);
+  }
+
+  get pagedRows(): Record<string, unknown>[] {
+    return this.filteredRows.slice(this.listPageStart, this.listPageEnd);
   }
 
   /** Graphiques (données filtrées = même périmètre que le tableau). */
@@ -474,11 +509,15 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
   }
 
   getFieldOptions(field: ReferentielFormField): Array<{ value: string | number; label: string }> {
+    if (field.options?.length) {
+      return field.options;
+    }
     return this.fieldOptions[this.optionsCacheKey(field)] ?? [];
   }
 
   clearListFilter(): void {
     this.listFilter = '';
+    this.resetListPage();
   }
 
   clearStructuredFilters(): void {
@@ -487,6 +526,7 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
     this.filterPeriodeId = '';
     this.filterAnneeId = '';
     this.filterNiveauId = '';
+    this.resetListPage();
   }
 
   clearAllListFilters(): void {
@@ -508,6 +548,28 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
     this.successMessage = null;
     this.clearAllListFilters();
     this.fetch();
+  }
+
+  resetListPage(): void {
+    this.listPageIndex = 0;
+  }
+
+  onListPageSizeChange(): void {
+    this.resetListPage();
+  }
+
+  goPrevListPage(): void {
+    if (!this.canGoPrevListPage) {
+      return;
+    }
+    this.listPageIndex = this.currentListPageIndex - 1;
+  }
+
+  goNextListPage(): void {
+    if (!this.canGoNextListPage) {
+      return;
+    }
+    this.listPageIndex = this.currentListPageIndex + 1;
   }
 
   resolveRowId(row: Record<string, unknown>): string | number | null {
@@ -753,7 +815,7 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
           out[f.key] = null;
         } else {
           const n = typeof v === 'number' ? v : Number(v);
-          out[f.key] = Number.isNaN(n) ? null : n;
+          out[f.key] = Number.isNaN(n) ? v : n;
         }
       } else if (f.type === 'date' && typeof v === 'string' && v.length >= 10) {
         out[f.key] = v.slice(0, 10);
@@ -788,6 +850,8 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
         const n = typeof v === 'number' ? v : Number(v);
         if (!Number.isNaN(n)) {
           out[f.key] = f.type === 'select' && f.payloadAsObjectId ? { id: n } : n;
+        } else if (f.type === 'select') {
+          out[f.key] = f.payloadAsObjectId ? { id: v } : v;
         }
       } else {
         out[f.key] = v;
@@ -1261,7 +1325,7 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
 
   private loadFieldOptions(): void {
     for (const field of this.fieldsForForm) {
-      if (field.type !== 'select' || !field.optionsApiPath) continue;
+      if (field.type !== 'select' || field.options?.length || !field.optionsApiPath) continue;
       const cacheKey = this.optionsCacheKey(field);
       if (this.fieldOptionsApiLoaded.has(cacheKey)) {
         this.mergeSeedIntoFieldOptions(cacheKey);
@@ -1292,7 +1356,7 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
       this.optionSubs.push(sub);
     }
     for (const field of this.fieldsForForm) {
-      if (field.type !== 'select' || !field.optionsApiPath) continue;
+      if (field.type !== 'select' || field.options?.length || !field.optionsApiPath) continue;
       const cacheKey = this.optionsCacheKey(field);
       if (!this.fieldOptionsApiLoaded.has(cacheKey) && this.optionSeeds[cacheKey]) {
         this.fieldOptions[cacheKey] = [this.optionSeeds[cacheKey]];

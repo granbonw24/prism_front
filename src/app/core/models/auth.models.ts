@@ -11,12 +11,26 @@ export interface LoginResponse {
   email: string | null;
   roles: string[];
   permissions: string[];
+  idRegion?: number | null;
+  idDrena?: number | null;
+  idIep?: number | null;
+  idDepartement?: number | null;
+  idSousPrefecture?: number | null;
+  idCommune?: number | null;
+  idLocalite?: number | null;
 }
 
 export interface AuthMeResponse {
   userId: number;
   username: string;
   permissions: string[];
+  idRegion?: number | null;
+  idDrena?: number | null;
+  idIep?: number | null;
+  idDepartement?: number | null;
+  idSousPrefecture?: number | null;
+  idCommune?: number | null;
+  idLocalite?: number | null;
 }
 
 export interface AuthSession {
@@ -25,4 +39,11 @@ export interface AuthSession {
   email?: string | null;
   roles: string[];
   permissions: string[];
+  idRegion?: number | null;
+  idDrena?: number | null;
+  idIep?: number | null;
+  idDepartement?: number | null;
+  idSousPrefecture?: number | null;
+  idCommune?: number | null;
+  idLocalite?: number | null;
 }

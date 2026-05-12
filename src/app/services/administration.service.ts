@@ -14,6 +14,7 @@ import { API_BASE_URL } from '@core/tokens/api-base-url.token';
 import { SpringPage } from '@models/centre';
 import {
   AppRole,
+  AdminScopeOption,
   AppUserAdmin,
   AppUserAdminUpsertRequest,
   Fonctionnalite,
@@ -44,6 +45,21 @@ export class AdministrationService {
     return this.http
       .get<unknown>(`${this.apiBaseUrl}/api/app-role`)
       .pipe(map((body) => normalizeAppRoleList(body)));
+  }
+
+  getScopeOptions(apiPath: string): Observable<AdminScopeOption[]> {
+    return this.http.get<unknown>(`${this.apiBaseUrl}${apiPath}`).pipe(
+      map((body) => {
+        const list = Array.isArray(body)
+          ? body
+          : Array.isArray((body as { content?: unknown[] })?.content)
+            ? (body as { content: unknown[] }).content
+            : [];
+        return list
+          .map((row) => this.normalizeScopeOption(row))
+          .filter((row): row is AdminScopeOption => row != null);
+      }),
+    );
   }
 
   createRole(payload: Partial<AppRole>): Observable<AppRole> {
@@ -173,5 +189,47 @@ export class AdministrationService {
 
   deletePersonnel(id: number): Observable<void> {
     return this.http.delete<void>(`${this.apiBaseUrl}/api/admin/personnel/${id}`);
+  }
+
+  private normalizeScopeOption(row: unknown): AdminScopeOption | null {
+    if (row == null || typeof row !== 'object') {
+      return null;
+    }
+    const r = row as Record<string, unknown>;
+    const id = Number(r['id']);
+    if (!Number.isFinite(id)) {
+      return null;
+    }
+    const code = this.firstText(r, [
+      'code',
+      'codeRegion',
+      'codeDrena',
+      'codeIep',
+      'codeDepartement',
+      'codeSousPrefecture',
+      'codeCommune',
+      'codeLocalite',
+    ]);
+    const libelle = this.firstText(r, [
+      'libelle',
+      'libelleRegion',
+      'nomDrena',
+      'nomIep',
+      'nomDepartement',
+      'nomSousPrefecture',
+      'nomCommune',
+      'nomLocalite',
+    ]);
+    return { ...r, id, code, libelle };
+  }
+
+  private firstText(row: Record<string, unknown>, keys: string[]): string | null {
+    for (const key of keys) {
+      const value = row[key];
+      if (value != null && String(value).trim()) {
+        return String(value).trim();
+      }
+    }
+    return null;
   }
 }

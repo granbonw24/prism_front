@@ -31,6 +31,20 @@ export interface AppUserAdmin {
   email?: string;
   actif?: boolean;
   roleIds: number[];
+  idRegion?: number | null;
+  idDrena?: number | null;
+  idIep?: number | null;
+  idDepartement?: number | null;
+  idSousPrefecture?: number | null;
+  idCommune?: number | null;
+  idLocalite?: number | null;
+  region?: AdminReference | null;
+  drena?: AdminReference | null;
+  iep?: AdminReference | null;
+  departement?: AdminReference | null;
+  sousPrefecture?: AdminReference | null;
+  commune?: AdminReference | null;
+  localite?: AdminReference | null;
 }
 
 export interface AppUserAdminUpsertRequest {
@@ -39,6 +53,26 @@ export interface AppUserAdminUpsertRequest {
   actif?: boolean | null;
   password?: string | null;
   roleIds?: number[] | null;
+  idRegion?: number | null;
+  idDrena?: number | null;
+  idIep?: number | null;
+  idDepartement?: number | null;
+  idSousPrefecture?: number | null;
+  idCommune?: number | null;
+  idLocalite?: number | null;
+}
+
+export interface AdminReference {
+  id?: number | null;
+  code?: string | null;
+  libelle?: string | null;
+}
+
+export interface AdminScopeOption {
+  id: number;
+  code?: string | null;
+  libelle?: string | null;
+  [key: string]: unknown;
 }
 
 export interface PersonnelAdmin {

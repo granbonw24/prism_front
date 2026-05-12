@@ -5,6 +5,7 @@ export type ReferentielMenuGroupId =
   | 'geographie'
   | 'centres-autorisations'
   | 'pedagogie'
+  | 'activites-centre'
   | 'documents'
   | 'others';
 
@@ -33,6 +34,7 @@ const F = (
     required?: boolean;
     maxLength?: number;
     optionsApiPath?: string;
+    options?: Array<{ value: string | number; label: string }>;
     optionValueKey?: string;
     optionLabelKeys?: string[];
     payloadAsObjectId?: boolean;
@@ -44,6 +46,7 @@ const F = (
   required: opts?.required ?? false,
   maxLength: opts?.maxLength,
   optionsApiPath: opts?.optionsApiPath,
+  options: opts?.options,
   optionValueKey: opts?.optionValueKey,
   optionLabelKeys: opts?.optionLabelKeys,
   payloadAsObjectId: opts?.payloadAsObjectId,
@@ -197,6 +200,18 @@ export const REFERENTIEL_ROUTE_DATA: ReferentielRouteData[] = [
       F('bientenu', 'Bien tenu', 'text', { maxLength: 30 }),
       F('respmethode', 'Resp. méthode', 'text', { maxLength: 50 }),
       F('bienrensigne', 'Bien renseigné', 'text', { maxLength: 30 }),
+    ],
+  },
+  {
+    path: 'discipline',
+    title: 'Disciplines',
+    menuGroup: 'activites-centre',
+    apiPath: '/api/disciplines',
+    createFields: [
+      F('libelleDiscipline', 'Libellé discipline', 'text', {
+        required: true,
+        maxLength: 100,
+      }),
     ],
   },
   {
@@ -401,6 +416,18 @@ export const REFERENTIEL_ROUTE_DATA: ReferentielRouteData[] = [
     ],
   },
   {
+    path: 'manuel',
+    title: 'Manuels',
+    menuGroup: 'activites-centre',
+    apiPath: '/api/manuels',
+    createFields: [
+      F('libelleManuel', 'Libellé manuel', 'text', {
+        required: true,
+        maxLength: 100,
+      }),
+    ],
+  },
+  {
     path: 'ministere',
     title: 'Ministères',
     menuGroup: 'others',
@@ -494,6 +521,77 @@ export const REFERENTIEL_ROUTE_DATA: ReferentielRouteData[] = [
     apiPath: '/api/niveaucp',
     createFields: [
       F('libelleNiveauCp', 'Libellé', 'text', { required: true, maxLength: 100 }),
+    ],
+  },
+  {
+    path: 'niveaucontrole',
+    title: 'Niveaux de contrôle',
+    menuGroup: 'activites-centre',
+    apiPath: '/api/niveaux-controle',
+    createFields: [
+      F('libelleNiveauControle', 'Libellé niveau contrôle', 'text', {
+        required: true,
+        maxLength: 100,
+      }),
+    ],
+  },
+  {
+    path: 'periodeevaluation',
+    title: 'Périodes d’évaluation',
+    menuGroup: 'activites-centre',
+    apiPath: '/api/periodes-evaluation',
+    createFields: [
+      F('libellePeriodeEvaluation', 'Libellé période', 'text', {
+        required: true,
+        maxLength: 100,
+      }),
+    ],
+  },
+  {
+    path: 'niveauevaluation',
+    title: 'Niveaux d’évaluation',
+    menuGroup: 'activites-centre',
+    apiPath: '/api/niveaux-evaluation',
+    createFields: [
+      F('libelleNiveauEvaluation', 'Libellé niveau évaluation', 'text', {
+        required: true,
+        maxLength: 100,
+      }),
+    ],
+  },
+  {
+    path: 'themeevaluation',
+    title: 'Thèmes d’évaluation',
+    menuGroup: 'activites-centre',
+    apiPath: '/api/themes-evaluation',
+    createFields: [
+      F('libelleThemeEvaluation', 'Libellé thème', 'text', {
+        required: true,
+        maxLength: 200,
+      }),
+      F('niveau', 'Niveau rattaché', 'select', {
+        required: true,
+        options: [
+          { value: 'NIVEAU_1', label: 'Niveau 1' },
+          { value: 'NIVEAU_2', label: 'Niveau 2' },
+          { value: 'POST_ALPHA', label: 'Post Alpha' },
+        ],
+      }),
+    ],
+    columnLabels: {
+      niveau: 'Niveau rattaché',
+    },
+  },
+  {
+    path: 'aspectaameliorer',
+    title: 'Aspects à améliorer',
+    menuGroup: 'activites-centre',
+    apiPath: '/api/aspects-a-ameliorer',
+    createFields: [
+      F('libelleAspectAAmeliorer', 'Libellé aspect à améliorer', 'text', {
+        required: true,
+        maxLength: 200,
+      }),
     ],
   },
   {

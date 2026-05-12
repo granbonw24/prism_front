@@ -166,6 +166,7 @@
               <select
                 class="form-control form-control-sm"
                 [(ngModel)]="filterCentreId"
+                (ngModelChange)="resetListPage()"
               >
                 <option value="">Tous les centres</option>
                 <option *ngFor="let o of centreFilterOptions" [value]="o.value">{{ o.label }}</option>
@@ -179,6 +180,7 @@
               <select
                 class="form-control form-control-sm"
                 [(ngModel)]="filterSecondaryCentreId"
+                (ngModelChange)="resetListPage()"
               >
                 <option value="">Tous</option>
                 <option *ngFor="let o of secondaryCentreFilterOptions" [value]="o.value">{{ o.label }}</option>
@@ -192,6 +194,7 @@
               <select
                 class="form-control form-control-sm"
                 [(ngModel)]="filterPeriodeId"
+                (ngModelChange)="resetListPage()"
               >
                 <option value="">Toutes</option>
                 <option *ngFor="let o of periodeFilterOptions" [value]="o.value">{{ o.label }}</option>
@@ -205,6 +208,7 @@
               <select
                 class="form-control form-control-sm"
                 [(ngModel)]="filterAnneeId"
+                (ngModelChange)="resetListPage()"
               >
                 <option value="">Toutes</option>
                 <option *ngFor="let o of anneeFilterOptions" [value]="o.value">{{ o.label }}</option>
@@ -218,6 +222,7 @@
               <select
                 class="form-control form-control-sm"
                 [(ngModel)]="filterNiveauId"
+                (ngModelChange)="resetListPage()"
               >
                 <option value="">Tous</option>
                 <option *ngFor="let o of niveauFilterOptions" [value]="o.value">{{ o.label }}</option>
@@ -245,6 +250,7 @@
             class="form-control border-left-0 mena-list-filter-input"
             placeholder="Filtrer la liste…"
             [(ngModel)]="listFilter"
+            (ngModelChange)="resetListPage()"
             [disabled]="loading || !rows.length"
             autocomplete="off"
             aria-label="Filtrer la liste"
@@ -280,8 +286,8 @@
             </tr>
           </thead>
           <tbody>
-            <tr *ngFor="let row of filteredRows; let i = index">
-              <td>{{ i + 1 }}</td>
+            <tr *ngFor="let row of pagedRows; let i = index">
+              <td>{{ listPageStart + i + 1 }}</td>
               <td
                 *ngFor="let col of columns"
                 class="mena-table-cell text-truncate"
@@ -314,6 +320,46 @@
             </tr>
           </tbody>
         </table>
+        <div
+          class="d-flex flex-wrap align-items-center justify-content-between px-3 py-2 bg-light border-top small"
+        >
+          <div class="d-flex align-items-center mb-2 mb-md-0">
+            <span class="text-muted mr-2">Lignes par page</span>
+            <select
+              class="form-control form-control-sm"
+              style="width: 5rem"
+              [(ngModel)]="listPageSize"
+              (ngModelChange)="onListPageSizeChange()"
+            >
+              <option *ngFor="let size of listPageSizeOptions" [ngValue]="size">{{ size }}</option>
+            </select>
+          </div>
+          <div class="d-flex align-items-center mb-2 mb-md-0">
+            <button
+              type="button"
+              class="btn btn-outline-secondary btn-sm"
+              (click)="goPrevListPage()"
+              [disabled]="!canGoPrevListPage"
+            >
+              Précédent
+            </button>
+            <span class="mx-2 text-muted">
+              Page {{ currentListPageIndex + 1 }} / {{ listPageCount }}
+            </span>
+            <button
+              type="button"
+              class="btn btn-outline-secondary btn-sm"
+              (click)="goNextListPage()"
+              [disabled]="!canGoNextListPage"
+            >
+              Suivant
+            </button>
+          </div>
+          <div class="text-muted">
+            {{ filteredRowCount === 0 ? 0 : listPageStart + 1 }}-{{ listPageEnd }}
+            sur {{ filteredRowCount }} résultat(s)
+          </div>
+        </div>
         </ng-container>
         <ng-template #noFilterHits>
           <p class="p-4 text-muted mb-0">
