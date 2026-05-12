@@ -127,17 +127,48 @@
       <div *ngIf="stepIndex === 1">
         <div class="form-row">
           <div class="form-group col-md-3">
-            <label class="small text-muted">Localité</label>
-            <select class="form-control" [(ngModel)]="model.centre.localiteId" [disabled]="saving">
+            <label class="small text-muted">Région administrative</label>
+            <select class="form-control" [(ngModel)]="createRegionId" (ngModelChange)="onCreateRegionChange()" [disabled]="saving">
               <option [ngValue]="null">--</option>
-              <option *ngFor="let l of localites" [ngValue]="l.id">{{ localiteOptionLabel(l) }}</option>
+              <option *ngFor="let r of regions" [ngValue]="r.id">{{ refOptionLibelle(r) }}</option>
+            </select>
+          </div>
+          <div class="form-group col-md-3">
+            <label class="small text-muted">DRENA</label>
+            <select class="form-control" [(ngModel)]="createDrenaId" (ngModelChange)="onCreateDrenaChange()" [disabled]="saving">
+              <option [ngValue]="null">--</option>
+              <option *ngFor="let d of filteredCreateDrenas()" [ngValue]="d.id">{{ refOptionLibelle(d) }}</option>
+            </select>
+          </div>
+          <div class="form-group col-md-3">
+            <label class="small text-muted">Département</label>
+            <select class="form-control" [(ngModel)]="createDepartementId" (ngModelChange)="onCreateDepartementChange()" [disabled]="saving">
+              <option [ngValue]="null">--</option>
+              <option *ngFor="let d of filteredCreateDepartements()" [ngValue]="d.id">{{ refOptionLibelle(d) }}</option>
+            </select>
+          </div>
+          <div class="form-group col-md-3">
+            <label class="small text-muted">Commune</label>
+            <select class="form-control" [(ngModel)]="createCommuneId" (ngModelChange)="onCreateCommuneChange()" [disabled]="saving">
+              <option [ngValue]="null">--</option>
+              <option *ngFor="let c of filteredCreateCommunes()" [ngValue]="c.id">{{ refOptionLibelle(c) }}</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group col-md-3">
+            <label class="small text-muted">Localité</label>
+            <select class="form-control" [(ngModel)]="model.centre.localiteId" (ngModelChange)="onCreateLocaliteChange()" [disabled]="saving">
+              <option [ngValue]="null">--</option>
+              <option *ngFor="let l of filteredCreateLocalites()" [ngValue]="l.id">{{ localiteOptionLabel(l) }}</option>
             </select>
           </div>
           <div class="form-group col-md-3">
             <label class="small text-muted">IEP</label>
-            <select class="form-control" [(ngModel)]="model.centre.iepId" [disabled]="saving">
+            <select class="form-control" [(ngModel)]="model.centre.iepId" (ngModelChange)="onCreateIepChange()" [disabled]="saving">
               <option [ngValue]="null">--</option>
-              <option *ngFor="let i of ieps" [ngValue]="i.id">{{ iepOptionLabel(i) }}</option>
+              <option *ngFor="let i of filteredCreateIeps()" [ngValue]="i.id">{{ iepOptionLabel(i) }}</option>
             </select>
           </div>
           <div class="form-group col-md-3">
@@ -226,7 +257,8 @@
         <div class="form-row">
           <div class="form-group col-md-6">
             <label class="small text-muted">Nom milieu implantation</label>
-            <input class="form-control" [(ngModel)]="model.centre.nomMilieuImplentation" [disabled]="saving" />
+            <input class="form-control bg-light" [value]="selectedCreateMilieuImplantationLabel()" readonly />
+            <div class="small text-muted mt-1">Déduit automatiquement de la localité sélectionnée.</div>
           </div>
         </div>
 
@@ -952,10 +984,17 @@
 
           <div class="form-row">
             <div class="form-group col-md-3">
-              <label class="small text-muted">DRENA / Région</label>
+              <label class="small text-muted">Région administrative</label>
+              <select class="form-control" [(ngModel)]="editRegionId" (ngModelChange)="onEditRegionChange()" [disabled]="saving">
+                <option [ngValue]="null">--</option>
+                <option *ngFor="let r of regions" [ngValue]="r.id">{{ refOptionLibelle(r) }}</option>
+              </select>
+            </div>
+            <div class="form-group col-md-3">
+              <label class="small text-muted">DRENA</label>
               <select class="form-control" [(ngModel)]="editDrenaId" (ngModelChange)="onEditDrenaChange()" [disabled]="saving">
                 <option [ngValue]="null">--</option>
-                <option *ngFor="let d of drenas" [ngValue]="d.id">{{ refOptionLibelle(d) }}</option>
+                <option *ngFor="let d of filteredEditDrenas()" [ngValue]="d.id">{{ refOptionLibelle(d) }}</option>
               </select>
             </div>
             <div class="form-group col-md-3">
@@ -969,9 +1008,12 @@
               <label class="small text-muted">Département</label>
               <select class="form-control" [(ngModel)]="editDepartementId" (ngModelChange)="onEditDepartementChange()" [disabled]="saving">
                 <option [ngValue]="null">--</option>
-                <option *ngFor="let d of departements" [ngValue]="d.id">{{ refOptionLibelle(d) }}</option>
+                <option *ngFor="let d of filteredEditDepartements()" [ngValue]="d.id">{{ refOptionLibelle(d) }}</option>
               </select>
             </div>
+          </div>
+
+          <div class="form-row">
             <div class="form-group col-md-3">
               <label class="small text-muted">Commune</label>
               <select class="form-control" [(ngModel)]="editCommuneId" (ngModelChange)="onEditCommuneChange()" [disabled]="saving">
@@ -979,9 +1021,6 @@
                 <option *ngFor="let c of filteredEditCommunes()" [ngValue]="c.id">{{ refOptionLibelle(c) }}</option>
               </select>
             </div>
-          </div>
-
-          <div class="form-row">
             <div class="form-group col-md-3">
               <label class="small text-muted">Localité</label>
               <select class="form-control" [(ngModel)]="editForm.idLocalite" (ngModelChange)="onEditLocaliteChange()" [disabled]="saving">
@@ -1065,7 +1104,7 @@
             </div>
             <div class="form-group col-md-6">
               <label class="small text-muted">Milieu d’implantation</label>
-              <input class="form-control" [(ngModel)]="editForm.nomMilieuImplentation" [disabled]="saving" />
+              <input class="form-control bg-light" [value]="selectedEditMilieuImplantationLabel()" readonly />
             </div>
           </div>
 

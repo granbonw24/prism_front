@@ -212,9 +212,14 @@
           <div class="form-row">
             <div class="form-group col-md-6" *ngFor="let scope of scopeConfigs">
               <label class="small text-muted">{{ scope.label }}</label>
-              <select class="form-control" [(ngModel)]="createForm[scope.key]" [disabled]="saving">
+              <select
+                class="form-control"
+                [ngModel]="createForm[scope.key]"
+                (ngModelChange)="onScopeChanged(createForm, scope.key, $event)"
+                [disabled]="saving"
+              >
                 <option [ngValue]="null">— Non rattaché —</option>
-                <option *ngFor="let option of scope.options(); trackBy: trackScopeById" [ngValue]="option.id">
+                <option *ngFor="let option of filteredScopeOptions(scope.key, createForm); trackBy: trackScopeById" [ngValue]="option.id">
                   {{ optionLabel(option) }}
                 </option>
               </select>
@@ -381,9 +386,14 @@
           <div class="form-row">
             <div class="form-group col-md-6" *ngFor="let scope of scopeConfigs">
               <label class="small text-muted">{{ scope.label }}</label>
-              <select class="form-control" [(ngModel)]="editForm[scope.key]" [disabled]="saving">
+              <select
+                class="form-control"
+                [ngModel]="editForm[scope.key]"
+                (ngModelChange)="onScopeChanged(editForm, scope.key, $event)"
+                [disabled]="saving"
+              >
                 <option [ngValue]="null">— Non rattaché —</option>
-                <option *ngFor="let option of scope.options(); trackBy: trackScopeById" [ngValue]="option.id">
+                <option *ngFor="let option of filteredScopeOptions(scope.key, editForm); trackBy: trackScopeById" [ngValue]="option.id">
                   {{ optionLabel(option) }}
                 </option>
               </select>

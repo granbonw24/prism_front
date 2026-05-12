@@ -44,6 +44,9 @@ type ControleRow = {
   niveauAlpha?: Ref | null;
   dateDemarrageAppren?: string | null;
   conformiteProgramme?: boolean | null;
+  valideeCoordonnateur?: boolean | null;
+  valideeSuperviseur?: boolean | null;
+  valideeCentrale?: boolean | null;
   horairesFormation?: HoraireRow[] | null;
   kitsManuels?: KitRow[] | null;
 };
@@ -94,6 +97,7 @@ export class ActivitesCentreControleComponent implements OnInit {
 
   loading = false;
   saving = false;
+  validatingId: number | null = null;
   errorMessage: string | null = null;
   successMessage: string | null = null;
   searchText = '';
@@ -120,6 +124,10 @@ export class ActivitesCentreControleComponent implements OnInit {
 
   get canEdit(): boolean {
     return this.auth.hasPermission('ACTIVITES_CENTRE_CONTROLE:MODIFIER');
+  }
+
+  get canValidate(): boolean {
+    return this.auth.hasPermission('ACTIVITES_CENTRE_CONTROLE:VALIDER');
   }
 
   get filteredRows(): ControleRow[] {
@@ -185,7 +193,7 @@ export class ActivitesCentreControleComponent implements OnInit {
   }
 
   openEdit(row: ControleRow): void {
-    if (!this.canEdit) return;
+    if (!this.canEdit || this.isLocked(row)) return;
     this.formMode = 'edit';
     this.editingId = row.id ?? null;
     this.form = this.formFromRow(row);
@@ -252,7 +260,7 @@ export class ActivitesCentreControleComponent implements OnInit {
   }
 
   deleteRow(row: ControleRow): void {
-    if (!this.canEdit || row.id == null) return;
+    if (!this.canEdit || row.id == null || this.isLocked(row)) return;
     const ok = window.confirm(`Supprimer le contrôle ${row.id} ?`);
     if (!ok) return;
     this.http.delete(`${this.apiBaseUrl}/api/controle/${row.id}`).subscribe({
@@ -261,6 +269,24 @@ export class ActivitesCentreControleComponent implements OnInit {
         this.reload();
       },
       error: (err: HttpErrorResponse) => {
+        this.errorMessage = this.httpError(err);
+      },
+    });
+  }
+
+  validateRow(row: ControleRow): void {
+    const step = this.nextValidationStep(row);
+    if (row.id == null || step == null || this.validatingId != null) return;
+    this.validatingId = row.id;
+    this.errorMessage = null;
+    this.http.put(`${this.apiBaseUrl}/api/controle/${row.id}/${step}`, {}).subscribe({
+      next: () => {
+        this.validatingId = null;
+        this.successMessage = 'Validation effectuée.';
+        this.reload();
+      },
+      error: (err: HttpErrorResponse) => {
+        this.validatingId = null;
         this.errorMessage = this.httpError(err);
       },
     });
@@ -305,6 +331,28 @@ export class ActivitesCentreControleComponent implements OnInit {
     if (value === true) return 'Oui';
     if (value === false) return 'Non';
     return '-';
+  }
+
+  validationLabel(row: ControleRow): string {
+    if (row.valideeCentrale) return 'Validé central';
+    if (row.valideeSuperviseur) return 'Validé superviseur';
+    if (row.valideeCoordonnateur) return 'Validé coordonnateur';
+    return 'En attente coordonnateur';
+  }
+
+  validationClass(row: ControleRow): string {
+    if (row.valideeCentrale) return 'badge-success';
+    if (row.valideeSuperviseur) return 'badge-primary';
+    if (row.valideeCoordonnateur) return 'badge-info';
+    return 'badge-secondary';
+  }
+
+  isLocked(row: ControleRow): boolean {
+    return Boolean(row.valideeCoordonnateur || row.valideeSuperviseur || row.valideeCentrale);
+  }
+
+  canValidateRow(row: ControleRow): boolean {
+    return this.nextValidationStep(row) !== null;
   }
 
   horairesLabel(row: ControleRow): string {
@@ -396,6 +444,22 @@ export class ActivitesCentreControleComponent implements OnInit {
 
   private dayLabel(day: string | null | undefined): string {
     return DAYS.find((d) => d.value === day)?.label ?? day ?? '-';
+  }
+
+  private nextValidationStep(row: ControleRow): string | null {
+    if (!this.canValidate) return null;
+    if (!row.valideeCoordonnateur && this.hasValidatorRole(['COORDONNATEUR'])) return 'valider-coordonnateur';
+    if (row.valideeCoordonnateur && !row.valideeSuperviseur && this.hasValidatorRole(['SUPERVISEUR'])) {
+      return 'valider-superviseur';
+    }
+    if (row.valideeSuperviseur && !row.valideeCentrale && this.hasValidatorRole(['SUPERVISEUR_AENF', 'DIRECTEUR'])) {
+      return 'valider-centrale';
+    }
+    return null;
+  }
+
+  private hasValidatorRole(roles: string[]): boolean {
+    return this.auth.hasAnyRole([...roles, 'ADMIN', 'SUPER_ADMIN', 'SUPER_ROOT']);
   }
 
   private httpError(err: HttpErrorResponse): string {

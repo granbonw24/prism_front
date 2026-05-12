@@ -1,0 +1,70 @@
+<ng-container *ngIf="session$ | async as session; else loadingProfile">
+  <div class="d-sm-flex align-items-center justify-content-between mb-4">
+    <div>
+      <h1 class="h3 mb-1 text-gray-800">Profil utilisateur</h1>
+      <p class="text-muted mb-0">Informations du compte connecté et périmètre de travail.</p>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-lg-5 mb-4">
+      <div class="card shadow-sm border-0 h-100">
+        <div class="card-body">
+          <div class="d-flex align-items-center mb-3">
+            <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center mr-3" style="width: 48px; height: 48px;">
+              <i class="fas fa-user"></i>
+            </div>
+            <div>
+              <div class="h5 mb-0 text-gray-900">{{ session.username }}</div>
+              <div class="text-muted small">{{ session.email || 'Email non renseigné' }}</div>
+            </div>
+          </div>
+
+          <dl class="row mb-0">
+            <dt class="col-sm-4 text-muted">Rôle principal</dt>
+            <dd class="col-sm-8 font-weight-bold">{{ presentation.roleLabel(session) }}</dd>
+
+            <dt class="col-sm-4 text-muted">Rôles</dt>
+            <dd class="col-sm-8">{{ roles(session) }}</dd>
+
+            <dt class="col-sm-4 text-muted">Permissions</dt>
+            <dd class="col-sm-8">{{ permissionsCount(session) }} permission(s)</dd>
+          </dl>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-7 mb-4">
+      <div class="card shadow-sm border-0 h-100">
+        <div class="card-header bg-white border-0">
+          <h2 class="h6 mb-0 text-gray-800">Circonscription rattachée</h2>
+        </div>
+        <div class="card-body">
+          <div *ngIf="presentation.allScopes(session).length > 0; else noScope">
+            <div class="table-responsive">
+              <table class="table table-sm mb-0">
+                <tbody>
+                  <tr *ngFor="let scope of presentation.allScopes(session)">
+                    <th class="text-muted font-weight-normal" style="width: 180px;">{{ scope.label }}</th>
+                    <td class="font-weight-bold">{{ presentation.referenceLabel(scope.ref, scope.id) }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <ng-template #noScope>
+            <div class="alert alert-info mb-0">
+              Aucune circonscription spécifique n’est rattachée à ce compte.
+            </div>
+          </ng-template>
+        </div>
+      </div>
+    </div>
+  </div>
+</ng-container>
+
+<ng-template #loadingProfile>
+  <div class="card shadow-sm border-0">
+    <div class="card-body text-muted">Chargement du profil...</div>
+  </div>
+</ng-template>

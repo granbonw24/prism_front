@@ -1,3 +1,9 @@
+export interface AuthReference {
+  id: number;
+  code?: string | null;
+  libelle?: string | null;
+}
+
 export interface LoginRequest {
   username: string;
   password: string;
@@ -18,11 +24,20 @@ export interface LoginResponse {
   idSousPrefecture?: number | null;
   idCommune?: number | null;
   idLocalite?: number | null;
+  region?: AuthReference | null;
+  drena?: AuthReference | null;
+  iep?: AuthReference | null;
+  departement?: AuthReference | null;
+  sousPrefecture?: AuthReference | null;
+  commune?: AuthReference | null;
+  localite?: AuthReference | null;
 }
 
 export interface AuthMeResponse {
   userId: number;
   username: string;
+  email?: string | null;
+  roles?: string[];
   permissions: string[];
   idRegion?: number | null;
   idDrena?: number | null;
@@ -31,6 +46,13 @@ export interface AuthMeResponse {
   idSousPrefecture?: number | null;
   idCommune?: number | null;
   idLocalite?: number | null;
+  region?: AuthReference | null;
+  drena?: AuthReference | null;
+  iep?: AuthReference | null;
+  departement?: AuthReference | null;
+  sousPrefecture?: AuthReference | null;
+  commune?: AuthReference | null;
+  localite?: AuthReference | null;
 }
 
 export interface AuthSession {
@@ -46,4 +68,11 @@ export interface AuthSession {
   idSousPrefecture?: number | null;
   idCommune?: number | null;
   idLocalite?: number | null;
+  region?: AuthReference | null;
+  drena?: AuthReference | null;
+  iep?: AuthReference | null;
+  departement?: AuthReference | null;
+  sousPrefecture?: AuthReference | null;
+  commune?: AuthReference | null;
+  localite?: AuthReference | null;
 }

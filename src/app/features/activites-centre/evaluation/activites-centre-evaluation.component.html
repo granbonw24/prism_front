@@ -35,6 +35,7 @@
           <thead class="thead-light">
             <tr>
               <th>ID</th>
+              <th>Validation</th>
               <th>Centre Alpha</th>
               <th>Période</th>
               <th>Niveau</th>
@@ -46,18 +47,22 @@
           <tbody>
             <tr *ngFor="let row of filteredRows">
               <td class="text-muted">{{ row.id }}</td>
+              <td>
+                <span class="badge" [ngClass]="validationClass(row)">{{ validationLabel(row) }}</span>
+              </td>
               <td>{{ refLabel(row.alpha) }}</td>
               <td>{{ refLabel(row.periodeEvaluation) }}</td>
               <td>{{ refLabel(row.niveauEvaluation) }}</td>
               <td>{{ typeLabel(row.typeEvaluation) }}</td>
               <td>{{ themesTauxLabel(row) }}</td>
               <td class="text-center text-nowrap">
-                <button *ngIf="canEdit" class="btn btn-sm btn-outline-primary mr-1" type="button" (click)="openEdit(row)">Modifier</button>
-                <button *ngIf="canEdit" class="btn btn-sm btn-outline-danger" type="button" (click)="deleteRow(row)">Supprimer</button>
+                <button *ngIf="canEdit" class="btn btn-sm btn-outline-primary mr-1" type="button" (click)="openEdit(row)" [disabled]="isLocked(row)">Modifier</button>
+                <button *ngIf="canValidateRow(row)" class="btn btn-sm btn-outline-success mr-1" type="button" (click)="validateRow(row)" [disabled]="validatingId === row.id">Valider</button>
+                <button *ngIf="canEdit" class="btn btn-sm btn-outline-danger" type="button" (click)="deleteRow(row)" [disabled]="isLocked(row)">Supprimer</button>
               </td>
             </tr>
             <tr *ngIf="filteredRows.length === 0">
-              <td colspan="7" class="text-center text-muted py-4">Aucune évaluation trouvée.</td>
+              <td colspan="8" class="text-center text-muted py-4">Aucune évaluation trouvée.</td>
             </tr>
           </tbody>
         </table>

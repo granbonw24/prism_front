@@ -44,6 +44,14 @@ export class AuthService {
     return permissions.some((permission) => this.hasPermission(permission));
   }
 
+  hasRole(role: string): boolean {
+    return this.currentSession?.roles.includes(role) ?? false;
+  }
+
+  hasAnyRole(roles: string[]): boolean {
+    return roles.some((role) => this.hasRole(role));
+  }
+
   login(body: LoginRequest): Observable<LoginResponse> {
     const url = `${this.apiBaseUrl}/api/auth/login`;
     return this.http.post<LoginResponse>(url, body).pipe(
@@ -76,7 +84,7 @@ export class AuthService {
           userId: me.userId,
           username: me.username,
           email: prev?.email,
-          roles: prev?.roles ?? [],
+          roles: me.roles ?? prev?.roles ?? [],
           permissions: me.permissions ?? [],
           idRegion: me.idRegion ?? prev?.idRegion ?? null,
           idDrena: me.idDrena ?? prev?.idDrena ?? null,

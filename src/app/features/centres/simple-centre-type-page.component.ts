@@ -12,6 +12,7 @@ import {
   CentreRefDetails,
   CentreRow as Row,
   CentreTypeNiveauPayload,
+  DepartementOption,
   IepOption,
   iepOptionLabel,
   LocaliteOption,
@@ -32,6 +33,11 @@ import {
   TypePromoteur,
 } from '@models/centre';
 import { API_BASE_URL } from '@core/tokens/api-base-url.token';
+
+type DrenaDepartementOption = RefOption & {
+  drena?: CentreRefDetails | null;
+  departement?: CentreRefDetails | null;
+};
 
 @Component({
   selector: 'app-simple-centre-type-page',
@@ -82,8 +88,10 @@ export class SimpleCentreTypePageComponent implements OnInit {
   natures: NatureOption[] = [];
   periodicites: PeriodiciteOption[] = [];
   autorites: AutoriteOption[] = [];
+  regions: RefOption[] = [];
   drenas: RefOption[] = [];
-  departements: RefOption[] = [];
+  departements: DepartementOption[] = [];
+  drenaDepartements: DrenaDepartementOption[] = [];
   communes: RefOption[] = [];
   sousPrefectures: SousPrefectureOption[] = [];
   promoteurs: PromoteurOption[] = [];
@@ -137,6 +145,11 @@ export class SimpleCentreTypePageComponent implements OnInit {
   detailsRow: CentreDetailRow | null = null;
   editRowId: number | null = null;
   editLoading = false;
+  createRegionId: number | null = null;
+  createDrenaId: number | null = null;
+  createDepartementId: number | null = null;
+  createCommuneId: number | null = null;
+  editRegionId: number | null = null;
   editDrenaId: number | null = null;
   editDepartementId: number | null = null;
   editCommuneId: number | null = null;
@@ -213,8 +226,10 @@ export class SimpleCentreTypePageComponent implements OnInit {
       }),
       localites: this.http.get<LocaliteOption[]>(`${this.apiBaseUrl}/api/localite-d-implantation`),
       ieps: this.http.get<IepOption[]>(`${this.apiBaseUrl}/api/iep`),
+      regions: this.http.get<any[]>(`${this.apiBaseUrl}/api/region`),
       drenas: this.http.get<any[]>(`${this.apiBaseUrl}/api/drena`),
       departements: this.http.get<any[]>(`${this.apiBaseUrl}/api/departement`),
+      drenaDepartements: this.http.get<any[]>(`${this.apiBaseUrl}/api/drena-departement`),
       communes: this.http.get<any[]>(`${this.apiBaseUrl}/api/commune`),
       sousPrefectures: this.http.get<any[]>(`${this.apiBaseUrl}/api/sous-prefecture`),
       natures: this.http.get<NatureOption[]>(`${this.apiBaseUrl}/api/naturecentre`),
@@ -233,8 +248,17 @@ export class SimpleCentreTypePageComponent implements OnInit {
         this.rows = list.map((x) => this.mapRow(x));
         this.localites = res.localites ?? [];
         this.ieps = res.ieps ?? [];
+        this.regions = (res.regions ?? []).map((x: any) => this.refOptionFromApi(x));
         this.drenas = (res.drenas ?? []).map((x: any) => this.refOptionFromApi(x));
-        this.departements = (res.departements ?? []).map((x: any) => this.refOptionFromApi(x));
+        this.departements = (res.departements ?? []).map((x: any) => ({
+          ...this.refOptionFromApi(x),
+          region: this.asCentreRef(x.region),
+        }));
+        this.drenaDepartements = (res.drenaDepartements ?? []).map((x: any) => ({
+          ...this.refOptionFromApi(x),
+          drena: this.asCentreRef(x.drena),
+          departement: this.asCentreRef(x.departement),
+        }));
         this.communes = (res.communes ?? []).map((x: any) => this.refOptionFromApi(x));
         this.sousPrefectures = (res.sousPrefectures ?? []).map((x: any) => ({
           ...this.refOptionFromApi(x),
@@ -359,6 +383,10 @@ export class SimpleCentreTypePageComponent implements OnInit {
       niveaux: [],
     };
     this.promoteurMode = 'existing';
+    this.createRegionId = null;
+    this.createDrenaId = null;
+    this.createDepartementId = null;
+    this.createCommuneId = null;
   }
 
   onPromoteurModeChange(): void {
@@ -430,6 +458,11 @@ export class SimpleCentreTypePageComponent implements OnInit {
     return found ? this.refOptionLibelle(found) : '—';
   }
 
+  regionLabel(id: number | null | undefined): string {
+    const found = this.regions.find((x) => x.id === id);
+    return found ? this.refOptionLibelle(found) : '—';
+  }
+
   departementLabel(id: number | null | undefined): string {
     const found = this.departements.find((x) => x.id === id);
     return found ? this.refOptionLibelle(found) : '—';
@@ -440,34 +473,118 @@ export class SimpleCentreTypePageComponent implements OnInit {
     return found ? this.refOptionLibelle(found) : '—';
   }
 
+  filteredCreateIeps(): IepOption[] {
+    if (this.createDrenaId == null) {
+      return this.filterIepsByRegion(this.createRegionId);
+    }
+    return this.ieps.filter((iep) => iep.drena?.id === this.createDrenaId);
+  }
+
+  filteredCreateDrenas(): RefOption[] {
+    return this.filterDrenasByRegion(this.createRegionId);
+  }
+
+  filteredCreateDepartements(): DepartementOption[] {
+    return this.filterDepartements(this.createRegionId, this.createDrenaId);
+  }
+
+  filteredCreateCommunes(): RefOption[] {
+    return this.filterCommunes(this.createRegionId, this.createDrenaId, this.createDepartementId);
+  }
+
+  filteredCreateLocalites(): LocaliteOption[] {
+    return this.filterLocalites(
+      this.createRegionId,
+      this.createDrenaId,
+      this.createDepartementId,
+      this.createCommuneId,
+    );
+  }
+
   filteredEditIeps(): IepOption[] {
-    if (this.editDrenaId == null) return this.ieps;
+    if (this.editDrenaId == null) {
+      return this.filterIepsByRegion(this.editRegionId);
+    }
     return this.ieps.filter((iep) => iep.drena?.id === this.editDrenaId);
   }
 
+  filteredEditDrenas(): RefOption[] {
+    return this.filterDrenasByRegion(this.editRegionId);
+  }
+
+  filteredEditDepartements(): DepartementOption[] {
+    return this.filterDepartements(this.editRegionId, this.editDrenaId);
+  }
+
   filteredEditCommunes(): RefOption[] {
-    if (this.editDepartementId == null) return this.communes;
-    const communeIds = new Set(
-      this.localites
-        .filter((localite) => this.localiteDepartementId(localite) === this.editDepartementId)
-        .map((localite) => localite.commune?.id)
-        .filter((id): id is number => id != null),
-    );
-    return this.communes.filter((commune) => communeIds.has(commune.id));
+    return this.filterCommunes(this.editRegionId, this.editDrenaId, this.editDepartementId);
   }
 
   filteredEditLocalites(): LocaliteOption[] {
-    return this.localites.filter((localite) => {
-      const matchesDepartement = this.editDepartementId == null || this.localiteDepartementId(localite) === this.editDepartementId;
-      const matchesCommune = this.editCommuneId == null || localite.commune?.id === this.editCommuneId;
-      return matchesDepartement && matchesCommune;
-    });
+    return this.filterLocalites(
+      this.editRegionId,
+      this.editDrenaId,
+      this.editDepartementId,
+      this.editCommuneId,
+    );
+  }
+
+  onCreateRegionChange(): void {
+    if (this.createDrenaId != null && !this.filteredCreateDrenas().some((drena) => drena.id === this.createDrenaId)) {
+      this.createDrenaId = null;
+    }
+    if (this.model.centre.iepId != null && !this.filteredCreateIeps().some((iep) => iep.id === this.model.centre.iepId)) {
+      this.model.centre.iepId = null as any;
+    }
+    this.clearCreateChildrenFrom('region');
+  }
+
+  onCreateDrenaChange(): void {
+    if (this.model.centre.iepId != null && !this.filteredCreateIeps().some((iep) => iep.id === this.model.centre.iepId)) {
+      this.model.centre.iepId = null as any;
+    }
+    this.clearCreateChildrenFrom('drena');
+  }
+
+  onCreateIepChange(): void {
+    const iep = this.ieps.find((item) => item.id === this.model.centre.iepId);
+    this.createDrenaId = iep?.drena?.id ?? this.createDrenaId;
+  }
+
+  onCreateDepartementChange(): void {
+    this.createRegionId = this.createDepartementId != null ? this.departementRegionId(this.createDepartementId) : this.createRegionId;
+    this.clearCreateChildrenFrom('departement');
+  }
+
+  onCreateCommuneChange(): void {
+    if (this.model.centre.localiteId != null && !this.filteredCreateLocalites().some((localite) => localite.id === this.model.centre.localiteId)) {
+      this.model.centre.localiteId = null as any;
+    }
+  }
+
+  onCreateLocaliteChange(): void {
+    const localite = this.localites.find((item) => item.id === this.model.centre.localiteId);
+    this.createCommuneId = localite?.commune?.id ?? this.createCommuneId;
+    this.createDepartementId = localite ? this.localiteDepartementId(localite) : this.createDepartementId;
+    this.createRegionId = this.createDepartementId != null ? this.departementRegionId(this.createDepartementId) : this.createRegionId;
+    this.model.centre.nomMilieuImplentation = this.localiteMilieuImplantationLabel(localite);
+  }
+
+  onEditRegionChange(): void {
+    if (this.editDrenaId != null && !this.filteredEditDrenas().some((drena) => drena.id === this.editDrenaId)) {
+      this.editDrenaId = null;
+    }
+    if (this.editForm.idIep != null && !this.filteredEditIeps().some((iep) => iep.id === this.editForm.idIep)) {
+      this.editForm.idIep = null;
+    }
+    this.clearEditChildrenFrom('region');
   }
 
   onEditDrenaChange(): void {
     if (this.editForm.idIep != null && !this.filteredEditIeps().some((iep) => iep.id === this.editForm.idIep)) {
       this.editForm.idIep = null;
     }
+    this.clearEditChildrenFrom('drena');
   }
 
   onEditIepChange(): void {
@@ -476,12 +593,8 @@ export class SimpleCentreTypePageComponent implements OnInit {
   }
 
   onEditDepartementChange(): void {
-    if (this.editCommuneId != null && !this.filteredEditCommunes().some((commune) => commune.id === this.editCommuneId)) {
-      this.editCommuneId = null;
-    }
-    if (this.editForm.idLocalite != null && !this.filteredEditLocalites().some((localite) => localite.id === this.editForm.idLocalite)) {
-      this.editForm.idLocalite = null;
-    }
+    this.editRegionId = this.editDepartementId != null ? this.departementRegionId(this.editDepartementId) : this.editRegionId;
+    this.clearEditChildrenFrom('departement');
   }
 
   onEditCommuneChange(): void {
@@ -494,6 +607,18 @@ export class SimpleCentreTypePageComponent implements OnInit {
     const localite = this.localites.find((item) => item.id === this.editForm.idLocalite);
     this.editCommuneId = localite?.commune?.id ?? null;
     this.editDepartementId = localite ? this.localiteDepartementId(localite) : null;
+    this.editRegionId = this.editDepartementId != null ? this.departementRegionId(this.editDepartementId) : null;
+    this.editForm.nomMilieuImplentation = this.localiteMilieuImplantationLabel(localite);
+  }
+
+  selectedCreateMilieuImplantationLabel(): string {
+    const localite = this.localites.find((item) => item.id === this.model.centre.localiteId);
+    return this.localiteMilieuImplantationLabel(localite) || '—';
+  }
+
+  selectedEditMilieuImplantationLabel(): string {
+    const localite = this.localites.find((item) => item.id === this.editForm.idLocalite);
+    return this.localiteMilieuImplantationLabel(localite) || this.editForm.nomMilieuImplentation || '—';
   }
 
   anneeScolaireLabel(id: number | null | undefined): string {
@@ -608,10 +733,12 @@ export class SimpleCentreTypePageComponent implements OnInit {
           encadrerParMena: d.encadrerParMena ?? null,
           idPromoteur: d.promoteur?.idPromoteur ?? d.idPromoteur ?? null,
         };
+        this.editRegionId = d.region?.id ?? null;
         this.editDrenaId = d.drena?.id ?? this.ieps.find((iep) => iep.id === d.idIep)?.drena?.id ?? null;
         const selectedLocalite = this.localites.find((localite) => localite.id === d.idLocalite);
         this.editCommuneId = d.commune?.id ?? selectedLocalite?.commune?.id ?? null;
         this.editDepartementId = d.departement?.id ?? (selectedLocalite ? this.localiteDepartementId(selectedLocalite) : null);
+        this.editRegionId = this.editRegionId ?? (this.editDepartementId != null ? this.departementRegionId(this.editDepartementId) : null);
         this.editNiveaux = this.niveauPayloadsFromDetails(d.niveaux ?? []);
         this.editLoading = false;
       },
@@ -627,6 +754,7 @@ export class SimpleCentreTypePageComponent implements OnInit {
     this.editRowId = null;
     this.editLoading = false;
     this.editNiveaux = [];
+    this.editRegionId = null;
     this.editDrenaId = null;
     this.editDepartementId = null;
     this.editCommuneId = null;
@@ -648,6 +776,9 @@ export class SimpleCentreTypePageComponent implements OnInit {
     this.saving = true;
     const payload = {
       ...this.editForm,
+      nomMilieuImplentation: this.localiteMilieuImplantationLabel(
+        this.localites.find((item) => item.id === this.editForm.idLocalite),
+      ),
       niveaux: this.buildEditNiveauxPayload(),
     };
     this.http.put(`${this.apiBaseUrl}${this.apiPath}/${id}/infos`, payload).subscribe({
@@ -683,10 +814,14 @@ export class SimpleCentreTypePageComponent implements OnInit {
     this.saving = true;
     this.errorMessage = null;
     const promoteurPayload = this.buildPromoteurPayload();
+    const selectedLocalite = this.localites.find((item) => item.id === this.model.centre.localiteId);
     const payload: SimpleFullCreatePayload = {
       libelle: String(this.model.libelle ?? '').trim(),
       promoteur: promoteurPayload,
-      centre: { ...this.model.centre },
+      centre: {
+        ...this.model.centre,
+        nomMilieuImplentation: this.localiteMilieuImplantationLabel(selectedLocalite),
+      },
       niveaux: this.buildNiveauxPayload(),
     };
     this.http.post(`${this.apiBaseUrl}${this.apiPath}`, payload).subscribe({
@@ -908,6 +1043,129 @@ export class SimpleCentreTypePageComponent implements OnInit {
     if (sousPrefectureId == null) return null;
     const sousPrefecture = this.sousPrefectures.find((item) => item.id === sousPrefectureId);
     return sousPrefecture?.departement?.id ?? null;
+  }
+
+  private localiteMilieuImplantationLabel(localite: LocaliteOption | null | undefined): string {
+    return this.refCentreLabel(localite?.milieuImplantation, () => '');
+  }
+
+  private departementRegionId(departementId: number | null): number | null {
+    if (departementId == null) return null;
+    return this.departements.find((item) => item.id === departementId)?.region?.id ?? null;
+  }
+
+  private filterDepartements(regionId: number | null, drenaId: number | null): DepartementOption[] {
+    const allowedIds = this.allowedDepartementIds(regionId, drenaId);
+    if (allowedIds == null) return this.departements;
+    return this.departements.filter((departement) => allowedIds.has(departement.id));
+  }
+
+  private filterDrenasByRegion(regionId: number | null): RefOption[] {
+    const allowedIds = this.allowedDrenaIds(regionId);
+    if (allowedIds == null) return this.drenas;
+    return this.drenas.filter((drena) => allowedIds.has(drena.id));
+  }
+
+  private filterIepsByRegion(regionId: number | null): IepOption[] {
+    const allowedDrenaIds = this.allowedDrenaIds(regionId);
+    if (allowedDrenaIds == null) return this.ieps;
+    return this.ieps.filter((iep) => iep.drena?.id != null && allowedDrenaIds.has(iep.drena.id));
+  }
+
+  private filterCommunes(
+    regionId: number | null,
+    drenaId: number | null,
+    departementId: number | null,
+  ): RefOption[] {
+    if (regionId == null && drenaId == null && departementId == null) return this.communes;
+    const communeIds = new Set(
+      this.filterLocalites(regionId, drenaId, departementId, null)
+        .map((localite) => localite.commune?.id)
+        .filter((id): id is number => id != null),
+    );
+    return this.communes.filter((commune) => communeIds.has(commune.id));
+  }
+
+  private filterLocalites(
+    regionId: number | null,
+    drenaId: number | null,
+    departementId: number | null,
+    communeId: number | null,
+  ): LocaliteOption[] {
+    const allowedDepartementIds = this.allowedDepartementIds(regionId, drenaId);
+    return this.localites.filter((localite) => {
+      const localiteDepartementId = this.localiteDepartementId(localite);
+      const matchesDepartement = departementId == null || localiteDepartementId === departementId;
+      const matchesAllowedDepartements =
+        allowedDepartementIds == null ||
+        (localiteDepartementId != null && allowedDepartementIds.has(localiteDepartementId));
+      const matchesCommune = communeId == null || localite.commune?.id === communeId;
+      return matchesDepartement && matchesAllowedDepartements && matchesCommune;
+    });
+  }
+
+  private allowedDepartementIds(regionId: number | null, drenaId: number | null): Set<number> | null {
+    const sets: Array<Set<number>> = [];
+    if (regionId != null) {
+      sets.push(new Set(this.departements.filter((d) => d.region?.id === regionId).map((d) => d.id)));
+    }
+    if (drenaId != null) {
+      sets.push(
+        new Set(
+          this.drenaDepartements
+            .filter((item) => item.drena?.id === drenaId)
+            .map((item) => item.departement?.id)
+            .filter((id): id is number => id != null),
+        ),
+      );
+    }
+    if (sets.length === 0) return null;
+    return sets.reduce((acc, set) => new Set([...acc].filter((id) => set.has(id))));
+  }
+
+  private allowedDrenaIds(regionId: number | null): Set<number> | null {
+    if (regionId == null) return null;
+    const regionDepartementIds = new Set(
+      this.departements
+        .filter((departement) => departement.region?.id === regionId)
+        .map((departement) => departement.id),
+    );
+    return new Set(
+      this.drenaDepartements
+        .filter((item) => item.departement?.id != null && regionDepartementIds.has(item.departement.id))
+        .map((item) => item.drena?.id)
+        .filter((id): id is number => id != null),
+    );
+  }
+
+  private clearCreateChildrenFrom(parent: 'region' | 'drena' | 'departement'): void {
+    if (this.createDepartementId != null && !this.filteredCreateDepartements().some((d) => d.id === this.createDepartementId)) {
+      this.createDepartementId = null;
+    }
+    if (this.createCommuneId != null && !this.filteredCreateCommunes().some((c) => c.id === this.createCommuneId)) {
+      this.createCommuneId = null;
+    }
+    if (this.model.centre.localiteId != null && !this.filteredCreateLocalites().some((l) => l.id === this.model.centre.localiteId)) {
+      this.model.centre.localiteId = null as any;
+    }
+    if (parent === 'region' || parent === 'departement') {
+      return;
+    }
+  }
+
+  private clearEditChildrenFrom(parent: 'region' | 'drena' | 'departement'): void {
+    if (this.editDepartementId != null && !this.filteredEditDepartements().some((d) => d.id === this.editDepartementId)) {
+      this.editDepartementId = null;
+    }
+    if (this.editCommuneId != null && !this.filteredEditCommunes().some((c) => c.id === this.editCommuneId)) {
+      this.editCommuneId = null;
+    }
+    if (this.editForm.idLocalite != null && !this.filteredEditLocalites().some((l) => l.id === this.editForm.idLocalite)) {
+      this.editForm.idLocalite = null;
+    }
+    if (parent === 'region' || parent === 'departement') {
+      return;
+    }
   }
 
   promoteurSummary(row: Row): string {

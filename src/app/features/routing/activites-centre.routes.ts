@@ -2,6 +2,7 @@ import { Routes } from '@angular/router';
 import type { ReferentielFormField } from '@core/config/referentiel-form.types';
 import { ActivitesCentreControleComponent } from '@features/activites-centre/controle/activites-centre-controle.component';
 import { ActivitesCentreEvaluationComponent } from '@features/activites-centre/evaluation/activites-centre-evaluation.component';
+import { AlphaCentresComponent } from '@features/centres/alpha/alpha-centres.component';
 import { ReferentielListPageComponent } from '@shared/referentiel-list-page/referentiel-list-page.component';
 
 const F = (
@@ -39,6 +40,8 @@ export const activitesCentreFeatureRoutes: Routes = [
       title: 'ACTIVITES CENTRE — Partenariat',
       subtitle: 'Appuis et partenariats rattachés aux centres.',
       apiPath: '/api/appui-partenaire',
+      permissionFeature: 'ACTIVITES_CENTRE_PARTENARIAT',
+      listColumnKeys: ['centre', 'partenaire', 'categorieAppui', 'codeAppuiPartenaire', 'libelleAppuiPartenaire'],
       createFields: [
         F('idCentre', 'Centre', 'select', {
           required: true,
@@ -69,6 +72,16 @@ export const activitesCentreFeatureRoutes: Routes = [
       title: 'ACTIVITES CENTRE — Performance',
       subtitle: 'Fréquentation et progression des apprentissages par centre Alpha.',
       apiPath: '/api/performance',
+      permissionFeature: 'ACTIVITES_CENTRE_PERFORMANCE',
+      workflowFeature: 'ACTIVITES_CENTRE_PERFORMANCE',
+      listColumnKeys: [
+        'alpha',
+        'tauxFrequentationParMois',
+        'tauxProgressionApprentissageLecture',
+        'tauxProgressionApprentissageEcriture',
+        'tauxProgressionApprentissageCalcul',
+        'tauxProgressionApprentissageCvc',
+      ],
       createFields: [
         alphaField,
         F('tauxFrequentationParMois', 'Taux fréquentation par mois', 'text'),
@@ -95,12 +108,11 @@ export const activitesCentreFeatureRoutes: Routes = [
   },
   {
     path: 'activites-centre/informations-centres',
-    component: ReferentielListPageComponent,
+    component: AlphaCentresComponent,
     data: {
       title: 'ACTIVITES CENTRE — Informations centres',
-      subtitle: 'Liste des centres Alpha concernés par les activités centre.',
-      apiPath: '/api/alpha',
-      createFields: [],
+      subtitle: 'Vue synthétique des centres Alpha, avec détail complet et actions.',
+      createInitiallyOpen: false,
     },
   },
 ];

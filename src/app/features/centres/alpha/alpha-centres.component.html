@@ -1,18 +1,29 @@
 <div class="container-fluid">
   <div class="d-sm-flex align-items-center justify-content-between mb-3">
-    <h1 class="h4 mb-0 text-gray-800">Centres Alpha</h1>
-    <button class="btn btn-sm btn-outline-primary" (click)="loadAll()" [disabled]="loading || saving">
-      Rafraîchir
-    </button>
+    <div>
+      <h1 class="h4 mb-0 text-gray-800">{{ pageTitle }}</h1>
+      <p *ngIf="pageSubtitle" class="small text-muted mb-0 mt-1">{{ pageSubtitle }}</p>
+    </div>
+    <div class="d-flex flex-wrap gap-1 mt-2 mt-sm-0">
+      <button *ngIf="!createPanelOpen" class="btn btn-sm btn-primary" type="button" (click)="openCreatePanel()" [disabled]="loading || saving">
+        Ajouter un centre
+      </button>
+      <button class="btn btn-sm btn-outline-primary" (click)="loadAll()" [disabled]="loading || saving">
+        Rafraîchir
+      </button>
+    </div>
   </div>
 
   <div *ngIf="errorMessage" class="alert alert-danger py-2">
     {{ errorMessage }}
   </div>
 
-  <div class="card border-0 shadow-sm mb-4">
-    <div class="card-header py-3 bg-white border-bottom-0">
+  <div *ngIf="createPanelOpen" class="card border-0 shadow-sm mb-4">
+    <div class="card-header py-3 bg-white border-bottom-0 d-flex justify-content-between align-items-center">
       <h6 class="m-0 font-weight-bold text-primary">Enregistrer un centre Alpha</h6>
+      <button *ngIf="canCollapseCreatePanel" class="btn btn-sm btn-outline-secondary" type="button" (click)="closeCreatePanel()" [disabled]="saving">
+        Masquer
+      </button>
     </div>
     <div class="card-body pt-2">
       <div class="mena-wizard-steps">
@@ -127,17 +138,48 @@
       <div *ngIf="stepIndex === 1">
         <div class="form-row">
           <div class="form-group col-md-3">
-            <label class="small text-muted">Localité</label>
-            <select class="form-control" [(ngModel)]="model.centre.localiteId" [disabled]="saving">
+            <label class="small text-muted">Région administrative</label>
+            <select class="form-control" [(ngModel)]="createRegionId" (ngModelChange)="onCreateRegionChange()" [disabled]="saving">
               <option [ngValue]="null">--</option>
-              <option *ngFor="let l of localites" [ngValue]="l.id">{{ localiteOptionLabel(l) }}</option>
+              <option *ngFor="let r of regions" [ngValue]="r.id">{{ refOptionLibelle(r) }}</option>
+            </select>
+          </div>
+          <div class="form-group col-md-3">
+            <label class="small text-muted">DRENA</label>
+            <select class="form-control" [(ngModel)]="createDrenaId" (ngModelChange)="onCreateDrenaChange()" [disabled]="saving">
+              <option [ngValue]="null">--</option>
+              <option *ngFor="let d of filteredCreateDrenas()" [ngValue]="d.id">{{ refOptionLibelle(d) }}</option>
+            </select>
+          </div>
+          <div class="form-group col-md-3">
+            <label class="small text-muted">Département</label>
+            <select class="form-control" [(ngModel)]="createDepartementId" (ngModelChange)="onCreateDepartementChange()" [disabled]="saving">
+              <option [ngValue]="null">--</option>
+              <option *ngFor="let d of filteredCreateDepartements()" [ngValue]="d.id">{{ refOptionLibelle(d) }}</option>
+            </select>
+          </div>
+          <div class="form-group col-md-3">
+            <label class="small text-muted">Commune</label>
+            <select class="form-control" [(ngModel)]="createCommuneId" (ngModelChange)="onCreateCommuneChange()" [disabled]="saving">
+              <option [ngValue]="null">--</option>
+              <option *ngFor="let c of filteredCreateCommunes()" [ngValue]="c.id">{{ refOptionLibelle(c) }}</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group col-md-3">
+            <label class="small text-muted">Localité</label>
+            <select class="form-control" [(ngModel)]="model.centre.localiteId" (ngModelChange)="onCreateLocaliteChange()" [disabled]="saving">
+              <option [ngValue]="null">--</option>
+              <option *ngFor="let l of filteredCreateLocalites()" [ngValue]="l.id">{{ localiteOptionLabel(l) }}</option>
             </select>
           </div>
           <div class="form-group col-md-3">
             <label class="small text-muted">IEP</label>
-            <select class="form-control" [(ngModel)]="model.centre.iepId" [disabled]="saving">
+            <select class="form-control" [(ngModel)]="model.centre.iepId" (ngModelChange)="onCreateIepChange()" [disabled]="saving">
               <option [ngValue]="null">--</option>
-              <option *ngFor="let i of ieps" [ngValue]="i.id">{{ iepOptionLabel(i) }}</option>
+              <option *ngFor="let i of filteredCreateIeps()" [ngValue]="i.id">{{ iepOptionLabel(i) }}</option>
             </select>
           </div>
           <div class="form-group col-md-3">
@@ -694,7 +736,7 @@
           </thead>
           <tbody>
             <tr *ngFor="let r of rows">
-              <td class="font-weight-bold">{{ r.codeCentre ?? r.idCentre }}</td>
+              <td class="font-weight-bold">{{ r.codeCentre ?? '—' }}</td>
               <td>{{ r.codeType ?? '—' }}</td>
               <td>{{ r.libelle ?? '—' }}</td>
               <td>{{ promoteurSummary(r) }}</td>
@@ -804,7 +846,7 @@
             <tbody>
               <tr>
                 <th style="width: 260px">Code centre</th>
-                <td class="font-weight-bold">{{ d.codeCentre ?? d.idCentre }}</td>
+                <td class="font-weight-bold">{{ d.codeCentre ?? '—' }}</td>
               </tr>
               <tr>
                 <th>Code Alpha</th>
@@ -864,9 +906,9 @@
                       <div class="small">
                         <div *ngIf="pm.denomination"><span class="text-muted">Dénomination</span> : {{ pm.denomination }}</div>
                         <div *ngIf="pm.nomProgramme"><span class="text-muted">Nom programme</span> : {{ pm.nomProgramme }}</div>
-                        <div *ngIf="pm.libelleTypePersonneMorale || pm.idTypePersonneMorale != null">
+                        <div *ngIf="pm.libelleTypePersonneMorale">
                           <span class="text-muted">Type personne morale</span> :
-                          {{ pm.libelleTypePersonneMorale ?? ('#' + pm.idTypePersonneMorale) }}
+                          {{ pm.libelleTypePersonneMorale }}
                         </div>
                         <div *ngIf="pm.nomRepresentant"><span class="text-muted">Représentant</span> : {{ pm.nomRepresentant }}</div>
                         <div *ngIf="pm.contact"><span class="text-muted">Contact</span> : {{ pm.contact }}</div>
@@ -1025,10 +1067,17 @@
 
           <div class="form-row">
             <div class="form-group col-md-3">
-              <label class="small text-muted">DRENA / Région</label>
+              <label class="small text-muted">Région administrative</label>
+              <select class="form-control" [(ngModel)]="editRegionId" (ngModelChange)="onEditRegionChange()" [disabled]="saving">
+                <option [ngValue]="null">--</option>
+                <option *ngFor="let r of regions" [ngValue]="r.id">{{ refOptionLibelle(r) }}</option>
+              </select>
+            </div>
+            <div class="form-group col-md-3">
+              <label class="small text-muted">DRENA</label>
               <select class="form-control" [(ngModel)]="editDrenaId" (ngModelChange)="onEditDrenaChange()" [disabled]="saving">
                 <option [ngValue]="null">--</option>
-                <option *ngFor="let d of drenas" [ngValue]="d.id">{{ refOptionLibelle(d) }}</option>
+                <option *ngFor="let d of filteredEditDrenas()" [ngValue]="d.id">{{ refOptionLibelle(d) }}</option>
               </select>
             </div>
             <div class="form-group col-md-3">
@@ -1042,9 +1091,12 @@
               <label class="small text-muted">Département</label>
               <select class="form-control" [(ngModel)]="editDepartementId" (ngModelChange)="onEditDepartementChange()" [disabled]="saving">
                 <option [ngValue]="null">--</option>
-                <option *ngFor="let d of departements" [ngValue]="d.id">{{ refOptionLibelle(d) }}</option>
+                <option *ngFor="let d of filteredEditDepartements()" [ngValue]="d.id">{{ refOptionLibelle(d) }}</option>
               </select>
             </div>
+          </div>
+
+          <div class="form-row">
             <div class="form-group col-md-3">
               <label class="small text-muted">Commune</label>
               <select class="form-control" [(ngModel)]="editCommuneId" (ngModelChange)="onEditCommuneChange()" [disabled]="saving">
@@ -1052,9 +1104,6 @@
                 <option *ngFor="let c of filteredEditCommunes()" [ngValue]="c.id">{{ refOptionLibelle(c) }}</option>
               </select>
             </div>
-          </div>
-
-          <div class="form-row">
             <div class="form-group col-md-3">
               <label class="small text-muted">Localité</label>
               <select class="form-control" [(ngModel)]="editForm.idLocalite" (ngModelChange)="onEditLocaliteChange()" [disabled]="saving">

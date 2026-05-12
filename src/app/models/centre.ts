@@ -185,6 +185,7 @@ export type LocaliteOption = {
   libelle?: string | null;
   commune?: CentreRefDetails | null;
   sousPrefecture?: CentreRefDetails | null;
+  milieuImplantation?: CentreRefDetails | null;
 };
 
 export type IepOption = {

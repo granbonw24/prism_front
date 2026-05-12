@@ -162,6 +162,7 @@
               >Informations centres</a
             >
             <a
+              *ngIf="canViewActivitesCentreVisite()"
               class="collapse-item mena-submenu-toggle"
               [class.collapsed]="!activitesCentreVisiteSectionOpen()"
               href="#"
@@ -172,7 +173,12 @@
               aria-controls="activites-centre-visite"
               >Visite</a
             >
-            <div id="activites-centre-visite" class="collapse" [class.show]="activitesCentreVisiteSectionOpen()">
+            <div
+              *ngIf="canViewActivitesCentreVisite()"
+              id="activites-centre-visite"
+              class="collapse"
+              [class.show]="activitesCentreVisiteSectionOpen()"
+            >
               <a
                 *ngIf="canViewSuiviConseiller()"
                 class="collapse-item pl-4"

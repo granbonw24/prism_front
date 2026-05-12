@@ -63,6 +63,15 @@ export class MenuComponent {
     return this.auth.hasPermission('SUIVI_CENTRALE:LIRE');
   }
 
+  canViewActivitesCentreVisite(): boolean {
+    return (
+      this.canViewSuiviConseiller() ||
+      this.canViewSuiviSuperviseur() ||
+      this.canViewSuiviIepp() ||
+      this.canViewSuiviCentrale()
+    );
+  }
+
   canViewActivitesCentrePartenariat(): boolean {
     return this.auth.hasPermission('ACTIVITES_CENTRE_PARTENARIAT:LIRE');
   }

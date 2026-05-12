@@ -30,6 +30,9 @@ type EvaluationRow = {
   themeEvaluation?: Ref | null;
   tauxEvaluation?: Ref | null;
   typeEvaluation?: TypeEvaluation | string | null;
+  valideeCoordonnateur?: boolean | null;
+  valideeSuperviseur?: boolean | null;
+  valideeCentrale?: boolean | null;
   themesTaux?: ThemeTauxRow[] | null;
 };
 
@@ -72,6 +75,7 @@ export class ActivitesCentreEvaluationComponent implements OnInit {
 
   loading = false;
   saving = false;
+  validatingId: number | null = null;
   formOpen = false;
   formMode: 'create' | 'edit' = 'create';
   editingId: number | null = null;
@@ -96,6 +100,10 @@ export class ActivitesCentreEvaluationComponent implements OnInit {
 
   get canEdit(): boolean {
     return this.auth.hasPermission('ACTIVITES_CENTRE_EVALUATION:MODIFIER');
+  }
+
+  get canValidate(): boolean {
+    return this.auth.hasPermission('ACTIVITES_CENTRE_EVALUATION:VALIDER');
   }
 
   get filteredRows(): EvaluationRow[] {
@@ -164,7 +172,7 @@ export class ActivitesCentreEvaluationComponent implements OnInit {
   }
 
   openEdit(row: EvaluationRow): void {
-    if (!this.canEdit) return;
+    if (!this.canEdit || this.isLocked(row)) return;
     this.formMode = 'edit';
     this.editingId = row.id ?? null;
     this.form = {
@@ -250,7 +258,7 @@ export class ActivitesCentreEvaluationComponent implements OnInit {
   }
 
   deleteRow(row: EvaluationRow): void {
-    if (!this.canEdit || row.id == null) return;
+    if (!this.canEdit || row.id == null || this.isLocked(row)) return;
     if (!window.confirm(`Supprimer l’évaluation ${row.id} ?`)) return;
     this.http.delete(`${this.apiBaseUrl}/api/evaluation/${row.id}`).subscribe({
       next: () => {
@@ -258,6 +266,24 @@ export class ActivitesCentreEvaluationComponent implements OnInit {
         this.reload();
       },
       error: (err: HttpErrorResponse) => {
+        this.errorMessage = this.httpError(err);
+      },
+    });
+  }
+
+  validateRow(row: EvaluationRow): void {
+    const step = this.nextValidationStep(row);
+    if (row.id == null || step == null || this.validatingId != null) return;
+    this.validatingId = row.id;
+    this.errorMessage = null;
+    this.http.put(`${this.apiBaseUrl}/api/evaluation/${row.id}/${step}`, {}).subscribe({
+      next: () => {
+        this.validatingId = null;
+        this.successMessage = 'Validation effectuée.';
+        this.reload();
+      },
+      error: (err: HttpErrorResponse) => {
+        this.validatingId = null;
         this.errorMessage = this.httpError(err);
       },
     });
@@ -281,6 +307,28 @@ export class ActivitesCentreEvaluationComponent implements OnInit {
     if (type === 'SOMMATIVE') return 'Sommative';
     if (type === 'CERTIFICATIVE') return 'Certificative';
     return '-';
+  }
+
+  validationLabel(row: EvaluationRow): string {
+    if (row.valideeCentrale) return 'Validé central';
+    if (row.valideeSuperviseur) return 'Validé superviseur';
+    if (row.valideeCoordonnateur) return 'Validé coordonnateur';
+    return 'En attente coordonnateur';
+  }
+
+  validationClass(row: EvaluationRow): string {
+    if (row.valideeCentrale) return 'badge-success';
+    if (row.valideeSuperviseur) return 'badge-primary';
+    if (row.valideeCoordonnateur) return 'badge-info';
+    return 'badge-secondary';
+  }
+
+  isLocked(row: EvaluationRow): boolean {
+    return Boolean(row.valideeCoordonnateur || row.valideeSuperviseur || row.valideeCentrale);
+  }
+
+  canValidateRow(row: EvaluationRow): boolean {
+    return this.nextValidationStep(row) !== null;
   }
 
   themesTauxLabel(row: EvaluationRow): string {
@@ -363,6 +411,22 @@ export class ActivitesCentreEvaluationComponent implements OnInit {
     const value = this.normalizeText(type);
     if (value === 'FORMATIVE' || value === 'SOMMATIVE' || value === 'CERTIFICATIVE') return value;
     return null;
+  }
+
+  private nextValidationStep(row: EvaluationRow): string | null {
+    if (!this.canValidate) return null;
+    if (!row.valideeCoordonnateur && this.hasValidatorRole(['COORDONNATEUR'])) return 'valider-coordonnateur';
+    if (row.valideeCoordonnateur && !row.valideeSuperviseur && this.hasValidatorRole(['SUPERVISEUR'])) {
+      return 'valider-superviseur';
+    }
+    if (row.valideeSuperviseur && !row.valideeCentrale && this.hasValidatorRole(['SUPERVISEUR_AENF', 'DIRECTEUR'])) {
+      return 'valider-centrale';
+    }
+    return null;
+  }
+
+  private hasValidatorRole(roles: string[]): boolean {
+    return this.auth.hasAnyRole([...roles, 'ADMIN', 'SUPER_ADMIN', 'SUPER_ROOT']);
   }
 
   private normalizeText(value: string | null | undefined): string {

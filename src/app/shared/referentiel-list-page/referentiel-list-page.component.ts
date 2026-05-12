@@ -18,6 +18,7 @@ import { API_BASE_URL } from '@core/tokens/api-base-url.token';
 import { formatHttpError } from '@core/utils/http-error.util';
 import { ConfirmDeleteComponent } from '@shared/confirm-delete/confirm-delete.component';
 import { MenaChartComponent } from '@shared/mena-chart/mena-chart.component';
+import { AuthService } from '@services/auth.service';
 
 /**
  * Paramètres pour les listes déroulantes « centre » (API paginée).
@@ -57,6 +58,8 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
   title = '';
   subtitle = '';
   apiPath = '';
+  permissionFeature: string | null = null;
+  workflowFeature: string | null = null;
   createFields: ReferentielFormField[] = [];
   /** Surcharges libellés colonnes (route `data.columnLabels`). */
   columnLabels: Record<string, string> = {};
@@ -113,6 +116,7 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
   deleteTargetLabel = '';
   deleteSubmitting = false;
   deleteError: string | null = null;
+  workflowSubmittingId: string | number | null = null;
   fieldOptions: Record<string, Array<{ value: string | number; label: string }>> = {};
 
   /** Évite de relancer les GET d’options quand le cache est déjà rempli par l’API. */
@@ -129,11 +133,13 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
   private optionSubs: Subscription[] = [];
   /** Clés utilisées pour le filtre texte (toutes les colonnes « métier », pas seulement l’affichage). */
   private filterableKeys: string[] = [];
+  private routeListColumnKeys?: string[];
 
   constructor(
     private readonly route: ActivatedRoute,
     private readonly http: HttpClient,
     private readonly fb: FormBuilder,
+    private readonly auth: AuthService,
     @Inject(API_BASE_URL) private readonly apiBaseUrl: string,
   ) {}
 
@@ -142,14 +148,20 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
       const routeTitle = (data['title'] as string) ?? 'Référentiel';
       const routeSubtitle = (data['subtitle'] as string) ?? '';
       const routeApiPath = (data['apiPath'] as string) ?? '';
+      const routePermissionFeature = (data['permissionFeature'] as string | null | undefined) ?? null;
+      const routeWorkflowFeature = (data['workflowFeature'] as string | null | undefined) ?? null;
       const routeCreateFields = (data['createFields'] as ReferentielFormField[]) ?? [];
       const routeColumnLabels = (data['columnLabels'] as Record<string, string>) ?? {};
+      const routeListColumnKeys = (data['listColumnKeys'] as string[] | undefined) ?? undefined;
       this.title = this.inputTitle ?? routeTitle;
       this.subtitle = this.inputSubtitle ?? routeSubtitle;
       this.apiPath = this.inputApiPath ?? routeApiPath;
+      this.permissionFeature = routePermissionFeature;
+      this.workflowFeature = routeWorkflowFeature;
       this.createFields =
         this.inputCreateFields != null ? this.inputCreateFields : routeCreateFields;
       this.columnLabels = routeColumnLabels;
+      this.routeListColumnKeys = routeListColumnKeys;
       this.fetch();
     });
   }
@@ -403,7 +415,63 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
   }
 
   get canUseRowActions(): boolean {
-    return !!this.apiPath;
+    return !!this.apiPath && (this.canUpdateRecord || this.canDeleteRecord || this.hasWorkflow);
+  }
+
+  get canCreateRecord(): boolean {
+    return this.hasPermission('CREER');
+  }
+
+  get canUpdateRecord(): boolean {
+    return this.hasPermission('MODIFIER');
+  }
+
+  get canDeleteRecord(): boolean {
+    return this.hasPermission('MODIFIER');
+  }
+
+  get hasWorkflow(): boolean {
+    return !!this.workflowFeature;
+  }
+
+  workflowStatusLabel(row: Record<string, unknown>): string {
+    if (this.bool(row['valideeCentrale'])) return 'Validé central';
+    if (this.bool(row['valideeSuperviseur'])) return 'Validé superviseur';
+    if (this.bool(row['valideeCoordonnateur'])) return 'Validé coordonnateur';
+    return 'En attente coordonnateur';
+  }
+
+  workflowStatusClass(row: Record<string, unknown>): string {
+    if (this.bool(row['valideeCentrale'])) return 'badge badge-success';
+    if (this.bool(row['valideeSuperviseur'])) return 'badge badge-primary';
+    if (this.bool(row['valideeCoordonnateur'])) return 'badge badge-info';
+    return 'badge badge-secondary';
+  }
+
+  canValidateWorkflow(row: Record<string, unknown>): boolean {
+    return this.nextWorkflowStep(row) !== null;
+  }
+
+  validateWorkflowRow(row: Record<string, unknown>): void {
+    const id = this.resolveRowId(row);
+    const step = this.nextWorkflowStep(row);
+    if (!this.apiPath || id == null || step == null || this.workflowSubmittingId !== null) {
+      return;
+    }
+    this.workflowSubmittingId = id;
+    this.errorMessage = null;
+    const url = `${this.apiBaseUrl}${this.apiPath}/${encodeURIComponent(String(id))}/${step}`;
+    this.http.put<unknown>(url, {}).subscribe({
+      next: () => {
+        this.workflowSubmittingId = null;
+        this.successMessage = 'Validation effectuée.';
+        this.fetch();
+      },
+      error: (err: HttpErrorResponse) => {
+        this.workflowSubmittingId = null;
+        this.errorMessage = formatHttpError(err, 'Validation refusée.');
+      },
+    });
   }
 
   columnHeaderLabel(columnKey: string): string {
@@ -550,6 +618,10 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
     this.fetch();
   }
 
+  bool(value: unknown): boolean {
+    return value === true || value === 1 || value === '1' || value === 'true';
+  }
+
   resetListPage(): void {
     this.listPageIndex = 0;
   }
@@ -584,6 +656,10 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
   }
 
   openCreateModal(): void {
+    if (!this.canCreateRecord) {
+      this.errorMessage = 'Vous n’avez pas la permission de créer cet enregistrement.';
+      return;
+    }
     this.formError = null;
     this.formMode = 'create';
     this.editingId = null;
@@ -600,7 +676,7 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
   }
 
   openEditModal(row: Record<string, unknown>): void {
-    if (!this.hasCreateForm) {
+    if (!this.hasCreateForm || !this.canUpdateRecord || this.bool(row['valideeCoordonnateur'])) {
       return;
     }
     const id = this.resolveRowId(row);
@@ -673,6 +749,9 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
   }
 
   openDeleteModal(row: Record<string, unknown>): void {
+    if (!this.canDeleteRecord || this.bool(row['valideeCoordonnateur'])) {
+      return;
+    }
     const id = this.resolveRowId(row);
     if (id == null) {
       return;
@@ -730,6 +809,41 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
       }
     }
     return `#${id}`;
+  }
+
+  private hasPermission(permission: string): boolean {
+    if (!this.permissionFeature) {
+      return true;
+    }
+    return this.auth.hasPermission(`${this.permissionFeature}:${permission}`);
+  }
+
+  private nextWorkflowStep(row: Record<string, unknown>): string | null {
+    if (!this.workflowFeature || !this.auth.hasPermission(`${this.workflowFeature}:VALIDER`)) {
+      return null;
+    }
+    if (!this.bool(row['valideeCoordonnateur']) && this.hasValidatorRole(['COORDONNATEUR'])) {
+      return 'valider-coordonnateur';
+    }
+    if (
+      this.bool(row['valideeCoordonnateur']) &&
+      !this.bool(row['valideeSuperviseur']) &&
+      this.hasValidatorRole(['SUPERVISEUR'])
+    ) {
+      return 'valider-superviseur';
+    }
+    if (
+      this.bool(row['valideeSuperviseur']) &&
+      !this.bool(row['valideeCentrale']) &&
+      this.hasValidatorRole(['SUPERVISEUR_AENF', 'DIRECTEUR'])
+    ) {
+      return 'valider-centrale';
+    }
+    return null;
+  }
+
+  private hasValidatorRole(roles: string[]): boolean {
+    return this.auth.hasAnyRole([...roles, 'ADMIN', 'SUPER_ADMIN', 'SUPER_ROOT']);
   }
 
   private buildRecordForm(
@@ -1300,7 +1414,7 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
     visibleKeys.sort();
     this.filterableKeys = visibleKeys;
 
-    const preferred = this.inputListColumnKeys;
+    const preferred = this.inputListColumnKeys ?? this.routeListColumnKeys;
     if (preferred != null && preferred.length > 0) {
       this.columns = preferred.filter((k) => k in first);
       return;

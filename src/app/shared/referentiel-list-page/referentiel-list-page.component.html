@@ -17,6 +17,7 @@
         Actualiser
       </button>
       <button
+        *ngIf="canCreateRecord"
         type="button"
         class="btn btn-primary btn-sm shadow-sm mena-btn-add"
         (click)="openCreateModal()"
@@ -281,6 +282,7 @@
           <thead>
             <tr>
               <th>#</th>
+              <th *ngIf="hasWorkflow">Validation</th>
               <th *ngFor="let col of columns">{{ columnHeaderLabel(col) }}</th>
               <th *ngIf="canUseRowActions" class="text-right mena-col-actions">Actions</th>
             </tr>
@@ -288,6 +290,9 @@
           <tbody>
             <tr *ngFor="let row of pagedRows; let i = index">
               <td>{{ listPageStart + i + 1 }}</td>
+              <td *ngIf="hasWorkflow">
+                <span [class]="workflowStatusClass(row)">{{ workflowStatusLabel(row) }}</span>
+              </td>
               <td
                 *ngFor="let col of columns"
                 class="mena-table-cell text-truncate"
@@ -300,18 +305,30 @@
                   <button
                     type="button"
                     class="btn btn-outline-primary btn-sm mena-btn-action"
-                    *ngIf="hasCreateForm && resolveRowId(row) != null"
+                    *ngIf="hasCreateForm && canUpdateRecord && resolveRowId(row) != null"
                     (click)="openEditModal(row)"
                     title="Modifier"
+                    [disabled]="bool(row['valideeCoordonnateur'])"
                   >
                     <i class="fas fa-pen"></i>
                   </button>
                   <button
                     type="button"
+                    class="btn btn-outline-success btn-sm mena-btn-action"
+                    *ngIf="hasWorkflow && canValidateWorkflow(row)"
+                    (click)="validateWorkflowRow(row)"
+                    title="Valider le niveau courant"
+                    [disabled]="workflowSubmittingId === resolveRowId(row)"
+                  >
+                    <i class="fas fa-check"></i>
+                  </button>
+                  <button
+                    type="button"
                     class="btn btn-outline-danger btn-sm mena-btn-action"
-                    *ngIf="resolveRowId(row) != null"
+                    *ngIf="canDeleteRecord && resolveRowId(row) != null"
                     (click)="openDeleteModal(row)"
                     title="Supprimer"
+                    [disabled]="bool(row['valideeCoordonnateur'])"
                   >
                     <i class="fas fa-trash-alt"></i>
                   </button>

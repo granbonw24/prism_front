@@ -21,6 +21,16 @@ type ScopeKey =
   | 'idCommune'
   | 'idLocalite';
 
+const SCOPE_DESCENDANTS: Record<ScopeKey, ScopeKey[]> = {
+  idRegion: ['idDrena', 'idIep', 'idDepartement', 'idSousPrefecture', 'idCommune', 'idLocalite'],
+  idDrena: ['idIep', 'idDepartement', 'idSousPrefecture', 'idCommune', 'idLocalite'],
+  idIep: [],
+  idDepartement: ['idSousPrefecture', 'idCommune', 'idLocalite'],
+  idSousPrefecture: ['idCommune', 'idLocalite'],
+  idCommune: ['idLocalite'],
+  idLocalite: [],
+};
+
 @Component({
   selector: 'app-utilisateurs',
   standalone: true,
@@ -39,6 +49,7 @@ export class UtilisateursComponent implements OnInit {
   drenas: AdminScopeOption[] = [];
   ieps: AdminScopeOption[] = [];
   departements: AdminScopeOption[] = [];
+  drenaDepartements: AdminScopeOption[] = [];
   sousPrefectures: AdminScopeOption[] = [];
   communes: AdminScopeOption[] = [];
   localites: AdminScopeOption[] = [];
@@ -46,15 +57,14 @@ export class UtilisateursComponent implements OnInit {
   readonly scopeConfigs: Array<{
     key: ScopeKey;
     label: string;
-    options: () => AdminScopeOption[];
   }> = [
-    { key: 'idRegion', label: 'Région', options: () => this.regions },
-    { key: 'idDrena', label: 'DRENA', options: () => this.drenas },
-    { key: 'idIep', label: 'IEPP', options: () => this.ieps },
-    { key: 'idDepartement', label: 'Département', options: () => this.departements },
-    { key: 'idSousPrefecture', label: 'Sous-préfecture', options: () => this.sousPrefectures },
-    { key: 'idCommune', label: 'Commune', options: () => this.communes },
-    { key: 'idLocalite', label: 'Localité', options: () => this.localites },
+    { key: 'idRegion', label: 'Région' },
+    { key: 'idDrena', label: 'DRENA' },
+    { key: 'idIep', label: 'IEPP' },
+    { key: 'idDepartement', label: 'Département' },
+    { key: 'idSousPrefecture', label: 'Sous-préfecture' },
+    { key: 'idCommune', label: 'Commune' },
+    { key: 'idLocalite', label: 'Localité' },
   ];
 
   pageIndex = 0;
@@ -123,12 +133,13 @@ export class UtilisateursComponent implements OnInit {
   }
 
   private async loadScopeOptions(): Promise<void> {
-    const [regions, drenas, ieps, departements, sousPrefectures, communes, localites] =
+    const [regions, drenas, ieps, departements, drenaDepartements, sousPrefectures, communes, localites] =
       await Promise.all([
         firstValueFrom(this.admin.getScopeOptions('/api/region')),
         firstValueFrom(this.admin.getScopeOptions('/api/drena')),
         firstValueFrom(this.admin.getScopeOptions('/api/iep')),
         firstValueFrom(this.admin.getScopeOptions('/api/departement')),
+        firstValueFrom(this.admin.getScopeOptions('/api/drena-departement')),
         firstValueFrom(this.admin.getScopeOptions('/api/sous-prefecture')),
         firstValueFrom(this.admin.getScopeOptions('/api/commune')),
         firstValueFrom(this.admin.getScopeOptions('/api/localite-d-implantation')),
@@ -137,6 +148,7 @@ export class UtilisateursComponent implements OnInit {
     this.drenas = drenas;
     this.ieps = ieps;
     this.departements = departements;
+    this.drenaDepartements = drenaDepartements;
     this.sousPrefectures = sousPrefectures;
     this.communes = communes;
     this.localites = localites;
@@ -233,6 +245,7 @@ export class UtilisateursComponent implements OnInit {
       !this.saving &&
       String(this.createForm.username ?? '').trim().length > 0 &&
       String(this.createForm.password ?? '').trim().length > 0 &&
+      this.scopeSelectionsAreConsistent(this.createForm) &&
       this.scopeIsValid(this.createSelectedRoleId, this.createForm)
     );
   }
@@ -299,6 +312,7 @@ export class UtilisateursComponent implements OnInit {
       !this.saving &&
       this.editUserId != null &&
       String(this.editForm.username ?? '').trim().length > 0 &&
+      this.scopeSelectionsAreConsistent(this.editForm) &&
       this.scopeIsValid(this.editSelectedRoleId, this.editForm)
     );
   }
@@ -401,6 +415,42 @@ export class UtilisateursComponent implements OnInit {
     return [option.code, option.libelle].filter((v) => v != null && String(v).trim()).join(' — ') || String(option.id);
   }
 
+  filteredScopeOptions(
+    key: ScopeKey,
+    form: AppUserAdminUpsertRequest,
+  ): AdminScopeOption[] {
+    const optionsByScope: Record<ScopeKey, () => AdminScopeOption[]> = {
+      idRegion: () => this.regions,
+      idDrena: () => this.filteredDrenas(form),
+      idIep: () => this.filteredIeps(form),
+      idDepartement: () => this.filteredDepartements(form),
+      idSousPrefecture: () => this.filteredSousPrefectures(form),
+      idCommune: () => this.filteredCommunes(form),
+      idLocalite: () => this.filteredLocalites(form),
+    };
+    return optionsByScope[key]();
+  }
+
+  onScopeChanged(
+    form: AppUserAdminUpsertRequest,
+    key: ScopeKey,
+    value: number | null,
+  ): void {
+    form[key] = value;
+    for (const descendantKey of SCOPE_DESCENDANTS[key]) {
+      const currentValue = form[descendantKey];
+      if (currentValue == null) {
+        continue;
+      }
+      const stillAvailable = this.filteredScopeOptions(descendantKey, form).some(
+        (option) => option.id === currentValue,
+      );
+      if (!stillAvailable) {
+        form[descendantKey] = null;
+      }
+    }
+  }
+
   filteredRoles(q: string): AppRole[] {
     const s = String(q ?? '').trim().toLowerCase();
     if (!s) return this.roles;
@@ -430,6 +480,179 @@ export class UtilisateursComponent implements OnInit {
       idCommune: form.idCommune ?? null,
       idLocalite: form.idLocalite ?? null,
     };
+  }
+
+  private filteredIeps(form: AppUserAdminUpsertRequest): AdminScopeOption[] {
+    if (form.idDrena == null) {
+      const drenaIds = this.allowedDrenaIds(form.idRegion ?? null);
+      if (drenaIds == null) {
+        return this.ieps;
+      }
+      return this.ieps.filter((option) => {
+        const drenaId = this.refId(option, 'drena');
+        return drenaId != null && drenaIds.has(drenaId);
+      });
+    }
+    return this.ieps.filter((option) => this.refId(option, 'drena') === form.idDrena);
+  }
+
+  private filteredDrenas(form: AppUserAdminUpsertRequest): AdminScopeOption[] {
+    const drenaIds = this.allowedDrenaIds(form.idRegion ?? null);
+    if (drenaIds == null) {
+      return this.drenas;
+    }
+    return this.drenas.filter((option) => drenaIds.has(option.id));
+  }
+
+  private filteredDepartements(form: AppUserAdminUpsertRequest): AdminScopeOption[] {
+    const allowedIds = this.allowedDepartementIds(form);
+    if (allowedIds == null) {
+      return this.departements;
+    }
+    return this.departements.filter((option) => allowedIds.has(option.id));
+  }
+
+  private filteredSousPrefectures(form: AppUserAdminUpsertRequest): AdminScopeOption[] {
+    const allowedIds = this.allowedSousPrefectureIds(form);
+    if (allowedIds == null) {
+      return this.sousPrefectures;
+    }
+    return this.sousPrefectures.filter((option) => allowedIds.has(option.id));
+  }
+
+  private filteredCommunes(form: AppUserAdminUpsertRequest): AdminScopeOption[] {
+    if (!this.hasUpperLocaliteFilter(form)) {
+      return this.communes;
+    }
+    const communeIds = new Set(
+      this.localitesMatchingUpperScope(form)
+        .map((option) => this.refId(option, 'commune'))
+        .filter((id): id is number => id != null),
+    );
+    return this.communes.filter((option) => communeIds.has(option.id));
+  }
+
+  private filteredLocalites(form: AppUserAdminUpsertRequest): AdminScopeOption[] {
+    return this.localitesMatchingUpperScope(form);
+  }
+
+  private localitesMatchingUpperScope(form: AppUserAdminUpsertRequest): AdminScopeOption[] {
+    const allowedSousPrefectureIds =
+      form.idSousPrefecture != null ? new Set([form.idSousPrefecture]) : this.allowedSousPrefectureIds(form);
+    return this.localites.filter((option) => {
+      const sousPrefectureId = this.refId(option, 'sousPrefecture');
+      const communeId = this.refId(option, 'commune');
+      const sousPrefectureMatches =
+        allowedSousPrefectureIds == null ||
+        (sousPrefectureId != null && allowedSousPrefectureIds.has(sousPrefectureId));
+      const communeMatches = form.idCommune == null || communeId === form.idCommune;
+      return sousPrefectureMatches && communeMatches;
+    });
+  }
+
+  private allowedDepartementIds(form: AppUserAdminUpsertRequest): Set<number> | null {
+    const sets: Array<Set<number>> = [];
+    if (form.idRegion != null) {
+      sets.push(
+        new Set(
+          this.departements
+            .filter((option) => this.refId(option, 'region') === form.idRegion)
+            .map((option) => option.id),
+        ),
+      );
+    }
+    if (form.idDrena != null) {
+      sets.push(
+        new Set(
+          this.drenaDepartements
+            .filter((option) => this.refId(option, 'drena') === form.idDrena)
+            .map((option) => this.refId(option, 'departement'))
+            .filter((id): id is number => id != null),
+        ),
+      );
+    }
+    if (sets.length === 0) {
+      return null;
+    }
+    return sets.reduce((acc, set) => this.intersection(acc, set));
+  }
+
+  private allowedDrenaIds(regionId: number | null): Set<number> | null {
+    if (regionId == null) {
+      return null;
+    }
+    const regionDepartementIds = new Set(
+      this.departements
+        .filter((option) => this.refId(option, 'region') === regionId)
+        .map((option) => option.id),
+    );
+    return new Set(
+      this.drenaDepartements
+        .filter((option) => {
+          const departementId = this.refId(option, 'departement');
+          return departementId != null && regionDepartementIds.has(departementId);
+        })
+        .map((option) => this.refId(option, 'drena'))
+        .filter((id): id is number => id != null),
+    );
+  }
+
+  private allowedSousPrefectureIds(form: AppUserAdminUpsertRequest): Set<number> | null {
+    if (form.idDepartement != null) {
+      return new Set(
+        this.sousPrefectures
+          .filter((option) => this.refId(option, 'departement') === form.idDepartement)
+          .map((option) => option.id),
+      );
+    }
+    const departementIds = this.allowedDepartementIds(form);
+    if (departementIds == null) {
+      return null;
+    }
+    return new Set(
+      this.sousPrefectures
+        .filter((option) => {
+          const departementId = this.refId(option, 'departement');
+          return departementId != null && departementIds.has(departementId);
+        })
+        .map((option) => option.id),
+    );
+  }
+
+  private hasUpperLocaliteFilter(form: AppUserAdminUpsertRequest): boolean {
+    return (
+      form.idRegion != null ||
+      form.idDrena != null ||
+      form.idDepartement != null ||
+      form.idSousPrefecture != null
+    );
+  }
+
+  private scopeSelectionsAreConsistent(form: AppUserAdminUpsertRequest): boolean {
+    return this.scopeConfigs.every((scope) => {
+      const value = form[scope.key];
+      return value == null || this.filteredScopeOptions(scope.key, form).some((option) => option.id === value);
+    });
+  }
+
+  private refId(option: AdminScopeOption, refKey: string): number | null {
+    const ref = option[refKey];
+    if (ref != null && typeof ref === 'object') {
+      return this.toNumberOrNull((ref as { id?: unknown }).id);
+    }
+    return this.toNumberOrNull(option[`id${refKey.charAt(0).toUpperCase()}${refKey.slice(1)}`]);
+  }
+
+  private toNumberOrNull(value: unknown): number | null {
+    if (value == null || value === '') {
+      return null;
+    }
+    const n = Number(value);
+    return Number.isFinite(n) ? n : null;
+  }
+
+  private intersection(a: Set<number>, b: Set<number>): Set<number> {
+    return new Set([...a].filter((value) => b.has(value)));
   }
 
   private formatError(e: unknown): string {
