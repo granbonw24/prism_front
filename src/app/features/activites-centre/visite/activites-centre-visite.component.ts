@@ -40,6 +40,8 @@ type MaitriseField = {
 
 type MaitriseResponse = 'BONNE' | 'MOYENNE' | 'MAUVAISE';
 type VisiteFormMode = 'points' | 'suivi';
+type CentralSource = 'Coordonnateur' | 'IEPP' | 'Superviseur';
+type CentralRow = VisiteRow & { centralSource?: CentralSource };
 
 const POINT_VISITE_FIELDS: MaitriseField[] = [
   { key: 'maitriseSeanceLecture', label: 'Maîtrise des séances de lecture' },
@@ -63,6 +65,14 @@ const SUIVI_FIELDS_BY_MODE: Record<VisiteSuiviMode, VisiteField[]> = {
     { key: 'nombreVisiteConseillerSuperviseurEffectue', label: 'Nombre de visites effectuées', type: 'number' },
     { key: 'nombreReunionBilanConseillerSuperviseur', label: 'Nombre de réunions bilan', type: 'number' },
   ],
+  centrale: [
+    { key: 'nombreVisiteRealiseParConseiller', label: 'Visites conseiller', type: 'number' },
+    { key: 'nombreBulletinEffectueParConseiller', label: 'Bulletins conseiller', type: 'number' },
+    { key: 'nombreVisiteEffectueParIepp', label: 'Visites IEPP', type: 'number' },
+    { key: 'nombreReunionPointActiviteAlpha', label: 'Réunions IEPP', type: 'number' },
+    { key: 'nombreVisiteConseillerSuperviseurEffectue', label: 'Visites superviseur', type: 'number' },
+    { key: 'nombreReunionBilanConseillerSuperviseur', label: 'Réunions bilan superviseur', type: 'number' },
+  ],
   iepp: [
     { key: 'nombreVisiteEffectueParIepp', label: 'Nombre de visites effectuées', type: 'number' },
     {
@@ -77,14 +87,31 @@ const MODE_SUBTITLES: Record<VisiteSuiviMode, string> = {
   conseiller: 'Suivi du conseiller : visites réalisées et bulletins effectués.',
   superviseur: 'Suivi par le superviseur : visites effectuées et réunions bilan.',
   iepp: 'Suivi par l’IEPP : visites effectuées et réunions sur les activités d’alphabétisation.',
+  centrale: 'Suivi central AENF : visites validées par le coordonnateur, suivis IEPP validés et suivis superviseur validés.',
 };
 
 const POINTS_VISITES_CREATE_PERMISSION = 'POINTS_VISITES:CREER';
 const POINTS_VISITES_UPDATE_PERMISSION = 'POINTS_VISITES:MODIFIER';
+const VALIDATION_COORDONNATEUR_PERMISSION = 'VALIDATION_VISITES_CONSEILLER:VALIDER';
 const SUIVI_PERMISSION_BY_MODE: Record<VisiteSuiviMode, string> = {
   conseiller: 'SUIVI_CONSEILLER:MODIFIER',
   superviseur: 'SUIVI_SUPERVISEUR:MODIFIER',
   iepp: 'SUIVI_IEPP:MODIFIER',
+  centrale: 'SUIVI_CENTRALE:LIRE',
+};
+const SUIVI_CREATE_PERMISSION_BY_MODE: Partial<Record<VisiteSuiviMode, string>> = {
+  superviseur: 'SUIVI_SUPERVISEUR:CREER',
+  iepp: 'SUIVI_IEPP:CREER',
+};
+const SUIVI_VALIDATE_PERMISSION_BY_MODE: Partial<Record<VisiteSuiviMode, string>> = {
+  superviseur: 'SUIVI_SUPERVISEUR:VALIDER',
+  iepp: 'SUIVI_IEPP:VALIDER',
+};
+const API_PATH_BY_MODE: Record<VisiteSuiviMode, string> = {
+  conseiller: '/api/visite',
+  superviseur: '/api/suivi-superviseur',
+  iepp: '/api/suivi-iepp',
+  centrale: '/api/suivi-superviseur',
 };
 
 @Component({
@@ -102,7 +129,7 @@ export class ActivitesCentreVisiteComponent implements OnInit {
   errorMessage: string | null = null;
   successMessage: string | null = null;
 
-  rows: VisiteRow[] = [];
+  rows: CentralRow[] = [];
   alphas: AlphaOption[] = [];
   searchText = '';
   filterAlphaId: number | '' = '';
@@ -110,6 +137,7 @@ export class ActivitesCentreVisiteComponent implements OnInit {
   createOpen = false;
   editTarget: VisiteRow | null = null;
   deleteTarget: VisiteRow | null = null;
+  validationTarget: VisiteRow | null = null;
   form: VisitePayload = this.emptyForm();
   formMode: VisiteFormMode = 'suivi';
 
@@ -126,7 +154,7 @@ export class ActivitesCentreVisiteComponent implements OnInit {
     if (typeof title === 'string' && title.trim()) {
       this.pageTitle = title.trim();
     }
-    if (mode === 'conseiller' || mode === 'superviseur' || mode === 'iepp') {
+    if (mode === 'conseiller' || mode === 'superviseur' || mode === 'iepp' || mode === 'centrale') {
       this.mode = mode;
     }
     this.reload();
@@ -142,6 +170,14 @@ export class ActivitesCentreVisiteComponent implements OnInit {
 
   get pointVisiteFields(): MaitriseField[] {
     return POINT_VISITE_FIELDS;
+  }
+
+  get showMaitriseColumns(): boolean {
+    return this.mode === 'conseiller';
+  }
+
+  get tableColspan(): number {
+    return 4 + this.suiviFields.length + (this.showMaitriseColumns ? this.pointVisiteFields.length : 0);
   }
 
   get maitriseOptions(): Array<{ value: MaitriseResponse; label: string; hint: string }> {
@@ -171,7 +207,21 @@ export class ActivitesCentreVisiteComponent implements OnInit {
     return this.auth.hasPermission(SUIVI_PERMISSION_BY_MODE[this.mode]);
   }
 
-  get filteredRows(): VisiteRow[] {
+  get canCreateSuivi(): boolean {
+    const permission = SUIVI_CREATE_PERMISSION_BY_MODE[this.mode];
+    return permission ? this.auth.hasPermission(permission) : false;
+  }
+
+  get canValidateCoordonnateur(): boolean {
+    return this.mode === 'conseiller' && this.auth.hasPermission(VALIDATION_COORDONNATEUR_PERMISSION);
+  }
+
+  get canValidateSuivi(): boolean {
+    const permission = SUIVI_VALIDATE_PERMISSION_BY_MODE[this.mode];
+    return permission ? this.auth.hasPermission(permission) : false;
+  }
+
+  get filteredRows(): CentralRow[] {
     const q = this.searchText.trim().toLowerCase();
     return this.rows.filter((row) => {
       const alphaId = this.alphaId(row);
@@ -183,6 +233,7 @@ export class ActivitesCentreVisiteComponent implements OnInit {
       }
       return [
         row.id,
+        row.centralSource,
         row.alpha?.code,
         row.alpha?.libelle,
         row.maitriseSeanceLecture,
@@ -196,10 +247,14 @@ export class ActivitesCentreVisiteComponent implements OnInit {
   }
 
   reload(): void {
+    if (this.mode === 'centrale') {
+      this.reloadCentrale();
+      return;
+    }
     this.loading = true;
     this.errorMessage = null;
     forkJoin({
-      visites: this.http.get<VisiteRow[]>(`${this.apiBaseUrl}/api/visite`),
+      visites: this.http.get<VisiteRow[]>(`${this.apiBaseUrl}${this.apiPath()}`),
       alphas: this.http.get<SpringPage<AlphaOption> | AlphaOption[]>(`${this.apiBaseUrl}/api/alpha`, {
         params: new HttpParams().set('page', '0').set('size', '1000').set('sort', 'id,asc'),
       }),
@@ -213,20 +268,63 @@ export class ActivitesCentreVisiteComponent implements OnInit {
     });
   }
 
+  private reloadCentrale(): void {
+    this.loading = true;
+    this.errorMessage = null;
+    forkJoin({
+      visites: this.http.get<VisiteRow[]>(`${this.apiBaseUrl}/api/visite`),
+      suivisIepp: this.http.get<VisiteRow[]>(`${this.apiBaseUrl}/api/suivi-iepp`),
+      suivisSuperviseur: this.http.get<VisiteRow[]>(`${this.apiBaseUrl}/api/suivi-superviseur`),
+      alphas: this.http.get<SpringPage<AlphaOption> | AlphaOption[]>(`${this.apiBaseUrl}/api/alpha`, {
+        params: new HttpParams().set('page', '0').set('size', '1000').set('sort', 'id,asc'),
+      }),
+    }).subscribe({
+      next: ({ visites, suivisIepp, suivisSuperviseur, alphas }) => {
+        const visitesValidees: CentralRow[] = (unwrapListBody(visites) as VisiteRow[])
+          .filter((row) => Boolean(row.valideeCoordonnateur))
+          .map((row) => ({ ...row, centralSource: 'Coordonnateur' }));
+        const ieppValidees: CentralRow[] = (unwrapListBody(suivisIepp) as VisiteRow[])
+          .filter((row) => Boolean(row.valideeIepp))
+          .map((row) => ({ ...row, centralSource: 'IEPP' }));
+        const superviseurValidees: CentralRow[] = (unwrapListBody(suivisSuperviseur) as VisiteRow[])
+          .filter((row) => Boolean(row.valideeSuperviseur))
+          .map((row) => ({ ...row, centralSource: 'Superviseur' }));
+        this.rows = [...visitesValidees, ...ieppValidees, ...superviseurValidees]
+          .sort((a, b) => this.centralSortKey(a).localeCompare(this.centralSortKey(b)));
+        this.alphas = unwrapListBody(alphas) as AlphaOption[];
+        this.loading = false;
+      },
+      error: (err) => this.onError(err),
+    });
+  }
+
   openCreate(mode: VisiteFormMode = 'suivi'): void {
     this.successMessage = null;
     this.errorMessage = null;
+    if (mode === 'points' && this.mode !== 'conseiller') {
+      this.errorMessage = 'Les points des visites sont enregistrés uniquement dans le flux conseiller.';
+      return;
+    }
     if (mode === 'suivi') {
-      if (!this.canManageSuivi) {
-        this.errorMessage = 'Vous n’avez pas la permission de modifier ce suivi.';
+      if (this.mode === 'conseiller') {
+        this.errorMessage = 'Le suivi conseiller est calculé automatiquement à partir des lignes de visite.';
         return;
       }
-      const target = this.findSingleSuiviTarget();
-      if (!target) {
-        this.errorMessage = 'Le suivi se met à jour sur une ligne existante. Filtrez sur un centre précis ou utilisez l’action modifier de la ligne.';
+      if (this.mode === 'centrale') {
+        this.errorMessage = 'Le suivi central est consultatif.';
         return;
       }
-      this.openEdit(target, 'suivi');
+      if (!this.canCreateSuivi) {
+        this.errorMessage = 'Vous n’avez pas la permission de créer ce suivi.';
+        return;
+      }
+      this.editTarget = null;
+      this.formMode = mode;
+      this.form = this.emptyForm();
+      if (this.filterAlphaId !== '') {
+        this.form.idAlpha = Number(this.filterAlphaId);
+      }
+      this.createOpen = true;
       return;
     }
     if (!this.canCreatePoints) {
@@ -245,12 +343,20 @@ export class ActivitesCentreVisiteComponent implements OnInit {
   openEdit(row: VisiteRow, mode: VisiteFormMode = 'suivi'): void {
     this.successMessage = null;
     this.errorMessage = null;
+    if (mode === 'points' && this.mode !== 'conseiller') {
+      this.errorMessage = 'Les points des visites sont enregistrés uniquement dans le flux conseiller.';
+      return;
+    }
     if (mode === 'points' && this.isConseillerLocked(row)) {
       this.errorMessage = 'Modification impossible : le superviseur a déjà effectué son suivi.';
       return;
     }
     if (mode === 'suivi' && this.isSuiviLocked(row)) {
       this.errorMessage = this.lockReason(row);
+      return;
+    }
+    if (mode === 'suivi' && this.mode === 'centrale') {
+      this.errorMessage = 'Le suivi central est consultatif.';
       return;
     }
     if (mode === 'points' && !this.canUpdatePoints) {
@@ -290,7 +396,11 @@ export class ActivitesCentreVisiteComponent implements OnInit {
     this.successMessage = null;
 
     const editId = this.editTarget?.id;
-    if (this.formMode === 'suivi' && editId == null) {
+    if (this.formMode === 'points' && this.mode !== 'conseiller') {
+      this.errorMessage = 'Les points des visites sont enregistrés uniquement dans le flux conseiller.';
+      return;
+    }
+    if (this.formMode === 'suivi' && this.mode === 'conseiller' && editId == null) {
       this.errorMessage = 'Le suivi doit être mis à jour sur une ligne existante.';
       return;
     }
@@ -302,15 +412,20 @@ export class ActivitesCentreVisiteComponent implements OnInit {
       this.errorMessage = 'Vous n’avez pas la permission d’enregistrer les points des visites.';
       return;
     }
-    if (this.formMode === 'suivi' && !this.canManageSuivi) {
+    if (this.formMode === 'suivi' && editId == null && !this.canCreateSuivi) {
+      this.errorMessage = 'Vous n’avez pas la permission de créer ce suivi.';
+      return;
+    }
+    if (this.formMode === 'suivi' && editId != null && !this.canManageSuivi) {
       this.errorMessage = 'Vous n’avez pas la permission d’enregistrer ce suivi.';
       return;
     }
     payload.mode = this.formMode === 'points' ? 'points' : this.mode;
+    const apiPayload = this.toApiPayload(payload);
     this.saving = true;
     const request$ = editId == null
-      ? this.http.post<VisiteRow>(`${this.apiBaseUrl}/api/visite`, payload)
-      : this.http.put<VisiteRow>(`${this.apiBaseUrl}/api/visite/${encodeURIComponent(String(editId))}`, payload);
+      ? this.http.post<VisiteRow>(`${this.apiBaseUrl}${this.apiPath()}`, apiPayload)
+      : this.http.put<VisiteRow>(`${this.apiBaseUrl}${this.apiPath()}/${encodeURIComponent(String(editId))}`, apiPayload);
 
     request$.subscribe({
       next: () => {
@@ -348,7 +463,7 @@ export class ActivitesCentreVisiteComponent implements OnInit {
     }
     this.saving = true;
     this.errorMessage = null;
-    this.http.delete<void>(`${this.apiBaseUrl}/api/visite/${encodeURIComponent(String(id))}`).subscribe({
+    this.http.delete<void>(`${this.apiBaseUrl}${this.apiPath()}/${encodeURIComponent(String(id))}`).subscribe({
       next: () => {
         this.saving = false;
         this.deleteTarget = null;
@@ -362,6 +477,29 @@ export class ActivitesCentreVisiteComponent implements OnInit {
     });
   }
 
+  askValidation(row: VisiteRow): void {
+    if (!this.canValidateRow(row) || this.saving) {
+      return;
+    }
+    this.errorMessage = null;
+    this.successMessage = null;
+    this.validationTarget = row;
+  }
+
+  closeValidation(): void {
+    if (!this.saving) {
+      this.validationTarget = null;
+    }
+  }
+
+  validationConfirmed(): void {
+    const target = this.validationTarget;
+    if (!target || this.saving) {
+      return;
+    }
+    this.validateRow(target);
+  }
+
   clearFilters(): void {
     this.searchText = '';
     this.filterAlphaId = '';
@@ -369,6 +507,39 @@ export class ActivitesCentreVisiteComponent implements OnInit {
 
   alphaId(row: VisiteRow): number | null {
     return row.alpha?.id ?? row.idAlpha ?? null;
+  }
+
+  centralSource(row: CentralRow): string {
+    return row.centralSource ?? '—';
+  }
+
+  validationIndicator(row: CentralRow): string {
+    if (this.mode === 'centrale') {
+      if (row.centralSource === 'Coordonnateur') return 'Validé coordonnateur';
+      if (row.centralSource === 'IEPP') return 'Validé IEPP';
+      if (row.centralSource === 'Superviseur') return 'Validé superviseur';
+      return 'Validé';
+    }
+    if (this.mode === 'conseiller') {
+      return row.valideeCoordonnateur ? 'Validé coordonnateur' : 'En attente coordonnateur';
+    }
+    if (this.mode === 'iepp') {
+      return row.valideeIepp ? 'Validé IEPP' : 'En attente IEPP';
+    }
+    if (this.mode === 'superviseur') {
+      return row.valideeSuperviseur ? 'Validé superviseur' : 'En attente superviseur';
+    }
+    return '—';
+  }
+
+  validationIndicatorClass(row: CentralRow): string {
+    if (this.mode === 'centrale' || this.isRowValidated(row)) {
+      if (row.centralSource === 'Coordonnateur' || this.mode === 'conseiller') return 'validation-badge validation-coordonnateur';
+      if (row.centralSource === 'IEPP' || this.mode === 'iepp') return 'validation-badge validation-iepp';
+      if (row.centralSource === 'Superviseur' || this.mode === 'superviseur') return 'validation-badge validation-superviseur';
+      return 'validation-badge validation-ok';
+    }
+    return 'validation-badge validation-pending';
   }
 
   alphaLabel(row: VisiteRow): string {
@@ -398,31 +569,63 @@ export class ActivitesCentreVisiteComponent implements OnInit {
   }
 
   canEditSuivi(row: VisiteRow): boolean {
-    return this.canManageSuivi && !this.isSuiviLocked(row);
+    return this.mode !== 'centrale' && this.canManageSuivi && !this.isSuiviLocked(row);
   }
 
   isConseillerLocked(row: VisiteRow): boolean {
-    return this.hasSupervisorFollowup(row);
+    return Boolean(row.valideeCoordonnateur);
   }
 
   isSuiviLocked(row: VisiteRow): boolean {
-    if (this.mode === 'conseiller') {
-      return this.hasSupervisorFollowup(row);
-    }
-    if (this.mode === 'superviseur') {
-      return this.hasIeppFollowup(row);
-    }
+    if (this.mode === 'conseiller') return Boolean(row.valideeCoordonnateur);
+    if (this.mode === 'iepp') return Boolean(row.valideeIepp);
+    if (this.mode === 'superviseur') return Boolean(row.valideeSuperviseur);
     return false;
   }
 
   lockReason(row: VisiteRow): string {
-    if (this.mode === 'conseiller' && this.hasSupervisorFollowup(row)) {
-      return 'Modification impossible : le superviseur a déjà effectué son suivi.';
+    if (this.mode === 'conseiller' && row.valideeCoordonnateur) {
+      return 'Modification impossible : le coordonnateur a déjà validé cette visite.';
     }
-    if (this.mode === 'superviseur' && this.hasIeppFollowup(row)) {
-      return 'Modification impossible : l’IEPP a déjà effectué son suivi.';
+    if (this.mode === 'iepp' && row.valideeIepp) {
+      return 'Modification impossible : le suivi IEPP est déjà validé.';
+    }
+    if (this.mode === 'superviseur' && row.valideeSuperviseur) {
+      return 'Modification impossible : le suivi superviseur est déjà validé.';
     }
     return '';
+  }
+
+  validateRow(row: VisiteRow): void {
+    if (row.id == null || this.saving) return;
+    const path = this.mode === 'conseiller' ? `${this.apiPath()}/${row.id}/valider-coordonnateur` : `${this.apiPath()}/${row.id}/valider`;
+    this.saving = true;
+    this.errorMessage = null;
+    this.successMessage = null;
+    this.http.put<VisiteRow>(`${this.apiBaseUrl}${path}`, {}).subscribe({
+      next: () => {
+        this.saving = false;
+        this.validationTarget = null;
+        this.successMessage = 'Validation effectuée.';
+        this.reload();
+      },
+      error: (err) => {
+        this.saving = false;
+        this.validationTarget = null;
+        this.errorMessage = this.formatError(err);
+      },
+    });
+  }
+
+  canValidateRow(row: VisiteRow): boolean {
+    return (this.canValidateCoordonnateur || this.canValidateSuivi) && !this.isRowValidated(row);
+  }
+
+  isRowValidated(row: VisiteRow): boolean {
+    if (this.mode === 'conseiller') return Boolean(row.valideeCoordonnateur);
+    if (this.mode === 'iepp') return Boolean(row.valideeIepp);
+    if (this.mode === 'superviseur') return Boolean(row.valideeSuperviseur);
+    return false;
   }
 
   maitriseValue(row: VisiteRow, key: MaitriseFieldKey): string {
@@ -446,6 +649,10 @@ export class ActivitesCentreVisiteComponent implements OnInit {
     this.errorMessage = this.formatError(err);
   }
 
+  private apiPath(): string {
+    return API_PATH_BY_MODE[this.mode];
+  }
+
   private findSingleSuiviTarget(): VisiteRow | null {
     const candidates = this.filterAlphaId !== ''
       ? this.rows.filter((row) => this.alphaId(row) === Number(this.filterAlphaId))
@@ -453,12 +660,9 @@ export class ActivitesCentreVisiteComponent implements OnInit {
     return candidates.length === 1 ? candidates[0] : null;
   }
 
-  private hasSupervisorFollowup(row: VisiteRow): boolean {
-    return row.nombreVisiteConseillerSuperviseurEffectue != null || row.nombreReunionBilanConseillerSuperviseur != null;
-  }
-
-  private hasIeppFollowup(row: VisiteRow): boolean {
-    return row.nombreVisiteEffectueParIepp != null || row.nombreReunionPointActiviteAlpha != null;
+  private centralSortKey(row: CentralRow): string {
+    const sourceOrder = row.centralSource === 'Coordonnateur' ? '1' : row.centralSource === 'IEPP' ? '2' : '3';
+    return `${this.alphaLabel(row)}-${sourceOrder}-${String(row.id ?? '').padStart(8, '0')}`;
   }
 
   private emptyForm(): VisitePayload {
@@ -511,6 +715,24 @@ export class ActivitesCentreVisiteComponent implements OnInit {
       nombreVisiteEffectueParIepp: this.toNumberOrNull(payload.nombreVisiteEffectueParIepp),
       nombreReunionPointActiviteAlpha: this.toNumberOrNull(payload.nombreReunionPointActiviteAlpha),
     };
+  }
+
+  private toApiPayload(payload: VisitePayload): Partial<VisitePayload> {
+    if (this.formMode === 'suivi' && this.mode === 'iepp') {
+      return {
+        idAlpha: payload.idAlpha,
+        nombreVisiteEffectueParIepp: payload.nombreVisiteEffectueParIepp,
+        nombreReunionPointActiviteAlpha: payload.nombreReunionPointActiviteAlpha,
+      };
+    }
+    if (this.formMode === 'suivi' && this.mode === 'superviseur') {
+      return {
+        idAlpha: payload.idAlpha,
+        nombreVisiteConseillerSuperviseurEffectue: payload.nombreVisiteConseillerSuperviseurEffectue,
+        nombreReunionBilanConseillerSuperviseur: payload.nombreReunionBilanConseillerSuperviseur,
+      };
+    }
+    return payload;
   }
 
   private normalizeMaitriseResponse(value: unknown): MaitriseResponse | null {

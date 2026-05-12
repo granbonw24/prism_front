@@ -1,4 +1,5 @@
 import type { Type } from '@angular/core';
+import { ReferentielListPageComponent } from '@shared/referentiel-list-page/referentiel-list-page.component';
 import { AutoriteAutorisationPageComponent } from './centres-autorisations/autorite-autorisation/autorite-autorisation-page.component';
 import { CampagnePageComponent } from './centres-autorisations/campagne/campagne-page.component';
 import { CategorieAppuiPageComponent } from './others/categorie-appui/categorie-appui-page.component';
@@ -70,5 +71,12 @@ export const REFERENTIEL_LIST_PAGE_BY_PATH: Record<string, Type<unknown>> = {
   "supportdidactique": SupportDidactiquePageComponent,
   "typealpha": TypeAlphaPageComponent,
   "typedocument": TypeDocumentPageComponent,
+  "region": ReferentielListPageComponent,
+  "drena": ReferentielListPageComponent,
+  "departement": ReferentielListPageComponent,
+  "drena-departement": ReferentielListPageComponent,
+  "iep": ReferentielListPageComponent,
+  "sous-prefecture": ReferentielListPageComponent,
+  "commune": ReferentielListPageComponent,
   "localite-d-implantation": LocaliteDImplantationPageComponent,
 };

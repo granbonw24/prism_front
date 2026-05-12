@@ -1,0 +1,199 @@
+<div class="container-fluid">
+  <div class="d-sm-flex align-items-center justify-content-between mb-3">
+    <div>
+      <h1 class="h4 mb-1 text-gray-800">ACTIVITES CENTRE — Contrôle démarrage</h1>
+      <p class="small text-muted mb-0">Contrôle des jours de formation, kits par manuel, niveau et conformité au programme.</p>
+    </div>
+    <div class="d-flex flex-wrap gap-1 mt-2 mt-sm-0">
+      <button *ngIf="canCreate" type="button" class="btn btn-sm btn-primary" (click)="openCreate()" [disabled]="loading || saving">
+        Ajouter un contrôle
+      </button>
+      <button type="button" class="btn btn-sm btn-outline-primary" (click)="reload()" [disabled]="loading">
+        Rafraîchir
+      </button>
+    </div>
+  </div>
+
+  <div *ngIf="errorMessage" class="alert alert-danger py-2">{{ errorMessage }}</div>
+  <div *ngIf="successMessage" class="alert alert-success py-2">{{ successMessage }}</div>
+
+  <div class="card border-0 shadow-sm mb-3">
+    <div class="card-body py-3">
+      <div class="form-row align-items-end">
+        <div class="form-group col-md-5 col-sm-12 mb-2 mb-md-0">
+          <label class="small text-muted mb-1">Recherche</label>
+          <input class="form-control form-control-sm" type="search" [(ngModel)]="searchText" placeholder="Centre, niveau, manuel..." />
+        </div>
+        <div class="form-group col-md-5 col-sm-12 mb-2 mb-md-0">
+          <label class="small text-muted mb-1">Centre Alpha</label>
+          <select class="form-control form-control-sm" [(ngModel)]="filterAlphaId">
+            <option [ngValue]="''">Tous</option>
+            <option *ngFor="let alpha of alphas" [ngValue]="alphaOptionValue(alpha)">
+              {{ alphaOptionLabel(alpha) }}
+            </option>
+          </select>
+        </div>
+        <div class="form-group col-md-2 col-sm-12 mb-0">
+          <button type="button" class="btn btn-sm btn-outline-secondary btn-block" (click)="clearFilters()" [disabled]="loading">
+            Réinitialiser
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card border-0 shadow-sm">
+    <div class="card-header bg-white border-bottom-0 py-3">
+      <h6 class="m-0 font-weight-bold text-primary">Liste des contrôles</h6>
+    </div>
+    <div class="card-body pt-3">
+      <div *ngIf="loading" class="small text-muted py-3">Chargement...</div>
+      <div *ngIf="!loading" class="table-responsive">
+        <table class="table table-bordered table-sm align-middle controle-table">
+          <thead class="thead-light">
+            <tr>
+              <th style="width: 4rem">ID</th>
+              <th>Centre Alpha</th>
+              <th>Date démarrage</th>
+              <th>Jours et heures de formation</th>
+              <th>Kits par manuel</th>
+              <th>Niveau</th>
+              <th>Conforme</th>
+              <th style="width: 10rem" class="text-center">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let row of filteredRows">
+              <td class="text-muted">{{ row.id }}</td>
+              <td>{{ alphaLabel(row) }}</td>
+              <td>{{ row.dateDemarrageAppren || '-' }}</td>
+              <td>{{ horairesLabel(row) }}</td>
+              <td>{{ kitsLabel(row) }}</td>
+              <td>{{ refLabel(row.niveauAlpha) }}</td>
+              <td>
+                <span class="badge" [ngClass]="row.conformiteProgramme === true ? 'badge-success' : row.conformiteProgramme === false ? 'badge-danger' : 'badge-secondary'">
+                  {{ conformiteLabel(row.conformiteProgramme) }}
+                </span>
+              </td>
+              <td class="text-center text-nowrap">
+                <button *ngIf="canEdit" type="button" class="btn btn-sm btn-outline-primary mr-1" (click)="openEdit(row)">
+                  Modifier
+                </button>
+                <button *ngIf="canEdit" type="button" class="btn btn-sm btn-outline-danger" (click)="deleteRow(row)">
+                  Supprimer
+                </button>
+              </td>
+            </tr>
+            <tr *ngIf="filteredRows.length === 0">
+              <td colspan="8" class="text-center text-muted py-4">Aucun contrôle trouvé.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="formOpen" class="controle-modal-backdrop">
+    <div class="controle-modal card border-0 shadow-lg">
+      <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">{{ formMode === 'edit' ? 'Modifier le contrôle' : 'Ajouter un contrôle' }}</h5>
+        <button type="button" class="close" aria-label="Fermer" (click)="closeForm()">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="card-body">
+        <div class="form-row">
+          <div class="form-group col-md-6">
+            <label>Centre Alpha</label>
+            <select class="form-control" [(ngModel)]="form.idAlpha" (ngModelChange)="form.idNiveauAlpha = null">
+              <option [ngValue]="null">Sélectionner</option>
+              <option *ngFor="let alpha of alphas" [ngValue]="alphaOptionId(alpha)">
+                {{ alphaOptionLabel(alpha) }}
+              </option>
+            </select>
+          </div>
+          <div class="form-group col-md-3">
+            <label>Date de démarrage</label>
+            <input class="form-control" type="date" [(ngModel)]="form.dateDemarrageAppren" />
+          </div>
+          <div class="form-group col-md-3">
+            <label>Niveau</label>
+            <select class="form-control" [(ngModel)]="form.idNiveauAlpha">
+              <option [ngValue]="null">Sélectionner</option>
+              <option *ngFor="let niveau of niveauxForSelectedAlpha()" [ngValue]="niveau.id ?? null">
+                {{ refLabel(niveau) }}
+              </option>
+            </select>
+          </div>
+        </div>
+
+        <div class="section-box mb-3">
+          <h6>Jour et heures de formation</h6>
+          <div class="row" *ngFor="let horaire of form.horairesFormation; trackBy: trackByIndex">
+            <div class="col-md-3 d-flex align-items-center mb-2">
+              <label class="mb-0">
+                <input type="checkbox" [(ngModel)]="horaire.selected" />
+                {{ horaire.label }}
+              </label>
+            </div>
+            <div class="col-md-3 mb-2">
+              <input class="form-control form-control-sm" type="time" [(ngModel)]="horaire.heureDebut" [disabled]="!horaire.selected" />
+            </div>
+            <div class="col-md-3 mb-2">
+              <input class="form-control form-control-sm" type="time" [(ngModel)]="horaire.heureFin" [disabled]="!horaire.selected" />
+            </div>
+          </div>
+        </div>
+
+        <div class="section-box mb-3">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <h6 class="mb-0">Nombre de kits du centre par manuel</h6>
+            <button type="button" class="btn btn-sm btn-outline-primary" (click)="addKit()">Ajouter un manuel</button>
+          </div>
+          <div class="form-row align-items-end" *ngFor="let kit of form.kitsManuels; let i = index; trackBy: trackByIndex">
+            <div class="form-group col-md-5">
+              <label>Manuel</label>
+              <select class="form-control form-control-sm" [(ngModel)]="kit.idManuel">
+                <option [ngValue]="null">Sélectionner</option>
+                <option *ngFor="let manuel of manuels" [ngValue]="manuel.id ?? null">
+                  {{ refLabel(manuel) }}
+                </option>
+              </select>
+            </div>
+            <div class="form-group col-md-2">
+              <label>Nombre</label>
+              <input class="form-control form-control-sm" type="number" min="0" [(ngModel)]="kit.nombreKit" />
+            </div>
+            <div class="form-group col-md-4">
+              <label>Précision autre</label>
+              <input class="form-control form-control-sm" type="text" [(ngModel)]="kit.precisionAutre" placeholder="Optionnel" />
+            </div>
+            <div class="form-group col-md-1">
+              <button type="button" class="btn btn-sm btn-outline-danger" (click)="removeKit(i)" [disabled]="form.kitsManuels.length === 1">
+                X
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="section-box">
+          <h6>Conformité au programme</h6>
+          <label class="mr-3">
+            <input type="radio" name="conformiteProgramme" [checked]="form.conformiteProgramme === true" (change)="form.conformiteProgramme = true" />
+            Oui
+          </label>
+          <label>
+            <input type="radio" name="conformiteProgramme" [checked]="form.conformiteProgramme === false" (change)="form.conformiteProgramme = false" />
+            Non
+          </label>
+        </div>
+      </div>
+      <div class="card-footer bg-white d-flex justify-content-end">
+        <button type="button" class="btn btn-light mr-2" (click)="closeForm()" [disabled]="saving">Annuler</button>
+        <button type="button" class="btn btn-primary" (click)="save()" [disabled]="saving">
+          {{ saving ? 'Enregistrement...' : 'Enregistrer' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

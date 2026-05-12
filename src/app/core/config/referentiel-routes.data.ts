@@ -35,6 +35,7 @@ const F = (
     optionsApiPath?: string;
     optionValueKey?: string;
     optionLabelKeys?: string[];
+    payloadAsObjectId?: boolean;
   },
 ): ReferentielFormField => ({
   key,
@@ -45,6 +46,7 @@ const F = (
   optionsApiPath: opts?.optionsApiPath,
   optionValueKey: opts?.optionValueKey,
   optionLabelKeys: opts?.optionLabelKeys,
+  payloadAsObjectId: opts?.payloadAsObjectId,
 });
 
 export const REFERENTIEL_ROUTE_DATA: ReferentielRouteData[] = [
@@ -216,6 +218,112 @@ export const REFERENTIEL_ROUTE_DATA: ReferentielRouteData[] = [
     apiPath: '/api/fonctions',
     createFields: [
       F('libelleFonction', 'Libellé', 'text', { required: true, maxLength: 100 }),
+    ],
+  },
+  {
+    path: 'region',
+    title: 'Régions',
+    menuGroup: 'geographie',
+    apiPath: '/api/region',
+    createFields: [
+      F('codeRegion', 'Code région', 'text', { maxLength: 10 }),
+      F('libelleRegion', 'Libellé région', 'text', { required: true, maxLength: 100 }),
+    ],
+  },
+  {
+    path: 'drena',
+    title: 'DRENA',
+    menuGroup: 'geographie',
+    apiPath: '/api/drena',
+    createFields: [
+      F('codeDrena', 'Code DRENA', 'text', { maxLength: 10 }),
+      F('nomDrena', 'Nom DRENA', 'text', { required: true, maxLength: 30 }),
+      F('mailDrena', 'Mail DRENA', 'text', { maxLength: 30 }),
+      F('telephoneDrena', 'Téléphone DRENA', 'text', { maxLength: 15 }),
+    ],
+  },
+  {
+    path: 'departement',
+    title: 'Départements',
+    menuGroup: 'geographie',
+    apiPath: '/api/departement',
+    createFields: [
+      F('idRegion', 'Région', 'select', {
+        optionsApiPath: '/api/region',
+        optionValueKey: 'id',
+        optionLabelKeys: ['code', 'libelle', 'codeRegion', 'libelleRegion'],
+        payloadAsObjectId: true,
+      }),
+      F('codeDepartement', 'Code département', 'text', { maxLength: 10 }),
+      F('nomDepartement', 'Nom département', 'text', { required: true, maxLength: 30 }),
+    ],
+  },
+  {
+    path: 'drena-departement',
+    title: 'Couverture DRENA / Départements',
+    menuGroup: 'geographie',
+    apiPath: '/api/drena-departement',
+    createFields: [
+      F('idDrena', 'DRENA', 'select', {
+        required: true,
+        optionsApiPath: '/api/drena',
+        optionValueKey: 'id',
+        optionLabelKeys: ['code', 'libelle', 'codeDrena', 'nomDrena'],
+        payloadAsObjectId: true,
+      }),
+      F('idDepartement', 'Département', 'select', {
+        required: true,
+        optionsApiPath: '/api/departement',
+        optionValueKey: 'id',
+        optionLabelKeys: ['code', 'libelle', 'codeDepartement', 'nomDepartement'],
+        payloadAsObjectId: true,
+      }),
+    ],
+  },
+  {
+    path: 'iep',
+    title: 'IEPP',
+    menuGroup: 'geographie',
+    apiPath: '/api/iep',
+    createFields: [
+      F('idDrena', 'DRENA', 'select', {
+        required: true,
+        optionsApiPath: '/api/drena',
+        optionValueKey: 'id',
+        optionLabelKeys: ['code', 'libelle', 'codeDrena', 'nomDrena'],
+        payloadAsObjectId: true,
+      }),
+      F('codeIep', 'Code IEPP', 'text', { maxLength: 10 }),
+      F('nomIep', 'Nom IEPP', 'text', { required: true, maxLength: 30 }),
+      F('mailIep', 'Mail IEPP', 'text', { maxLength: 30 }),
+      F('telephoneIep', 'Téléphone IEPP', 'text', { maxLength: 10 }),
+    ],
+  },
+  {
+    path: 'sous-prefecture',
+    title: 'Sous-préfectures',
+    menuGroup: 'geographie',
+    apiPath: '/api/sous-prefecture',
+    createFields: [
+      F('idDepartement', 'Département', 'select', {
+        required: true,
+        optionsApiPath: '/api/departement',
+        optionValueKey: 'id',
+        optionLabelKeys: ['code', 'libelle', 'codeDepartement', 'nomDepartement'],
+        payloadAsObjectId: true,
+      }),
+      F('codeSousPrefecture', 'Code sous-préfecture', 'text', { maxLength: 10 }),
+      F('nomSousPrefecture', 'Nom sous-préfecture', 'text', { required: true, maxLength: 30 }),
+    ],
+  },
+  {
+    path: 'commune',
+    title: 'Communes',
+    menuGroup: 'geographie',
+    apiPath: '/api/commune',
+    createFields: [
+      F('codeCommune', 'Code commune', 'text', { maxLength: 10 }),
+      F('nomCommune', 'Nom commune', 'text', { required: true, maxLength: 30 }),
     ],
   },
   {

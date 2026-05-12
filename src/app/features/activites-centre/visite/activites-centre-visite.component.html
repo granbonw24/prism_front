@@ -6,7 +6,7 @@
     </div>
     <div class="d-flex flex-wrap gap-1 mt-2 mt-sm-0">
       <button
-        *ngIf="canCreatePoints"
+        *ngIf="mode === 'conseiller' && canCreatePoints"
         class="btn btn-sm btn-outline-primary"
         type="button"
         (click)="openCreate('points')"
@@ -15,7 +15,7 @@
         Ajouter points des visites
       </button>
       <button
-        *ngIf="canManageSuivi"
+        *ngIf="mode !== 'conseiller' && mode !== 'centrale' && canManageSuivi"
         class="btn btn-sm btn-primary"
         type="button"
         (click)="openCreate('suivi')"
@@ -74,26 +74,31 @@
           <thead class="thead-light">
             <tr>
               <th style="width: 4rem">ID</th>
+              <th>Niveau de validation</th>
               <th>Centre Alpha</th>
               <th *ngFor="let field of suiviFields">{{ field.label }}</th>
-              <th>Lecture</th>
-              <th>Écriture</th>
-              <th>Calcul</th>
-              <th>CVC</th>
+              <th *ngIf="showMaitriseColumns">Lecture</th>
+              <th *ngIf="showMaitriseColumns">Écriture</th>
+              <th *ngIf="showMaitriseColumns">Calcul</th>
+              <th *ngIf="showMaitriseColumns">CVC</th>
               <th style="width: 12rem" class="text-center">Actions</th>
             </tr>
           </thead>
           <tbody>
             <tr *ngFor="let row of filteredRows">
               <td class="text-muted">{{ row.id }}</td>
+              <td>
+                <span [class]="validationIndicatorClass(row)">{{ validationIndicator(row) }}</span>
+              </td>
               <td>{{ alphaLabel(row) }}</td>
               <td *ngFor="let field of suiviFields">{{ fieldValue(row, field.key) }}</td>
-              <td>{{ maitriseValue(row, 'maitriseSeanceLecture') }}</td>
-              <td>{{ maitriseValue(row, 'maitriseSeanceEcriture') }}</td>
-              <td>{{ maitriseValue(row, 'maitriseSeanceCalcul') }}</td>
-              <td>{{ maitriseValue(row, 'maitriseSeanceCvc') }}</td>
+              <td *ngIf="showMaitriseColumns">{{ maitriseValue(row, 'maitriseSeanceLecture') }}</td>
+              <td *ngIf="showMaitriseColumns">{{ maitriseValue(row, 'maitriseSeanceEcriture') }}</td>
+              <td *ngIf="showMaitriseColumns">{{ maitriseValue(row, 'maitriseSeanceCalcul') }}</td>
+              <td *ngIf="showMaitriseColumns">{{ maitriseValue(row, 'maitriseSeanceCvc') }}</td>
               <td class="text-center text-nowrap">
                 <a
+                  *ngIf="mode !== 'centrale'"
                   class="btn btn-sm btn-outline-secondary mr-1"
                   [routerLink]="['/activites-centre/visite/detail', row.id]"
                   title="Voir le détail"
@@ -102,10 +107,10 @@
                   <i class="fas fa-eye" aria-hidden="true"></i>
                 </a>
                 <button
-                  *ngIf="canUpdatePoints"
+                  *ngIf="mode === 'conseiller' && canUpdatePoints"
                   class="btn btn-sm btn-outline-primary mr-1"
                   type="button"
-                  [title]="isConseillerLocked(row) ? 'Verrouillé : le superviseur a déjà effectué son suivi' : 'Modifier les points des visites'"
+                  [title]="isConseillerLocked(row) ? lockReason(row) : 'Modifier les points des visites'"
                   aria-label="Modifier les points des visites"
                   (click)="openEdit(row, 'points')"
                   [disabled]="saving || isConseillerLocked(row)"
@@ -113,7 +118,7 @@
                   <i class="fas fa-clipboard-check" aria-hidden="true"></i>
                 </button>
                 <button
-                  *ngIf="canManageSuivi"
+                  *ngIf="mode !== 'conseiller' && mode !== 'centrale' && canManageSuivi"
                   class="btn btn-sm btn-outline-primary mr-1"
                   type="button"
                   [title]="lockReason(row) || 'Modifier le suivi'"
@@ -124,6 +129,18 @@
                   <i class="fas fa-pen" aria-hidden="true"></i>
                 </button>
                 <button
+                  *ngIf="canValidateCoordonnateur || canValidateSuivi"
+                  class="btn btn-sm btn-outline-success mr-1"
+                  type="button"
+                  [title]="isRowValidated(row) ? 'Déjà validé' : 'Valider'"
+                  aria-label="Valider"
+                  (click)="askValidation(row)"
+                  [disabled]="saving || !canValidateRow(row)"
+                >
+                  <i class="fas fa-check" aria-hidden="true"></i>
+                </button>
+                <button
+                  *ngIf="mode !== 'centrale'"
                   class="btn btn-sm btn-outline-danger"
                   type="button"
                   title="Supprimer"
@@ -136,7 +153,7 @@
               </td>
             </tr>
             <tr *ngIf="filteredRows.length === 0">
-              <td colspan="9" class="text-center text-muted py-4">Aucun suivi de visite pour ces critères.</td>
+              <td [attr.colspan]="tableColspan" class="text-center text-muted py-4">Aucun suivi de visite pour ces critères.</td>
             </tr>
           </tbody>
         </table>
@@ -247,3 +264,29 @@
   </div>
 </div>
 <div *ngIf="deleteTarget" class="modal-backdrop fade show"></div>
+
+<div *ngIf="validationTarget" class="modal fade show d-block" tabindex="-1" role="dialog" aria-modal="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content mena-modal">
+      <div class="modal-header">
+        <h5 class="modal-title">Confirmer la validation</h5>
+        <button type="button" class="close" aria-label="Fermer" (click)="closeValidation()" [disabled]="saving">
+          <span aria-hidden="true">×</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p class="mb-2">Avez verifié les documents physique rattachés a cette valiation ?</p>
+        <div class="small text-muted">
+          Ligne concernée : <strong>{{ alphaLabel(validationTarget) }}</strong>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" (click)="closeValidation()" [disabled]="saving">Annuler</button>
+        <button type="button" class="btn btn-success" (click)="validationConfirmed()" [disabled]="saving">
+          {{ saving ? 'Validation…' : 'Confirmer la validation' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+<div *ngIf="validationTarget" class="modal-backdrop fade show"></div>

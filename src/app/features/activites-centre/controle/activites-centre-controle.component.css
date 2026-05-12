@@ -1,0 +1,32 @@
+.controle-table th,
+.controle-table td {
+  vertical-align: middle;
+}
+
+.controle-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1050;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 2rem 1rem;
+  overflow-y: auto;
+  background: rgba(15, 23, 42, 0.45);
+}
+
+.controle-modal {
+  width: min(980px, 100%);
+}
+
+.section-box {
+  padding: 1rem;
+  border: 1px solid #e3e6f0;
+  border-radius: 0.5rem;
+  background: #fbfcff;
+}
+
+.section-box h6 {
+  color: #4e73df;
+  font-weight: 700;
+}

@@ -9,6 +9,7 @@
  */
 import { Routes } from '@angular/router';
 import { anneeScolaireFeatureRoutes } from '@features/parametrage/others/anne-scolaire/anneescolaire.routes';
+import { activitesCentreFeatureRoutes } from '@features/routing/activites-centre.routes';
 import { administrationFeatureRoutes } from '@features/routing/administration.routes';
 import { apprenantFeatureRoutes } from '@features/routing/apprenant.routes';
 import { centresFeatureRoutes } from '@features/routing/centres.routes';
@@ -25,6 +26,7 @@ export const mainChildRoutes: Routes = [
   ...centresFeatureRoutes,
   ...promoteursFeatureRoutes,
   ...administrationFeatureRoutes,
+  ...activitesCentreFeatureRoutes,
   ...visitesFeatureRoutes,
   ...partenairePlaceholderRoutes,
   ...apprenantFeatureRoutes,

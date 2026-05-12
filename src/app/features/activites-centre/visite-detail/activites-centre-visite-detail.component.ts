@@ -10,7 +10,7 @@ type DetailFieldKey = Exclude<keyof VisitePayload, 'mode'>;
 type DetailField = {
   key: DetailFieldKey;
   label: string;
-  section: 'points' | 'conseiller' | 'superviseur' | 'iepp';
+  section: 'points' | 'conseiller';
 };
 
 const DETAIL_FIELDS: DetailField[] = [
@@ -20,14 +20,6 @@ const DETAIL_FIELDS: DetailField[] = [
   { section: 'points', key: 'maitriseSeanceCvc', label: 'Maîtrise des séances CVC' },
   { section: 'conseiller', key: 'nombreVisiteRealiseParConseiller', label: 'Nombre des visites réalisées' },
   { section: 'conseiller', key: 'nombreBulletinEffectueParConseiller', label: 'Nombre de bulletins effectués' },
-  { section: 'superviseur', key: 'nombreVisiteConseillerSuperviseurEffectue', label: 'Nombre de visites effectuées' },
-  { section: 'superviseur', key: 'nombreReunionBilanConseillerSuperviseur', label: 'Nombre de réunions bilan' },
-  { section: 'iepp', key: 'nombreVisiteEffectueParIepp', label: 'Nombre de visites effectuées' },
-  {
-    section: 'iepp',
-    key: 'nombreReunionPointActiviteAlpha',
-    label: 'Nombre de réunions sur les activités relatives à l’alphabétisation',
-  },
 ];
 
 @Component({

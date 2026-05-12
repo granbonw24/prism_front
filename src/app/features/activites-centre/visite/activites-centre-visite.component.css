@@ -11,6 +11,41 @@
   vertical-align: middle;
 }
 
+.validation-badge {
+  border-radius: 999px;
+  display: inline-flex;
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1;
+  padding: 0.35rem 0.55rem;
+  white-space: nowrap;
+}
+
+.validation-coordonnateur {
+  background: #e8f0fe;
+  color: #2e59d9;
+}
+
+.validation-iepp {
+  background: #e6f7f1;
+  color: #0f8f61;
+}
+
+.validation-superviseur {
+  background: #fff4db;
+  color: #9a6700;
+}
+
+.validation-ok {
+  background: #e6f7f1;
+  color: #0f8f61;
+}
+
+.validation-pending {
+  background: #f1f3f8;
+  color: #6e707e;
+}
+
 .mena-rating-grid {
   row-gap: 0.5rem;
 }

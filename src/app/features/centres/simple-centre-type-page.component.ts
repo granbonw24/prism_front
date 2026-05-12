@@ -8,8 +8,10 @@ import {
   AutoriteOption,
   autoriteOptionLabel,
   CentreDetailRow,
+  CentreNiveauDetails,
   CentreRefDetails,
   CentreRow as Row,
+  CentreTypeNiveauPayload,
   IepOption,
   iepOptionLabel,
   LocaliteOption,
@@ -18,10 +20,13 @@ import {
   natureOptionLabel,
   PeriodiciteOption,
   periodiciteOptionLabel,
+  PromoteurOption,
   PromoteurUpsertPayload,
   promoteurDetailsFromApi,
+  refOptionLibelle,
   RefOption,
   refOptionLabel,
+  SousPrefectureOption,
   SimpleCentreFullCreatePayload as SimpleFullCreatePayload,
   SpringPage,
   TypePromoteur,
@@ -77,11 +82,18 @@ export class SimpleCentreTypePageComponent implements OnInit {
   natures: NatureOption[] = [];
   periodicites: PeriodiciteOption[] = [];
   autorites: AutoriteOption[] = [];
-  promoteurs: RefOption[] = [];
+  drenas: RefOption[] = [];
+  departements: RefOption[] = [];
+  communes: RefOption[] = [];
+  sousPrefectures: SousPrefectureOption[] = [];
+  promoteurs: PromoteurOption[] = [];
   typePersonneMoraleOptions: RefOption[] = [];
+  anneesScolaires: RefOption[] = [];
+  niveaux: RefOption[] = [];
   promoteurMode: 'existing' | 'new' = 'existing';
 
   readonly refOptionLabel = refOptionLabel;
+  readonly refOptionLibelle = refOptionLibelle;
   readonly localiteOptionLabel = localiteOptionLabel;
   readonly iepOptionLabel = iepOptionLabel;
   readonly natureOptionLabel = natureOptionLabel;
@@ -105,9 +117,18 @@ export class SimpleCentreTypePageComponent implements OnInit {
       estElectrifie: false,
       aDeLeau: false,
       nombreVisite: 0,
+      totalApprenants: null,
+      totalHommes: null,
+      totalFemmes: null,
+      latitudeGps: '',
+      longitudeGps: '',
+      gpsValide: null,
+      structurePartenaire: '',
+      nomPartenaire: '',
       localisationCentre: '',
       nomMilieuImplentation: '',
     },
+    niveaux: [],
   };
 
   // Détails / édition (modales)
@@ -116,6 +137,9 @@ export class SimpleCentreTypePageComponent implements OnInit {
   detailsRow: CentreDetailRow | null = null;
   editRowId: number | null = null;
   editLoading = false;
+  editDrenaId: number | null = null;
+  editDepartementId: number | null = null;
+  editCommuneId: number | null = null;
   editForm: {
     libelle: string;
     idLocalite: number | null;
@@ -127,6 +151,14 @@ export class SimpleCentreTypePageComponent implements OnInit {
     aDeLeau: boolean | null;
     estElectrifie: boolean | null;
     nombreVisite: number | null;
+    totalApprenants: number | null;
+    totalHommes: number | null;
+    totalFemmes: number | null;
+    latitudeGps: string | null;
+    longitudeGps: string | null;
+    gpsValide: boolean | null;
+    structurePartenaire: string | null;
+    nomPartenaire: string | null;
     localisationCentre: string | null;
     nomMilieuImplentation: string | null;
     encadreurNonMena: string | null;
@@ -143,12 +175,21 @@ export class SimpleCentreTypePageComponent implements OnInit {
     aDeLeau: null,
     estElectrifie: null,
     nombreVisite: null,
+    totalApprenants: null,
+    totalHommes: null,
+    totalFemmes: null,
+    latitudeGps: null,
+    longitudeGps: null,
+    gpsValide: null,
+    structurePartenaire: null,
+    nomPartenaire: null,
     localisationCentre: null,
     nomMilieuImplentation: null,
     encadreurNonMena: null,
     encadrerParMena: null,
     idPromoteur: null,
   };
+  editNiveaux: CentreTypeNiveauPayload[] = [];
 
   constructor(
     private readonly http: HttpClient,
@@ -172,11 +213,17 @@ export class SimpleCentreTypePageComponent implements OnInit {
       }),
       localites: this.http.get<LocaliteOption[]>(`${this.apiBaseUrl}/api/localite-d-implantation`),
       ieps: this.http.get<IepOption[]>(`${this.apiBaseUrl}/api/iep`),
+      drenas: this.http.get<any[]>(`${this.apiBaseUrl}/api/drena`),
+      departements: this.http.get<any[]>(`${this.apiBaseUrl}/api/departement`),
+      communes: this.http.get<any[]>(`${this.apiBaseUrl}/api/commune`),
+      sousPrefectures: this.http.get<any[]>(`${this.apiBaseUrl}/api/sous-prefecture`),
       natures: this.http.get<NatureOption[]>(`${this.apiBaseUrl}/api/naturecentre`),
       periodicites: this.http.get<PeriodiciteOption[]>(`${this.apiBaseUrl}/api/Periodicites`),
       autorites: this.http.get<AutoriteOption[]>(`${this.apiBaseUrl}/api/autoriteautorisation`),
       promoteurs: this.http.get<any[]>(`${this.apiBaseUrl}/api/promoteur`),
       typePersonneMorales: this.http.get<any[]>(`${this.apiBaseUrl}/api/type-personne-morale`),
+      anneesScolaires: this.http.get<any[]>(`${this.apiBaseUrl}/api/anneescolaire`),
+      niveaux: this.http.get<any[]>(`${this.apiBaseUrl}${this.niveauApiPath()}`),
     }).subscribe({
       next: (res) => {
         const page = res.rows;
@@ -186,6 +233,13 @@ export class SimpleCentreTypePageComponent implements OnInit {
         this.rows = list.map((x) => this.mapRow(x));
         this.localites = res.localites ?? [];
         this.ieps = res.ieps ?? [];
+        this.drenas = (res.drenas ?? []).map((x: any) => this.refOptionFromApi(x));
+        this.departements = (res.departements ?? []).map((x: any) => this.refOptionFromApi(x));
+        this.communes = (res.communes ?? []).map((x: any) => this.refOptionFromApi(x));
+        this.sousPrefectures = (res.sousPrefectures ?? []).map((x: any) => ({
+          ...this.refOptionFromApi(x),
+          departement: this.asCentreRef(x.departement),
+        }));
         this.natures = res.natures ?? [];
         this.periodicites = res.periodicites ?? [];
         this.autorites = res.autorites ?? [];
@@ -193,11 +247,30 @@ export class SimpleCentreTypePageComponent implements OnInit {
           id: x.id,
           code: x.codePromoteur ?? undefined,
           libelle: x.libellePromoteur ?? undefined,
+          details: promoteurDetailsFromApi(x),
         }));
         this.typePersonneMoraleOptions = (res.typePersonneMorales ?? []).map((x: any) => ({
           id: x.id,
           code: undefined,
           libelle: x.libelle ?? undefined,
+        }));
+        this.anneesScolaires = (res.anneesScolaires ?? []).map((x: any) => ({
+          id: x.id,
+          code: x.codeAnneeScolaire ?? x.code ?? undefined,
+          libelle:
+            x.debutAnneeScolaire != null && x.finAnneeScolaire != null
+              ? `${x.debutAnneeScolaire} - ${x.finAnneeScolaire}`
+              : x.libelle ?? x.libelleAnneeScolaire ?? undefined,
+        }));
+        this.niveaux = (res.niveaux ?? []).map((x: any) => ({
+          id: x.id,
+          code: x.codeNiveauCp ?? x.codeNiveauSie ?? x.code ?? undefined,
+          libelle:
+            x.libelleNiveauCp ??
+            x.libelleNiveauSie ??
+            x.libelleNiveau ??
+            x.libelle ??
+            undefined,
         }));
         this.loading = false;
       },
@@ -225,7 +298,7 @@ export class SimpleCentreTypePageComponent implements OnInit {
       return c.localiteId != null && c.iepId != null && c.natureCentreId != null;
     }
     if (this.stepIndex === 2) {
-      return String(this.model.libelle ?? '').trim().length > 0;
+      return String(this.model.libelle ?? '').trim().length > 0 && !this.hasInvalidNiveauRows();
     }
     return false;
   }
@@ -272,9 +345,18 @@ export class SimpleCentreTypePageComponent implements OnInit {
         estElectrifie: false,
         aDeLeau: false,
         nombreVisite: 0,
+        totalApprenants: null,
+        totalHommes: null,
+        totalFemmes: null,
+        latitudeGps: '',
+        longitudeGps: '',
+        gpsValide: null,
+        structurePartenaire: '',
+        nomPartenaire: '',
         localisationCentre: '',
         nomMilieuImplentation: '',
       },
+      niveaux: [],
     };
     this.promoteurMode = 'existing';
   }
@@ -320,32 +402,154 @@ export class SimpleCentreTypePageComponent implements OnInit {
 
   localiteLabel(id: number | null | undefined): string {
     const found = this.localites.find((x) => x.id === id);
-    if (!found) return '—';
-    return `${found.codeLocalite ?? 'LOC'} · ${found.nomLocalite ?? ''}`.trim();
+    return found ? this.localiteOptionLabel(found) : '—';
   }
 
   iepLabel(id: number | null | undefined): string {
     const found = this.ieps.find((x) => x.id === id);
-    if (!found) return '—';
-    return `${found.codeIep ?? 'IEP'} · ${found.nomIep ?? ''}`.trim();
+    return found ? this.iepOptionLabel(found) : '—';
   }
 
   natureLabel(id: number | null | undefined): string {
     const found = this.natures.find((x) => x.id === id);
-    if (!found) return '—';
-    return `${found.codeNatureCentre ?? 'NAT'} · ${found.libelleNatureCentre ?? ''}`.trim();
+    return found ? this.natureOptionLabel(found) : '—';
   }
 
   periodiciteLabel(id: number | null | undefined): string {
     const found = this.periodicites.find((x) => x.id === id);
-    if (!found) return '—';
-    return `${found.codePeriodicite ?? 'PER'} · ${found.libellePeriodicite ?? ''}`.trim();
+    return found ? this.periodiciteOptionLabel(found) : '—';
   }
 
   autoriteLabel(id: number | null | undefined): string {
     const found = this.autorites.find((x) => x.id === id);
-    if (!found) return '—';
-    return `${found.codeAutorisation ?? 'AUT'} · ${found.libelleAutoriteAutorisation ?? ''}`.trim();
+    return found ? this.autoriteOptionLabel(found) : '—';
+  }
+
+  drenaLabel(id: number | null | undefined): string {
+    const found = this.drenas.find((x) => x.id === id);
+    return found ? this.refOptionLibelle(found) : '—';
+  }
+
+  departementLabel(id: number | null | undefined): string {
+    const found = this.departements.find((x) => x.id === id);
+    return found ? this.refOptionLibelle(found) : '—';
+  }
+
+  communeLabel(id: number | null | undefined): string {
+    const found = this.communes.find((x) => x.id === id);
+    return found ? this.refOptionLibelle(found) : '—';
+  }
+
+  filteredEditIeps(): IepOption[] {
+    if (this.editDrenaId == null) return this.ieps;
+    return this.ieps.filter((iep) => iep.drena?.id === this.editDrenaId);
+  }
+
+  filteredEditCommunes(): RefOption[] {
+    if (this.editDepartementId == null) return this.communes;
+    const communeIds = new Set(
+      this.localites
+        .filter((localite) => this.localiteDepartementId(localite) === this.editDepartementId)
+        .map((localite) => localite.commune?.id)
+        .filter((id): id is number => id != null),
+    );
+    return this.communes.filter((commune) => communeIds.has(commune.id));
+  }
+
+  filteredEditLocalites(): LocaliteOption[] {
+    return this.localites.filter((localite) => {
+      const matchesDepartement = this.editDepartementId == null || this.localiteDepartementId(localite) === this.editDepartementId;
+      const matchesCommune = this.editCommuneId == null || localite.commune?.id === this.editCommuneId;
+      return matchesDepartement && matchesCommune;
+    });
+  }
+
+  onEditDrenaChange(): void {
+    if (this.editForm.idIep != null && !this.filteredEditIeps().some((iep) => iep.id === this.editForm.idIep)) {
+      this.editForm.idIep = null;
+    }
+  }
+
+  onEditIepChange(): void {
+    const iep = this.ieps.find((item) => item.id === this.editForm.idIep);
+    this.editDrenaId = iep?.drena?.id ?? null;
+  }
+
+  onEditDepartementChange(): void {
+    if (this.editCommuneId != null && !this.filteredEditCommunes().some((commune) => commune.id === this.editCommuneId)) {
+      this.editCommuneId = null;
+    }
+    if (this.editForm.idLocalite != null && !this.filteredEditLocalites().some((localite) => localite.id === this.editForm.idLocalite)) {
+      this.editForm.idLocalite = null;
+    }
+  }
+
+  onEditCommuneChange(): void {
+    if (this.editForm.idLocalite != null && !this.filteredEditLocalites().some((localite) => localite.id === this.editForm.idLocalite)) {
+      this.editForm.idLocalite = null;
+    }
+  }
+
+  onEditLocaliteChange(): void {
+    const localite = this.localites.find((item) => item.id === this.editForm.idLocalite);
+    this.editCommuneId = localite?.commune?.id ?? null;
+    this.editDepartementId = localite ? this.localiteDepartementId(localite) : null;
+  }
+
+  anneeScolaireLabel(id: number | null | undefined): string {
+    const found = this.anneesScolaires.find((x) => x.id === id);
+    return found ? this.refOptionLibelle(found) : '—';
+  }
+
+  niveauLabel(id: number | null | undefined): string {
+    const found = this.niveaux.find((x) => x.id === id);
+    return found ? this.refOptionLibelle(found) : '—';
+  }
+
+  niveauApiPath(): string {
+    const p = this.apiPath ?? '';
+    if (p.includes('/cp')) return '/api/niveaucp';
+    return '/api/niveausiecec';
+  }
+
+  niveauTitle(): string {
+    const p = this.apiPath ?? '';
+    if (p.includes('/cp')) return 'Niveau CP';
+    if (p.includes('/cec')) return 'Niveau CEC';
+    return 'Niveau SIE';
+  }
+
+  salleTitle(): string {
+    const p = this.apiPath ?? '';
+    if (p.includes('/cp')) return 'Salles CP';
+    if (p.includes('/cec')) return 'Salles CEC';
+    return 'Salles SIE';
+  }
+
+  addNiveau(): void {
+    this.model.niveaux = this.model.niveaux ?? [];
+    this.model.niveaux.push({ anneeScolaireId: null, niveauId: null, nombreSalle: null });
+  }
+
+  removeNiveau(index: number): void {
+    this.model.niveaux = (this.model.niveaux ?? []).filter((_, i) => i !== index);
+  }
+
+  addEditNiveau(): void {
+    this.editNiveaux = this.editNiveaux ?? [];
+    this.editNiveaux.push({ anneeScolaireId: null, niveauId: null, nombreSalle: null });
+  }
+
+  removeEditNiveau(index: number): void {
+    this.editNiveaux = (this.editNiveaux ?? []).filter((_, i) => i !== index);
+  }
+
+  hasInvalidNiveauRows(): boolean {
+    return (this.model.niveaux ?? []).some((row) => row.anneeScolaireId == null || row.niveauId == null);
+  }
+
+  hasInvalidEditNiveauRows(): boolean {
+    return (this.editNiveaux ?? []).some((row) => row.anneeScolaireId == null || row.niveauId == null);
   }
 
   openDetails(row: Row): void {
@@ -390,12 +594,25 @@ export class SimpleCentreTypePageComponent implements OnInit {
           aDeLeau: d.aDeLeau ?? null,
           estElectrifie: d.estElectrifie ?? null,
           nombreVisite: d.nombreVisite ?? null,
+          totalApprenants: d.totalApprenants ?? null,
+          totalHommes: d.totalHommes ?? null,
+          totalFemmes: d.totalFemmes ?? null,
+          latitudeGps: d.latitudeGps ?? null,
+          longitudeGps: d.longitudeGps ?? null,
+          gpsValide: d.gpsValide ?? null,
+          structurePartenaire: d.structurePartenaire ?? null,
+          nomPartenaire: d.nomPartenaire ?? null,
           localisationCentre: d.localisationCentre ?? null,
           nomMilieuImplentation: d.nomMilieuImplentation ?? null,
           encadreurNonMena: d.encadreurNonMena ?? null,
           encadrerParMena: d.encadrerParMena ?? null,
           idPromoteur: d.promoteur?.idPromoteur ?? d.idPromoteur ?? null,
         };
+        this.editDrenaId = d.drena?.id ?? this.ieps.find((iep) => iep.id === d.idIep)?.drena?.id ?? null;
+        const selectedLocalite = this.localites.find((localite) => localite.id === d.idLocalite);
+        this.editCommuneId = d.commune?.id ?? selectedLocalite?.commune?.id ?? null;
+        this.editDepartementId = d.departement?.id ?? (selectedLocalite ? this.localiteDepartementId(selectedLocalite) : null);
+        this.editNiveaux = this.niveauPayloadsFromDetails(d.niveaux ?? []);
         this.editLoading = false;
       },
       error: (e) => {
@@ -409,17 +626,31 @@ export class SimpleCentreTypePageComponent implements OnInit {
   closeEdit(): void {
     this.editRowId = null;
     this.editLoading = false;
+    this.editNiveaux = [];
+    this.editDrenaId = null;
+    this.editDepartementId = null;
+    this.editCommuneId = null;
   }
 
   canSaveEdit(): boolean {
-    return !this.saving && !this.editLoading && this.editRowId != null && this.editForm.libelle.trim().length > 0;
+    return (
+      !this.saving &&
+      !this.editLoading &&
+      this.editRowId != null &&
+      this.editForm.libelle.trim().length > 0 &&
+      !this.hasInvalidEditNiveauRows()
+    );
   }
 
   saveEdit(): void {
     if (!this.canSaveEdit()) return;
     const id = this.editRowId!;
     this.saving = true;
-    this.http.put(`${this.apiBaseUrl}${this.apiPath}/${id}/infos`, this.editForm).subscribe({
+    const payload = {
+      ...this.editForm,
+      niveaux: this.buildEditNiveauxPayload(),
+    };
+    this.http.put(`${this.apiBaseUrl}${this.apiPath}/${id}/infos`, payload).subscribe({
       next: () => {
         this.saving = false;
         this.closeEdit();
@@ -456,6 +687,7 @@ export class SimpleCentreTypePageComponent implements OnInit {
       libelle: String(this.model.libelle ?? '').trim(),
       promoteur: promoteurPayload,
       centre: { ...this.model.centre },
+      niveaux: this.buildNiveauxPayload(),
     };
     this.http.post(`${this.apiBaseUrl}${this.apiPath}`, payload).subscribe({
       next: () => {
@@ -524,6 +756,14 @@ export class SimpleCentreTypePageComponent implements OnInit {
       estElectrifie: (x['estElectrifie'] as boolean | null | undefined) ?? null,
       aDeLeau: this.pickBool(x, 'aDeLeau', 'adeLeau', 'ADeLeau'),
       nombreVisite: (x['nombreVisite'] as number | null | undefined) ?? null,
+      totalApprenants: (x['totalApprenants'] as number | null | undefined) ?? null,
+      totalHommes: (x['totalHommes'] as number | null | undefined) ?? null,
+      totalFemmes: (x['totalFemmes'] as number | null | undefined) ?? null,
+      latitudeGps: (x['latitudeGps'] as string | undefined) ?? null,
+      longitudeGps: (x['longitudeGps'] as string | undefined) ?? null,
+      gpsValide: this.pickBool(x, 'gpsValide'),
+      structurePartenaire: (x['structurePartenaire'] as string | undefined) ?? null,
+      nomPartenaire: (x['nomPartenaire'] as string | undefined) ?? null,
       localisationCentre: (x['localisationCentre'] as string | undefined) ?? null,
       nomMilieuImplentation: (x['nomMilieuImplentation'] as string | undefined) ?? null,
       encadreurNonMena: (x['encadreurNonMena'] as string | undefined) ?? null,
@@ -538,19 +778,24 @@ export class SimpleCentreTypePageComponent implements OnInit {
       ...base,
       localite: this.asCentreRef(x['localite']),
       iep: this.asCentreRef(x['iep']),
+      drena: this.asCentreRef(x['drena']),
+      commune: this.asCentreRef(x['commune']),
+      sousPrefecture: this.asCentreRef(x['sousPrefecture']),
+      departement: this.asCentreRef(x['departement']),
+      region: this.asCentreRef(x['region']),
       naturecentre: this.asCentreRef(x['naturecentre']),
       periodicite: this.asCentreRef(x['periodicite']),
       autoriteAutorisation: this.asCentreRef(x['autoriteAutorisation']),
+      niveaux: this.asNiveauDetailsArray(x['niveaux']),
     };
   }
 
   refCentreLabel(ref: CentreRefDetails | null | undefined, fallback: () => string): string {
     if (!ref) return fallback();
-    const c = ref.code?.trim();
     const l = ref.libelle?.trim();
-    if (c && l) return `${c} — ${l}`;
-    if (c) return c;
     if (l) return l;
+    const c = ref.code?.trim();
+    if (c) return c;
     if (ref.id != null) return `#${ref.id}`;
     return fallback();
   }
@@ -561,6 +806,38 @@ export class SimpleCentreTypePageComponent implements OnInit {
 
   detailIepLabel(d: CentreDetailRow): string {
     return this.refCentreLabel(d.iep, () => this.iepLabel(d.idIep ?? null));
+  }
+
+  detailDrenaLabel(d: CentreDetailRow): string {
+    return this.refCentreLabel(d.drena, () => {
+      const iep = this.ieps.find((x) => x.id === d.idIep);
+      return this.drenaLabel(iep?.drena?.id ?? null);
+    });
+  }
+
+  detailCommuneLabel(d: CentreDetailRow): string {
+    return this.refCentreLabel(d.commune, () => {
+      const localite = this.localites.find((x) => x.id === d.idLocalite);
+      return this.communeLabel(localite?.commune?.id ?? null);
+    });
+  }
+
+  detailSousPrefectureLabel(d: CentreDetailRow): string {
+    return this.refCentreLabel(d.sousPrefecture, () => {
+      const localite = this.localites.find((x) => x.id === d.idLocalite);
+      return localite?.sousPrefecture ? this.refOptionLibelle(localite.sousPrefecture as RefOption) : '—';
+    });
+  }
+
+  detailDepartementLabel(d: CentreDetailRow): string {
+    return this.refCentreLabel(d.departement, () => {
+      const localite = this.localites.find((x) => x.id === d.idLocalite);
+      return this.departementLabel(localite ? this.localiteDepartementId(localite) : null);
+    });
+  }
+
+  detailRegionLabel(d: CentreDetailRow): string {
+    return this.refCentreLabel(d.region, () => '—');
   }
 
   detailNatureLabel(d: CentreDetailRow): string {
@@ -583,6 +860,15 @@ export class SimpleCentreTypePageComponent implements OnInit {
     return null;
   }
 
+  private optionalPositiveInt(v: unknown): number | null {
+    if (typeof v === 'number' && Number.isFinite(v)) return v;
+    if (typeof v === 'string' && v.trim() !== '') {
+      const n = Number(v);
+      return Number.isFinite(n) ? n : null;
+    }
+    return null;
+  }
+
   private asCentreRef(value: unknown): CentreRefDetails | null {
     if (!value || typeof value !== 'object') return null;
     const o = value as Record<string, unknown>;
@@ -593,6 +879,35 @@ export class SimpleCentreTypePageComponent implements OnInit {
       code: (o['code'] as string | undefined) ?? null,
       libelle: (o['libelle'] as string | undefined) ?? null,
     };
+  }
+
+  private refOptionFromApi(value: Record<string, unknown>): RefOption {
+    return {
+      id: Number(value['id'] ?? 0),
+      code: (
+        value['code'] ??
+        value['codeDrena'] ??
+        value['codeDepartement'] ??
+        value['codeCommune'] ??
+        value['codeSousPrefecture'] ??
+        undefined
+      ) as string | undefined,
+      libelle: (
+        value['libelle'] ??
+        value['nomDrena'] ??
+        value['nomDepartement'] ??
+        value['nomCommune'] ??
+        value['nomSousPrefecture'] ??
+        undefined
+      ) as string | undefined,
+    };
+  }
+
+  private localiteDepartementId(localite: LocaliteOption): number | null {
+    const sousPrefectureId = localite.sousPrefecture?.id;
+    if (sousPrefectureId == null) return null;
+    const sousPrefecture = this.sousPrefectures.find((item) => item.id === sousPrefectureId);
+    return sousPrefecture?.departement?.id ?? null;
   }
 
   promoteurSummary(row: Row): string {
@@ -619,11 +934,62 @@ export class SimpleCentreTypePageComponent implements OnInit {
     return p ? this.refOptionLabel(p) : `#${id}`;
   }
 
+  recapWizardExistingPromoteurDetails(): PromoteurOption | null {
+    const id = this.model.promoteur?.id;
+    if (id == null) return null;
+    return this.promoteurs.find((x) => x.id === id) ?? null;
+  }
+
   recapWizardTypePersonneMoraleLabel(): string {
     const id = this.model.promoteur?.personneMorale?.idTypePersonneMorale;
     if (id == null) return '—';
     const t = this.typePersonneMoraleOptions.find((x) => x.id === id);
     return t ? this.refOptionLabel(t) : `#${id}`;
+  }
+
+  private buildNiveauxPayload(): CentreTypeNiveauPayload[] {
+    return (this.model.niveaux ?? [])
+      .filter((row) => row.anneeScolaireId != null && row.niveauId != null)
+      .map((row) => ({
+        anneeScolaireId: row.anneeScolaireId,
+        niveauId: row.niveauId,
+        nombreSalle: row.nombreSalle ?? null,
+        codeNiveau: row.codeNiveau?.trim() || null,
+      }));
+  }
+
+  private buildEditNiveauxPayload(): CentreTypeNiveauPayload[] {
+    return (this.editNiveaux ?? [])
+      .filter((row) => row.anneeScolaireId != null && row.niveauId != null)
+      .map((row) => ({
+        anneeScolaireId: row.anneeScolaireId,
+        niveauId: row.niveauId,
+        nombreSalle: row.nombreSalle ?? null,
+        codeNiveau: row.codeNiveau?.trim() || null,
+      }));
+  }
+
+  private niveauPayloadsFromDetails(niveaux: CentreNiveauDetails[]): CentreTypeNiveauPayload[] {
+    return niveaux.map((niveau) => ({
+      anneeScolaireId: niveau.anneeScolaire?.id ?? null,
+      niveauId: niveau.niveauId ?? null,
+      nombreSalle: niveau.nombreSalle ?? null,
+      codeNiveau: niveau.codeNiveau ?? null,
+    }));
+  }
+
+  private asNiveauDetailsArray(value: unknown): CentreNiveauDetails[] {
+    if (!Array.isArray(value)) return [];
+    return value
+      .filter((item): item is Record<string, unknown> => item != null && typeof item === 'object')
+      .map((item) => ({
+        id: this.optionalPositiveInt(item['id']),
+        niveauId: this.optionalPositiveInt(item['niveauId']),
+        codeNiveau: (item['codeNiveau'] as string | undefined) ?? null,
+        libelleNiveau: (item['libelleNiveau'] as string | undefined) ?? null,
+        anneeScolaire: this.asCentreRef(item['anneeScolaire']),
+        nombreSalle: this.optionalPositiveInt(item['nombreSalle']),
+      }));
   }
 
   private buildPromoteurPayload(): PromoteurUpsertPayload {

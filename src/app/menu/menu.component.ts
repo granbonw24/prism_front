@@ -19,11 +19,18 @@ import { AuthService } from '@services/auth.service';
 })
 export class MenuComponent {
   private readonly activitesCentrePermissions = [
+    'ACTIVITES_CENTRE_PARTENARIAT:LIRE',
+    'ACTIVITES_CENTRE_PERFORMANCE:LIRE',
+    'ACTIVITES_CENTRE_CONTROLE:LIRE',
+    'ACTIVITES_CENTRE_EVALUATION:LIRE',
+    'ACTIVITES_CENTRE_INFOS:LIRE',
     'POINTS_VISITES:LIRE',
     'POINTS_VISITES:CREER',
     'SUIVI_CONSEILLER:LIRE',
+    'VALIDATION_VISITES_CONSEILLER:VALIDER',
     'SUIVI_SUPERVISEUR:LIRE',
     'SUIVI_IEPP:LIRE',
+    'SUIVI_CENTRALE:LIRE',
   ];
 
   constructor(
@@ -39,7 +46,8 @@ export class MenuComponent {
     return (
       this.auth.hasPermission('SUIVI_CONSEILLER:LIRE') ||
       this.auth.hasPermission('POINTS_VISITES:LIRE') ||
-      this.auth.hasPermission('POINTS_VISITES:CREER')
+      this.auth.hasPermission('POINTS_VISITES:CREER') ||
+      this.auth.hasPermission('VALIDATION_VISITES_CONSEILLER:VALIDER')
     );
   }
 
@@ -49,6 +57,30 @@ export class MenuComponent {
 
   canViewSuiviIepp(): boolean {
     return this.auth.hasPermission('SUIVI_IEPP:LIRE');
+  }
+
+  canViewSuiviCentrale(): boolean {
+    return this.auth.hasPermission('SUIVI_CENTRALE:LIRE');
+  }
+
+  canViewActivitesCentrePartenariat(): boolean {
+    return this.auth.hasPermission('ACTIVITES_CENTRE_PARTENARIAT:LIRE');
+  }
+
+  canViewActivitesCentrePerformance(): boolean {
+    return this.auth.hasPermission('ACTIVITES_CENTRE_PERFORMANCE:LIRE');
+  }
+
+  canViewActivitesCentreControle(): boolean {
+    return this.auth.hasPermission('ACTIVITES_CENTRE_CONTROLE:LIRE');
+  }
+
+  canViewActivitesCentreEvaluation(): boolean {
+    return this.auth.hasPermission('ACTIVITES_CENTRE_EVALUATION:LIRE');
+  }
+
+  canViewActivitesCentreInfos(): boolean {
+    return this.auth.hasPermission('ACTIVITES_CENTRE_INFOS:LIRE');
   }
 
   /** Ouvre le bloc ACTIVITES CENTRE lorsque l’URL courante est une route d’activité centre. */

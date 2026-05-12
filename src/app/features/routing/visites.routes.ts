@@ -25,8 +25,14 @@ export const visitesFeatureRoutes: Routes = [
     component: ActivitesCentreVisiteComponent,
     data: { title: 'ACTIVITES CENTRE — Visite — Suivi par l’IEPP', mode: 'iepp' },
   },
+  {
+    path: 'activites-centre/visite/centrale',
+    component: ActivitesCentreVisiteComponent,
+    data: { title: 'ACTIVITES CENTRE — Visite — Suivi central AENF', mode: 'centrale' },
+  },
   { path: 'visites/pointage', component: VisitesListComponent, data: { title: 'Visites — Point des visites' } },
   { path: 'visites/conseiller', redirectTo: 'activites-centre/visite/conseiller', pathMatch: 'full' },
   { path: 'visites/superviseur', redirectTo: 'activites-centre/visite/superviseur', pathMatch: 'full' },
   { path: 'visites/iepp', redirectTo: 'activites-centre/visite/iepp', pathMatch: 'full' },
+  { path: 'visites/centrale', redirectTo: 'activites-centre/visite/centrale', pathMatch: 'full' },
 ];

@@ -39,7 +39,7 @@ describe('ActivitesCentreVisiteComponent', () => {
     const requests = http.match(() => true);
     expect(requests.length).toBe(2);
     for (const req of requests) {
-      if (req.request.url.endsWith('/api/visite')) {
+      if (req.request.url.endsWith('/api/suivi-iepp')) {
         req.flush([
           {
             id: 1,
@@ -67,11 +67,40 @@ describe('ActivitesCentreVisiteComponent', () => {
     expect(component.filteredRows.length).toBe(1);
   });
 
-  it('sépare le formulaire points des visites du formulaire suivi', () => {
+  it('masque les colonnes de maîtrise dans le tableau IEPP', () => {
     fixture.detectChanges();
 
     for (const req of http.match(() => true)) {
-      if (req.request.url.endsWith('/api/visite')) {
+      if (req.request.url.endsWith('/api/suivi-iepp')) {
+        req.flush([
+          {
+            id: 1,
+            alpha: { id: 10, code: 'ALP-001', libelle: 'Centre Alpha' },
+            nombreVisiteEffectueParIepp: 3,
+            nombreReunionPointActiviteAlpha: 2,
+          },
+        ]);
+      } else if (req.request.url.endsWith('/api/alpha')) {
+        req.flush({ content: [{ idCentre: 10, codeAlpha: 'ALP-001', libelleAlpha: 'Centre Alpha' }] });
+      }
+    }
+    fixture.detectChanges();
+
+    const headerText = Array.from(fixture.nativeElement.querySelectorAll('thead th') as NodeListOf<HTMLElement>)
+      .map((cell) => cell.textContent?.trim())
+      .join(' ');
+    expect(headerText).not.toContain('Lecture');
+    expect(headerText).not.toContain('Écriture');
+    expect(headerText).not.toContain('Calcul');
+    expect(headerText).not.toContain('CVC');
+    http.verify();
+  });
+
+  it('agrège les lignes validées pour le suivi central AENF', () => {
+    fixture.detectChanges();
+
+    for (const req of http.match(() => true)) {
+      if (req.request.url.endsWith('/api/suivi-iepp')) {
         req.flush([]);
       } else if (req.request.url.endsWith('/api/alpha')) {
         req.flush({ content: [{ idCentre: 10, codeAlpha: 'ALP-001', libelleAlpha: 'Centre Alpha' }] });
@@ -79,6 +108,76 @@ describe('ActivitesCentreVisiteComponent', () => {
     }
 
     const component = fixture.componentInstance;
+    component.mode = 'centrale';
+    component.reload();
+
+    for (const req of http.match(() => true)) {
+      if (req.request.url.endsWith('/api/visite')) {
+        req.flush([
+          {
+            id: 1,
+            alpha: { id: 10, code: 'ALP-001', libelle: 'Centre Alpha' },
+            nombreVisiteRealiseParConseiller: 1,
+            nombreBulletinEffectueParConseiller: 1,
+            valideeCoordonnateur: true,
+          },
+          {
+            id: 2,
+            alpha: { id: 10, code: 'ALP-001', libelle: 'Centre Alpha' },
+            valideeCoordonnateur: false,
+          },
+        ]);
+      } else if (req.request.url.endsWith('/api/suivi-iepp')) {
+        req.flush([
+          {
+            id: 3,
+            alpha: { id: 10, code: 'ALP-001', libelle: 'Centre Alpha' },
+            nombreVisiteEffectueParIepp: 7,
+            nombreReunionPointActiviteAlpha: 8,
+            valideeIepp: true,
+          },
+        ]);
+      } else if (req.request.url.endsWith('/api/suivi-superviseur')) {
+        req.flush([
+          {
+            id: 4,
+            alpha: { id: 10, code: 'ALP-001', libelle: 'Centre Alpha' },
+            nombreVisiteConseillerSuperviseurEffectue: 5,
+            nombreReunionBilanConseillerSuperviseur: 10,
+            valideeSuperviseur: true,
+          },
+        ]);
+      } else if (req.request.url.endsWith('/api/alpha')) {
+        req.flush({ content: [{ idCentre: 10, codeAlpha: 'ALP-001', libelleAlpha: 'Centre Alpha' }] });
+      }
+    }
+
+    expect(component.filteredRows.map((row) => component.centralSource(row))).toEqual([
+      'Coordonnateur',
+      'IEPP',
+      'Superviseur',
+    ]);
+    expect(component.filteredRows.map((row) => component.validationIndicator(row))).toEqual([
+      'Validé coordonnateur',
+      'Validé IEPP',
+      'Validé superviseur',
+    ]);
+    http.verify();
+  });
+
+  it('sépare le formulaire points des visites du formulaire suivi', () => {
+    fixture.detectChanges();
+
+    for (const req of http.match(() => true)) {
+      if (req.request.url.endsWith('/api/suivi-iepp')) {
+        req.flush([]);
+      } else if (req.request.url.endsWith('/api/alpha')) {
+        req.flush({ content: [{ idCentre: 10, codeAlpha: 'ALP-001', libelleAlpha: 'Centre Alpha' }] });
+      }
+    }
+
+    const component = fixture.componentInstance;
+    component.mode = 'conseiller';
     component.openCreate('points');
     expect(component.formMode).toBe('points');
     expect(component.formTitle).toBe('Créer les points des visites');
@@ -96,11 +195,11 @@ describe('ActivitesCentreVisiteComponent', () => {
     http.verify();
   });
 
-  it('ouvre Ajouter suivi en modification quand une seule ligne existante est ciblée', () => {
+  it('ouvre Ajouter suivi en création indépendante pour l’IEPP', () => {
     fixture.detectChanges();
 
     for (const req of http.match(() => true)) {
-      if (req.request.url.endsWith('/api/visite')) {
+      if (req.request.url.endsWith('/api/suivi-iepp')) {
         req.flush([
           {
             id: 7,
@@ -116,9 +215,51 @@ describe('ActivitesCentreVisiteComponent', () => {
     const component = fixture.componentInstance;
     component.openCreate('suivi');
 
-    expect(component.editTarget?.id).toBe(7);
+    expect(component.editTarget).toBeNull();
     expect(component.formMode).toBe('suivi');
-    expect(component.formTitle).toBe('Modifier le suivi de visite');
+    expect(component.formTitle).toBe('Créer le suivi de visite');
+    http.verify();
+  });
+
+  it('demande une confirmation avant de valider une ligne', () => {
+    fixture.detectChanges();
+
+    for (const req of http.match(() => true)) {
+      if (req.request.url.endsWith('/api/suivi-iepp')) {
+        req.flush([
+          {
+            id: 7,
+            alpha: { id: 10, code: 'ALP-001', libelle: 'Centre Alpha' },
+            nombreVisiteEffectueParIepp: 3,
+            valideeIepp: false,
+          },
+        ]);
+      } else if (req.request.url.endsWith('/api/alpha')) {
+        req.flush({ content: [{ idCentre: 10, codeAlpha: 'ALP-001', libelleAlpha: 'Centre Alpha' }] });
+      }
+    }
+
+    const component = fixture.componentInstance;
+    component.askValidation(component.filteredRows[0]);
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('Avez verifié les documents physique rattachés a cette valiation ?');
+    http.expectNone('http://api.test/api/suivi-iepp/7/valider');
+
+    component.validationConfirmed();
+    const validate = http.expectOne('http://api.test/api/suivi-iepp/7/valider');
+    expect(validate.request.method).toBe('PUT');
+    validate.flush({ id: 7, valideeIepp: true });
+
+    for (const req of http.match(() => true)) {
+      if (req.request.url.endsWith('/api/suivi-iepp')) {
+        req.flush([]);
+      } else if (req.request.url.endsWith('/api/alpha')) {
+        req.flush({ content: [] });
+      }
+    }
+
+    expect(component.validationTarget).toBeNull();
     http.verify();
   });
 
@@ -126,7 +267,7 @@ describe('ActivitesCentreVisiteComponent', () => {
     fixture.detectChanges();
 
     for (const req of http.match(() => true)) {
-      if (req.request.url.endsWith('/api/visite')) {
+      if (req.request.url.endsWith('/api/suivi-iepp')) {
         req.flush([]);
       } else if (req.request.url.endsWith('/api/alpha')) {
         req.flush({ content: [{ idCentre: 10, codeAlpha: 'ALP-001', libelleAlpha: 'Centre Alpha' }] });
@@ -134,6 +275,7 @@ describe('ActivitesCentreVisiteComponent', () => {
     }
 
     const component = fixture.componentInstance;
+    component.mode = 'conseiller';
     component.openCreate('points');
     component.form.idAlpha = 10;
     component.form.maitriseSeanceLecture = 'BONNE';
@@ -150,6 +292,45 @@ describe('ActivitesCentreVisiteComponent', () => {
 
     for (const req of http.match(() => true)) {
       if (req.request.url.endsWith('/api/visite')) {
+        req.flush([]);
+      } else if (req.request.url.endsWith('/api/alpha')) {
+        req.flush({ content: [] });
+      }
+    }
+
+    http.verify();
+  });
+
+  it('envoie uniquement les champs du suivi IEPP au endpoint suivi-iepp', () => {
+    fixture.detectChanges();
+
+    for (const req of http.match(() => true)) {
+      if (req.request.url.endsWith('/api/suivi-iepp')) {
+        req.flush([]);
+      } else if (req.request.url.endsWith('/api/alpha')) {
+        req.flush({ content: [{ idCentre: 13, codeAlpha: 'ALP-013', libelleAlpha: 'Centre Alpha 13' }] });
+      }
+    }
+
+    const component = fixture.componentInstance;
+    component.openCreate('suivi');
+    component.form.idAlpha = 13;
+    component.form.nombreVisiteEffectueParIepp = 3;
+    component.form.nombreReunionPointActiviteAlpha = 3;
+    component.form.maitriseSeanceLecture = 'BONNE';
+    component.save();
+
+    const post = http.expectOne('http://api.test/api/suivi-iepp');
+    expect(post.request.method).toBe('POST');
+    expect(post.request.body).toEqual({
+      idAlpha: 13,
+      nombreVisiteEffectueParIepp: 3,
+      nombreReunionPointActiviteAlpha: 3,
+    });
+    post.flush({ id: 9 });
+
+    for (const req of http.match(() => true)) {
+      if (req.request.url.endsWith('/api/suivi-iepp')) {
         req.flush([]);
       } else if (req.request.url.endsWith('/api/alpha')) {
         req.flush({ content: [] });

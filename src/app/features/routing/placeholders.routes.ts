@@ -1,13 +1,12 @@
 import { Routes } from '@angular/router';
-import { SectionPlaceholderComponent } from '@features/sections/section-placeholder.component';
 
 export const partenairePlaceholderRoutes: Routes = [
-  { path: 'partenaire/partenariat', component: SectionPlaceholderComponent, data: { title: 'Partenaire - Partenariat' } },
+  { path: 'partenaire/partenariat', redirectTo: 'activites-centre/partenariat', pathMatch: 'full' },
 ];
 
 /** Sections menu sans écran métier : à remplacer par de vraies features quand le backend est prêt. */
 export const sectionPlaceholderRoutes: Routes = [
-  { path: 'performance', component: SectionPlaceholderComponent, data: { title: 'Performance' } },
-  { path: 'control', component: SectionPlaceholderComponent, data: { title: 'Control' } },
-  { path: 'evaluation-periodique', component: SectionPlaceholderComponent, data: { title: 'Évaluation périodique' } },
+  { path: 'performance', redirectTo: 'activites-centre/performance', pathMatch: 'full' },
+  { path: 'control', redirectTo: 'activites-centre/controle', pathMatch: 'full' },
+  { path: 'evaluation-periodique', redirectTo: 'activites-centre/evaluation-periodique', pathMatch: 'full' },
 ];

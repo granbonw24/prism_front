@@ -1,0 +1,128 @@
+<div class="container-fluid">
+  <div class="d-sm-flex align-items-center justify-content-between mb-3">
+    <div>
+      <h1 class="h4 mb-1 text-gray-800">ACTIVITES CENTRE — Évaluation périodique</h1>
+      <p class="small text-muted mb-0">
+        Les thèmes visibles dépendent du niveau : formative/sommative pour Niveau 1, certificative/sommative pour Niveau 2 et Post Alpha.
+      </p>
+    </div>
+    <div class="d-flex flex-wrap gap-1 mt-2 mt-sm-0">
+      <button *ngIf="canCreate" class="btn btn-sm btn-primary" type="button" (click)="openCreate()" [disabled]="loading || saving">
+        Ajouter une évaluation
+      </button>
+      <button class="btn btn-sm btn-outline-primary" type="button" (click)="reload()" [disabled]="loading">Rafraîchir</button>
+    </div>
+  </div>
+
+  <div *ngIf="errorMessage" class="alert alert-danger py-2">{{ errorMessage }}</div>
+  <div *ngIf="successMessage" class="alert alert-success py-2">{{ successMessage }}</div>
+
+  <div class="card border-0 shadow-sm mb-3">
+    <div class="card-body py-3">
+      <label class="small text-muted mb-1">Recherche</label>
+      <input class="form-control form-control-sm" type="search" [(ngModel)]="searchText" placeholder="Centre, période, niveau, thème..." />
+    </div>
+  </div>
+
+  <div class="card border-0 shadow-sm">
+    <div class="card-header bg-white border-bottom-0 py-3">
+      <h6 class="m-0 font-weight-bold text-primary">Liste des évaluations périodiques</h6>
+    </div>
+    <div class="card-body pt-3">
+      <div *ngIf="loading" class="small text-muted py-3">Chargement...</div>
+      <div *ngIf="!loading" class="table-responsive">
+        <table class="table table-bordered table-sm align-middle">
+          <thead class="thead-light">
+            <tr>
+              <th>ID</th>
+              <th>Centre Alpha</th>
+              <th>Période</th>
+              <th>Niveau</th>
+              <th>Thème / type d’évaluation</th>
+              <th>Taux</th>
+              <th class="text-center">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let row of filteredRows">
+              <td class="text-muted">{{ row.id }}</td>
+              <td>{{ refLabel(row.alpha) }}</td>
+              <td>{{ refLabel(row.periodeEvaluation) }}</td>
+              <td>{{ refLabel(row.niveauEvaluation) }}</td>
+              <td>{{ refLabel(row.themeEvaluation) }}</td>
+              <td>{{ refLabel(row.tauxEvaluation) }}</td>
+              <td class="text-center text-nowrap">
+                <button *ngIf="canEdit" class="btn btn-sm btn-outline-primary mr-1" type="button" (click)="openEdit(row)">Modifier</button>
+                <button *ngIf="canEdit" class="btn btn-sm btn-outline-danger" type="button" (click)="deleteRow(row)">Supprimer</button>
+              </td>
+            </tr>
+            <tr *ngIf="filteredRows.length === 0">
+              <td colspan="7" class="text-center text-muted py-4">Aucune évaluation trouvée.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="formOpen" class="evaluation-modal-backdrop">
+    <div class="evaluation-modal card border-0 shadow-lg">
+      <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">{{ formMode === 'edit' ? 'Modifier l’évaluation' : 'Ajouter une évaluation' }}</h5>
+        <button type="button" class="close" aria-label="Fermer" (click)="closeForm()">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="card-body">
+        <div class="form-row">
+          <div class="form-group col-md-6">
+            <label>Centre Alpha</label>
+            <select class="form-control" [(ngModel)]="form.idAlpha">
+              <option [ngValue]="null">Sélectionner</option>
+              <option *ngFor="let alpha of alphas" [ngValue]="alphaOptionId(alpha)">{{ alphaOptionLabel(alpha) }}</option>
+            </select>
+          </div>
+          <div class="form-group col-md-6">
+            <label>Période</label>
+            <select class="form-control" [(ngModel)]="form.idPeriodeEvaluation">
+              <option [ngValue]="null">Sélectionner</option>
+              <option *ngFor="let periode of periodes" [ngValue]="periode.id ?? null">{{ refLabel(periode) }}</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group col-md-4">
+            <label>Niveau</label>
+            <select class="form-control" [(ngModel)]="form.idNiveauEvaluation" (ngModelChange)="onNiveauChange()">
+              <option [ngValue]="null">Sélectionner</option>
+              <option *ngFor="let niveau of niveaux" [ngValue]="niveau.id ?? null">{{ refLabel(niveau) }}</option>
+            </select>
+          </div>
+          <div class="form-group col-md-5">
+            <label>Thème / type d’évaluation</label>
+            <select class="form-control" [(ngModel)]="form.idThemeEvaluation" [disabled]="!form.idNiveauEvaluation">
+              <option [ngValue]="null">Sélectionner</option>
+              <option *ngFor="let theme of filteredThemes" [ngValue]="theme.id ?? null">
+                {{ themeOptionLabel(theme) }}
+              </option>
+            </select>
+            <small class="form-text text-muted">Choisir d’abord le niveau pour filtrer les thèmes.</small>
+          </div>
+          <div class="form-group col-md-3">
+            <label>Taux</label>
+            <select class="form-control" [(ngModel)]="form.idTauxEvaluation">
+              <option [ngValue]="null">Sélectionner</option>
+              <option *ngFor="let item of taux" [ngValue]="item.id ?? null">{{ refLabel(item) }}</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="card-footer bg-white d-flex justify-content-end">
+        <button class="btn btn-light mr-2" type="button" (click)="closeForm()" [disabled]="saving">Annuler</button>
+        <button class="btn btn-primary" type="button" (click)="save()" [disabled]="saving">
+          {{ saving ? 'Enregistrement...' : 'Enregistrer' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

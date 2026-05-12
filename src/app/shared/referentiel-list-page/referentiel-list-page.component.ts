@@ -712,6 +712,20 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
       idNiveauCp: ['NiveauCp', 'niveauCp'],
       idNiveauSie: ['NiveauSie', 'niveauSie'],
       idAnneeScolaire: ['AnneeScolaire', 'anneeScolaire'],
+      idRegion: ['Region', 'region'],
+      idDrena: ['Drena', 'drena'],
+      idDepartement: ['Departement', 'departement'],
+      idSousPrefecture: ['SousPrefecture', 'sousPrefecture'],
+      idMilieuImplentation: ['MilieuImplantation', 'milieuImplantation'],
+      idCommune: ['Commune', 'commune'],
+      codeRegion: ['code'],
+      libelleRegion: ['libelle'],
+      codeDrena: ['code'],
+      nomDrena: ['libelle'],
+      codeDepartement: ['code'],
+      nomDepartement: ['libelle'],
+      codeCommune: ['code'],
+      nomCommune: ['libelle'],
     };
     for (const alt of fallbacks[fieldKey] ?? []) {
       const v = row[alt];

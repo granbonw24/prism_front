@@ -227,6 +227,51 @@
             <input class="form-control" [(ngModel)]="model.centre.nomMilieuImplentation" [disabled]="saving" />
           </div>
         </div>
+
+        <div class="form-row">
+          <div class="form-group col-md-4">
+            <label class="small text-muted">Total apprenants</label>
+            <input type="number" min="0" class="form-control" [(ngModel)]="model.centre.totalApprenants" [disabled]="saving" />
+          </div>
+          <div class="form-group col-md-4">
+            <label class="small text-muted">Hommes / garçons</label>
+            <input type="number" min="0" class="form-control" [(ngModel)]="model.centre.totalHommes" [disabled]="saving" />
+          </div>
+          <div class="form-group col-md-4">
+            <label class="small text-muted">Femmes / filles</label>
+            <input type="number" min="0" class="form-control" [(ngModel)]="model.centre.totalFemmes" [disabled]="saving" />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group col-md-4">
+            <label class="small text-muted">Latitude GPS</label>
+            <input class="form-control" [(ngModel)]="model.centre.latitudeGps" [disabled]="saving" />
+          </div>
+          <div class="form-group col-md-4">
+            <label class="small text-muted">Longitude GPS</label>
+            <input class="form-control" [(ngModel)]="model.centre.longitudeGps" [disabled]="saving" />
+          </div>
+          <div class="form-group col-md-4">
+            <label class="small text-muted">GPS valide</label>
+            <select class="form-control" [(ngModel)]="model.centre.gpsValide" [disabled]="saving">
+              <option [ngValue]="null">Non vérifié</option>
+              <option [ngValue]="true">Oui</option>
+              <option [ngValue]="false">Non</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group col-md-6">
+            <label class="small text-muted">Structure partenaire</label>
+            <input class="form-control" [(ngModel)]="model.centre.structurePartenaire" [disabled]="saving" />
+          </div>
+          <div class="form-group col-md-6">
+            <label class="small text-muted">Nom du partenaire</label>
+            <input class="form-control" [(ngModel)]="model.centre.nomPartenaire" [disabled]="saving" />
+          </div>
+        </div>
       </div>
 
       <!-- Étape 3: Alpha -->
@@ -250,14 +295,14 @@
             <label class="small text-muted">Type alpha</label>
             <select class="form-control" [(ngModel)]="model.typeAlphaId" [disabled]="saving">
               <option [ngValue]="null">--</option>
-              <option *ngFor="let t of typesAlpha" [ngValue]="t.id">{{ refOptionLabel(t) }}</option>
+              <option *ngFor="let t of typesAlpha" [ngValue]="t.id">{{ refOptionLibelle(t) }}</option>
             </select>
           </div>
           <div class="form-group col-md-3">
             <label class="small text-muted">Régime alpha</label>
             <select class="form-control" [(ngModel)]="model.regimeAlphaId" [disabled]="saving">
               <option [ngValue]="null">--</option>
-              <option *ngFor="let r of regimes" [ngValue]="r.id">{{ refOptionLabel(r) }}</option>
+              <option *ngFor="let r of regimes" [ngValue]="r.id">{{ refOptionLibelle(r) }}</option>
             </select>
           </div>
         </div>
@@ -266,6 +311,34 @@
           <div class="form-group col-md-12">
             <label class="small text-muted">Libellé Alpha</label>
             <input class="form-control" [(ngModel)]="model.libelleAlpha" [disabled]="saving" />
+          </div>
+        </div>
+
+        <div class="border rounded p-3 mb-3">
+          <div class="d-flex align-items-center justify-content-between mb-2">
+            <div>
+              <div class="font-weight-bold small text-secondary">Niveaux Alpha rattachés</div>
+              <div class="small text-muted">Coche les niveaux Alpha disponibles en base pour ce type de centre.</div>
+            </div>
+          </div>
+
+          <div *ngIf="niveauAlphaOptions.length === 0" class="small text-muted">
+            Aucun niveau Alpha disponible en base.
+          </div>
+
+          <div class="form-row" *ngIf="niveauAlphaOptions.length > 0">
+            <div class="form-group col-md-4 mb-2" *ngFor="let niveau of niveauAlphaOptions">
+              <label class="border rounded px-2 py-2 mb-0 w-100">
+                <input
+                  type="checkbox"
+                  class="mr-1"
+                  [checked]="isAlphaNiveauSelected(niveau.id)"
+                  (change)="toggleAlphaNiveau(niveau, $any($event.target).checked)"
+                  [disabled]="saving"
+                />
+                {{ refOptionLibelle(niveau) }}
+              </label>
+            </div>
           </div>
         </div>
 
@@ -288,8 +361,34 @@
                 <td>
                   <div><strong>Mode</strong>: {{ promoteurMode === 'existing' ? 'Promoteur existant' : 'Nouveau promoteur' }}</div>
                   <ng-container *ngIf="promoteurMode === 'existing'">
-                    <div><strong>Identifiant</strong>: {{ model.promoteur.id ?? '—' }}</div>
-                    <div><strong>Sélection</strong>: {{ recapWizardExistingPromoteurLabel() }}</div>
+                    <ng-container *ngIf="recapWizardExistingPromoteurDetails() as p; else noExistingPromoteurDetails">
+                      <div><strong>Code</strong>: {{ p.details?.codePromoteur || p.code || '—' }}</div>
+                      <div><strong>Libellé</strong>: {{ p.details?.libellePromoteur || p.libelle || '—' }}</div>
+                      <div><strong>Type</strong>: {{ p.details?.typePromoteur || '—' }}</div>
+                      <ng-container *ngIf="p.details?.personnePhysique as pp">
+                        <hr class="my-2" />
+                        <div class="font-weight-bold small text-secondary mb-1">Personne physique</div>
+                        <div><strong>Libellé</strong>: {{ pp.libellePersonnePhysique?.trim() || '—' }}</div>
+                        <div><strong>Nom</strong>: {{ pp.nom?.trim() || '—' }}</div>
+                        <div><strong>Prénom</strong>: {{ pp.prenom?.trim() || '—' }}</div>
+                        <div><strong>Contact</strong>: {{ pp.contact?.trim() || '—' }}</div>
+                        <div><strong>Fonction</strong>: {{ pp.fonction?.trim() || '—' }}</div>
+                      </ng-container>
+                      <ng-container *ngIf="p.details?.personneMorale as pm">
+                        <hr class="my-2" />
+                        <div class="font-weight-bold small text-secondary mb-1">Personne morale</div>
+                        <div><strong>Dénomination</strong>: {{ pm.denomination?.trim() || '—' }}</div>
+                        <div><strong>Nom programme</strong>: {{ pm.nomProgramme?.trim() || '—' }}</div>
+                        <div><strong>Représentant</strong>: {{ pm.nomRepresentant?.trim() || '—' }}</div>
+                        <div><strong>Contact</strong>: {{ pm.contact?.trim() || '—' }}</div>
+                        <div><strong>Boîte postale</strong>: {{ pm.boitePostale?.trim() || '—' }}</div>
+                        <div><strong>E-mail</strong>: {{ pm.mail?.trim() || '—' }}</div>
+                        <div><strong>Type personne morale</strong>: {{ pm.libelleTypePersonneMorale?.trim() || '—' }}</div>
+                      </ng-container>
+                    </ng-container>
+                    <ng-template #noExistingPromoteurDetails>
+                      <div><strong>Sélection</strong>: {{ recapWizardExistingPromoteurLabel() }}</div>
+                    </ng-template>
                   </ng-container>
                   <ng-container *ngIf="promoteurMode === 'new'">
                     <div><strong>Type promoteur</strong>: {{ model.promoteur.typePromoteur ?? '—' }}</div>
@@ -340,6 +439,17 @@
                     {{ model.centre.aDeLeau === true ? 'Oui' : model.centre.aDeLeau === false ? 'Non' : '—' }}
                   </div>
                   <div><strong>Nombre de visites</strong>: {{ model.centre.nombreVisite ?? '—' }}</div>
+                  <div><strong>Total apprenants</strong>: {{ model.centre.totalApprenants ?? '—' }}</div>
+                  <div><strong>Hommes / garçons</strong>: {{ model.centre.totalHommes ?? '—' }}</div>
+                  <div><strong>Femmes / filles</strong>: {{ model.centre.totalFemmes ?? '—' }}</div>
+                  <div><strong>Latitude GPS</strong>: {{ model.centre.latitudeGps?.trim() || '—' }}</div>
+                  <div><strong>Longitude GPS</strong>: {{ model.centre.longitudeGps?.trim() || '—' }}</div>
+                  <div>
+                    <strong>GPS valide</strong>:
+                    {{ model.centre.gpsValide === true ? 'Oui' : model.centre.gpsValide === false ? 'Non' : 'Non vérifié' }}
+                  </div>
+                  <div><strong>Structure partenaire</strong>: {{ model.centre.structurePartenaire?.trim() || '—' }}</div>
+                  <div><strong>Nom du partenaire</strong>: {{ model.centre.nomPartenaire?.trim() || '—' }}</div>
                   <div><strong>Encadreur non MENA</strong>: {{ model.centre.encadreurNonMena?.trim() || '—' }}</div>
                   <div>
                     <strong>Encadré par MENA</strong>:
@@ -358,6 +468,16 @@
                   <div><strong>Type</strong>: {{ typeAlphaLabel(model.typeAlphaId) }}</div>
                   <div><strong>Régime</strong>: {{ regimeLabel(model.regimeAlphaId) }}</div>
                   <div><strong>Libellé</strong>: {{ model.libelleAlpha || '—' }}</div>
+                </td>
+              </tr>
+              <tr>
+                <th>Niveaux Alpha</th>
+                <td>
+                  <div *ngIf="selectedNiveauAlphaOptionIds.length === 0" class="text-muted">Aucun niveau rattaché.</div>
+                  <div *ngFor="let n of selectedNiveauAlphaOptions(); let i = index">
+                    {{ i + 1 }}.
+                    {{ refOptionLibelle(n) }}
+                  </div>
                 </td>
               </tr>
             </tbody>
@@ -428,14 +548,14 @@
             <label class="mb-0 text-muted">Type Alpha</label>
             <select class="form-control form-control-sm" [(ngModel)]="alphaListFilter['idTypeAlpha']">
               <option value="">— Tous —</option>
-              <option *ngFor="let o of typesAlpha" [value]="'' + o.id">{{ refOptionLabel(o) }}</option>
+              <option *ngFor="let o of typesAlpha" [value]="'' + o.id">{{ refOptionLibelle(o) }}</option>
             </select>
           </div>
           <div class="form-group col-md-2 mb-1">
             <label class="mb-0 text-muted">Régime Alpha</label>
             <select class="form-control form-control-sm" [(ngModel)]="alphaListFilter['idRegimeAlpha']">
               <option value="">— Tous —</option>
-              <option *ngFor="let o of regimes" [value]="'' + o.id">{{ refOptionLabel(o) }}</option>
+              <option *ngFor="let o of regimes" [value]="'' + o.id">{{ refOptionLibelle(o) }}</option>
             </select>
           </div>
           <div class="form-group col-md-2 mb-1">
@@ -711,6 +831,15 @@
                 <td>{{ detailRegimeAlphaLabel(d) }}</td>
               </tr>
               <tr>
+                <th>Niveaux Alpha</th>
+                <td>
+                  <div *ngIf="(d.niveaux ?? []).length === 0" class="text-muted">Aucun niveau rattaché.</div>
+                  <div *ngFor="let n of d.niveaux ?? []; let i = index">
+                    {{ i + 1 }}. {{ n.libelleNiveau || n.codeNiveau || '—' }}
+                  </div>
+                </td>
+              </tr>
+              <tr>
                 <th>Promoteur</th>
                 <td>
                   <div class="font-weight-bold">{{ promoteurSummary(d) }}</div>
@@ -757,6 +886,26 @@
                 <td>{{ detailIepLabel(d) }}</td>
               </tr>
               <tr>
+                <th>DRENA / Région</th>
+                <td>{{ detailDrenaLabel(d) }}</td>
+              </tr>
+              <tr>
+                <th>Région administrative</th>
+                <td>{{ detailRegionLabel(d) }}</td>
+              </tr>
+              <tr>
+                <th>Département</th>
+                <td>{{ detailDepartementLabel(d) }}</td>
+              </tr>
+              <tr>
+                <th>Commune</th>
+                <td>{{ detailCommuneLabel(d) }}</td>
+              </tr>
+              <tr>
+                <th>Sous-préfecture</th>
+                <td>{{ detailSousPrefectureLabel(d) }}</td>
+              </tr>
+              <tr>
                 <th>Nature</th>
                 <td>{{ detailNatureLabel(d) }}</td>
               </tr>
@@ -783,6 +932,38 @@
               <tr>
                 <th>Nombre visites</th>
                 <td>{{ d.nombreVisite ?? '—' }}</td>
+              </tr>
+              <tr>
+                <th>Total apprenants</th>
+                <td>{{ d.totalApprenants ?? '—' }}</td>
+              </tr>
+              <tr>
+                <th>Hommes / garçons</th>
+                <td>{{ d.totalHommes ?? '—' }}</td>
+              </tr>
+              <tr>
+                <th>Femmes / filles</th>
+                <td>{{ d.totalFemmes ?? '—' }}</td>
+              </tr>
+              <tr>
+                <th>Latitude GPS</th>
+                <td>{{ d.latitudeGps?.trim() || '—' }}</td>
+              </tr>
+              <tr>
+                <th>Longitude GPS</th>
+                <td>{{ d.longitudeGps?.trim() || '—' }}</td>
+              </tr>
+              <tr>
+                <th>GPS valide</th>
+                <td>{{ d.gpsValide === true ? 'Oui' : d.gpsValide === false ? 'Non' : 'Non vérifié' }}</td>
+              </tr>
+              <tr>
+                <th>Structure partenaire</th>
+                <td>{{ d.structurePartenaire?.trim() || '—' }}</td>
+              </tr>
+              <tr>
+                <th>Nom du partenaire</th>
+                <td>{{ d.nomPartenaire?.trim() || '—' }}</td>
               </tr>
               <tr>
                 <th>Encadreur non MENA</th>
@@ -844,17 +1025,41 @@
 
           <div class="form-row">
             <div class="form-group col-md-3">
-              <label class="small text-muted">Localité</label>
-              <select class="form-control" [(ngModel)]="editForm.idLocalite" [disabled]="saving">
+              <label class="small text-muted">DRENA / Région</label>
+              <select class="form-control" [(ngModel)]="editDrenaId" (ngModelChange)="onEditDrenaChange()" [disabled]="saving">
                 <option [ngValue]="null">--</option>
-                <option *ngFor="let l of localites" [ngValue]="l.id">{{ localiteOptionLabel(l) }}</option>
+                <option *ngFor="let d of drenas" [ngValue]="d.id">{{ refOptionLibelle(d) }}</option>
               </select>
             </div>
             <div class="form-group col-md-3">
               <label class="small text-muted">IEP</label>
-              <select class="form-control" [(ngModel)]="editForm.idIep" [disabled]="saving">
+              <select class="form-control" [(ngModel)]="editForm.idIep" (ngModelChange)="onEditIepChange()" [disabled]="saving">
                 <option [ngValue]="null">--</option>
-                <option *ngFor="let i of ieps" [ngValue]="i.id">{{ iepOptionLabel(i) }}</option>
+                <option *ngFor="let i of filteredEditIeps()" [ngValue]="i.id">{{ iepOptionLabel(i) }}</option>
+              </select>
+            </div>
+            <div class="form-group col-md-3">
+              <label class="small text-muted">Département</label>
+              <select class="form-control" [(ngModel)]="editDepartementId" (ngModelChange)="onEditDepartementChange()" [disabled]="saving">
+                <option [ngValue]="null">--</option>
+                <option *ngFor="let d of departements" [ngValue]="d.id">{{ refOptionLibelle(d) }}</option>
+              </select>
+            </div>
+            <div class="form-group col-md-3">
+              <label class="small text-muted">Commune</label>
+              <select class="form-control" [(ngModel)]="editCommuneId" (ngModelChange)="onEditCommuneChange()" [disabled]="saving">
+                <option [ngValue]="null">--</option>
+                <option *ngFor="let c of filteredEditCommunes()" [ngValue]="c.id">{{ refOptionLibelle(c) }}</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group col-md-3">
+              <label class="small text-muted">Localité</label>
+              <select class="form-control" [(ngModel)]="editForm.idLocalite" (ngModelChange)="onEditLocaliteChange()" [disabled]="saving">
+                <option [ngValue]="null">--</option>
+                <option *ngFor="let l of filteredEditLocalites()" [ngValue]="l.id">{{ localiteOptionLabel(l) }}</option>
               </select>
             </div>
             <div class="form-group col-md-3">
@@ -934,6 +1139,70 @@
             <div class="form-group col-md-6">
               <label class="small text-muted">Milieu d’implantation</label>
               <input class="form-control" [(ngModel)]="editForm.nomMilieuImplentation" [disabled]="saving" />
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group col-md-4">
+              <label class="small text-muted">Total apprenants</label>
+              <input type="number" min="0" class="form-control" [(ngModel)]="editForm.totalApprenants" [disabled]="saving" />
+            </div>
+            <div class="form-group col-md-4">
+              <label class="small text-muted">Hommes / garçons</label>
+              <input type="number" min="0" class="form-control" [(ngModel)]="editForm.totalHommes" [disabled]="saving" />
+            </div>
+            <div class="form-group col-md-4">
+              <label class="small text-muted">Femmes / filles</label>
+              <input type="number" min="0" class="form-control" [(ngModel)]="editForm.totalFemmes" [disabled]="saving" />
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group col-md-4">
+              <label class="small text-muted">Latitude GPS</label>
+              <input class="form-control" [(ngModel)]="editForm.latitudeGps" [disabled]="saving" />
+            </div>
+            <div class="form-group col-md-4">
+              <label class="small text-muted">Longitude GPS</label>
+              <input class="form-control" [(ngModel)]="editForm.longitudeGps" [disabled]="saving" />
+            </div>
+            <div class="form-group col-md-4">
+              <label class="small text-muted">GPS valide</label>
+              <select class="form-control" [(ngModel)]="editForm.gpsValide" [disabled]="saving">
+                <option [ngValue]="null">Non vérifié</option>
+                <option [ngValue]="true">Oui</option>
+                <option [ngValue]="false">Non</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group col-md-6">
+              <label class="small text-muted">Structure partenaire</label>
+              <input class="form-control" [(ngModel)]="editForm.structurePartenaire" [disabled]="saving" />
+            </div>
+            <div class="form-group col-md-6">
+              <label class="small text-muted">Nom du partenaire</label>
+              <input class="form-control" [(ngModel)]="editForm.nomPartenaire" [disabled]="saving" />
+            </div>
+          </div>
+
+          <div class="border rounded p-3 mb-2">
+            <div class="font-weight-bold small text-secondary mb-2">Niveaux Alpha rattachés</div>
+            <div *ngIf="niveauAlphaOptions.length === 0" class="small text-muted">Aucun niveau Alpha disponible en base.</div>
+            <div class="form-row" *ngIf="niveauAlphaOptions.length > 0">
+              <div class="form-group col-md-4 mb-2" *ngFor="let niveau of niveauAlphaOptions">
+                <label class="border rounded px-2 py-2 mb-0 w-100">
+                  <input
+                    type="checkbox"
+                    class="mr-1"
+                    [checked]="isEditAlphaNiveauSelected(niveau.id)"
+                    (change)="toggleEditAlphaNiveau(niveau, $any($event.target).checked)"
+                    [disabled]="saving"
+                  />
+                  {{ refOptionLibelle(niveau) }}
+                </label>
+              </div>
             </div>
           </div>
         </ng-container>

@@ -1,4 +1,4 @@
-export type VisiteSuiviMode = 'conseiller' | 'superviseur' | 'iepp';
+export type VisiteSuiviMode = 'conseiller' | 'superviseur' | 'iepp' | 'centrale';
 
 export type VisiteRef = {
   id?: number | null;
@@ -20,6 +20,9 @@ export type VisiteRow = {
   nombreReunionBilanConseillerSuperviseur?: number | null;
   nombreVisiteEffectueParIepp?: number | null;
   nombreReunionPointActiviteAlpha?: number | null;
+  valideeCoordonnateur?: boolean | null;
+  valideeIepp?: boolean | null;
+  valideeSuperviseur?: boolean | null;
 };
 
 export type VisitePayload = {

@@ -5,10 +5,12 @@ import { FormsModule } from '@angular/forms';
 import { forkJoin } from 'rxjs';
 import {
   AlphaFullCreatePayload,
+  AlphaNiveauPayload,
   AlphaRow,
   AutoriteOption,
   autoriteOptionLabel,
   CentreDetailRow,
+  CentreNiveauDetails,
   CentreRefDetails,
   IepOption,
   iepOptionLabel,
@@ -18,10 +20,13 @@ import {
   natureOptionLabel,
   PeriodiciteOption,
   periodiciteOptionLabel,
+  PromoteurOption,
   PromoteurUpsertPayload,
   promoteurDetailsFromApi,
+  refOptionLibelle,
   RefOption,
   refOptionLabel,
+  SousPrefectureOption,
   SpringPage,
   TypePromoteur,
 } from '@models/centre';
@@ -50,12 +55,20 @@ export class AlphaCentresComponent {
   natures: NatureOption[] = [];
   periodicites: PeriodiciteOption[] = [];
   autorites: AutoriteOption[] = [];
-  promoteurs: RefOption[] = [];
+  drenas: RefOption[] = [];
+  departements: RefOption[] = [];
+  communes: RefOption[] = [];
+  sousPrefectures: SousPrefectureOption[] = [];
+  promoteurs: PromoteurOption[] = [];
   typePersonneMoraleOptions: RefOption[] = [];
+  niveauAlphaOptions: RefOption[] = [];
+  selectedNiveauAlphaOptionIds: number[] = [];
+  editSelectedNiveauAlphaOptionIds: number[] = [];
   promoteurMode: 'existing' | 'new' = 'existing';
 
   /** Exposés au template pour les libellés des &lt;select&gt; filtres. */
   readonly refOptionLabel = refOptionLabel;
+  readonly refOptionLibelle = refOptionLibelle;
   readonly localiteOptionLabel = localiteOptionLabel;
   readonly iepOptionLabel = iepOptionLabel;
   readonly natureOptionLabel = natureOptionLabel;
@@ -83,9 +96,18 @@ export class AlphaCentresComponent {
       estElectrifie: false,
       aDeLeau: false,
       nombreVisite: 0,
+      totalApprenants: null,
+      totalHommes: null,
+      totalFemmes: null,
+      latitudeGps: '',
+      longitudeGps: '',
+      gpsValide: null,
+      structurePartenaire: '',
+      nomPartenaire: '',
       localisationCentre: '',
       nomMilieuImplentation: '',
     },
+    niveaux: [],
   };
 
   // Détails / édition (modales)
@@ -94,6 +116,9 @@ export class AlphaCentresComponent {
   detailsRow: CentreDetailRow | null = null;
   editRowId: number | null = null;
   editLoading = false;
+  editDrenaId: number | null = null;
+  editDepartementId: number | null = null;
+  editCommuneId: number | null = null;
   pageIndex = 0;
   pageSize = 20;
   totalElements = 0;
@@ -125,6 +150,14 @@ export class AlphaCentresComponent {
     estElectrifie: '',
     aDeLeau: '',
     nombreVisite: '',
+    totalApprenants: '',
+    totalHommes: '',
+    totalFemmes: '',
+    latitudeGps: '',
+    longitudeGps: '',
+    gpsValide: '',
+    structurePartenaire: '',
+    nomPartenaire: '',
   };
 
   editForm: {
@@ -138,6 +171,14 @@ export class AlphaCentresComponent {
     aDeLeau: boolean | null;
     estElectrifie: boolean | null;
     nombreVisite: number | null;
+    totalApprenants: number | null;
+    totalHommes: number | null;
+    totalFemmes: number | null;
+    latitudeGps: string | null;
+    longitudeGps: string | null;
+    gpsValide: boolean | null;
+    structurePartenaire: string | null;
+    nomPartenaire: string | null;
     localisationCentre: string | null;
     nomMilieuImplentation: string | null;
     encadreurNonMena: string | null;
@@ -154,6 +195,14 @@ export class AlphaCentresComponent {
     aDeLeau: null,
     estElectrifie: null,
     nombreVisite: null,
+    totalApprenants: null,
+    totalHommes: null,
+    totalFemmes: null,
+    latitudeGps: null,
+    longitudeGps: null,
+    gpsValide: null,
+    structurePartenaire: null,
+    nomPartenaire: null,
     localisationCentre: null,
     nomMilieuImplentation: null,
     encadreurNonMena: null,
@@ -181,11 +230,16 @@ export class AlphaCentresComponent {
       regimes: this.http.get<any[]>(`${this.apiBaseUrl}/api/Regimealphabetisations`),
       localites: this.http.get<LocaliteOption[]>(`${this.apiBaseUrl}/api/localite-d-implantation`),
       ieps: this.http.get<IepOption[]>(`${this.apiBaseUrl}/api/iep`),
+      drenas: this.http.get<any[]>(`${this.apiBaseUrl}/api/drena`),
+      departements: this.http.get<any[]>(`${this.apiBaseUrl}/api/departement`),
+      communes: this.http.get<any[]>(`${this.apiBaseUrl}/api/commune`),
+      sousPrefectures: this.http.get<any[]>(`${this.apiBaseUrl}/api/sous-prefecture`),
       natures: this.http.get<NatureOption[]>(`${this.apiBaseUrl}/api/naturecentre`),
       periodicites: this.http.get<PeriodiciteOption[]>(`${this.apiBaseUrl}/api/Periodicites`),
       autorites: this.http.get<AutoriteOption[]>(`${this.apiBaseUrl}/api/autoriteautorisation`),
       promoteurs: this.http.get<any[]>(`${this.apiBaseUrl}/api/promoteur`),
       typePersonneMorales: this.http.get<any[]>(`${this.apiBaseUrl}/api/type-personne-morale`),
+      niveauxAlpha: this.http.get<any[]>(`${this.apiBaseUrl}/api/niveaualpha`),
     }).subscribe({
       next: (res) => {
         const page = res.rows;
@@ -208,16 +262,23 @@ export class AlphaCentresComponent {
         }));
         this.typesAlpha = (res.typesAlpha ?? []).map((x: any) => ({
           id: x.id,
-          code: x.codeTypeAlpha ?? undefined,
-          libelle: x.libelleTypeAlpha ?? undefined,
+          code: x.codeTypeAlpha ?? x.code ?? undefined,
+          libelle: x.libelleTypeAlpha ?? x.libelle ?? undefined,
         }));
         this.regimes = (res.regimes ?? []).map((x: any) => ({
           id: x.id,
-          code: x.codeRegimeAlpha ?? undefined,
-          libelle: x.libelleRegimeAlpha ?? undefined,
+          code: x.codeRegimeAlpha ?? x.code ?? undefined,
+          libelle: x.libelleRegimeAlpha ?? x.libelle ?? undefined,
         }));
         this.localites = res.localites ?? [];
         this.ieps = res.ieps ?? [];
+        this.drenas = (res.drenas ?? []).map((x: any) => this.refOptionFromApi(x));
+        this.departements = (res.departements ?? []).map((x: any) => this.refOptionFromApi(x));
+        this.communes = (res.communes ?? []).map((x: any) => this.refOptionFromApi(x));
+        this.sousPrefectures = (res.sousPrefectures ?? []).map((x: any) => ({
+          ...this.refOptionFromApi(x),
+          departement: this.asCentreRef(x.departement),
+        }));
         this.natures = res.natures ?? [];
         this.periodicites = res.periodicites ?? [];
         this.autorites = res.autorites ?? [];
@@ -225,12 +286,20 @@ export class AlphaCentresComponent {
           id: x.id,
           code: x.codePromoteur ?? undefined,
           libelle: x.libellePromoteur ?? undefined,
+          details: promoteurDetailsFromApi(x),
         }));
         this.typePersonneMoraleOptions = (res.typePersonneMorales ?? []).map((x: any) => ({
           id: x.id,
           code: undefined,
           libelle: x.libelle ?? undefined,
         }));
+        this.niveauAlphaOptions = this.uniqueRefOptions(
+          (res.niveauxAlpha ?? []).map((x: any) => ({
+            id: x.id,
+            code: x.codeNiveauAlpha ?? x.code ?? undefined,
+            libelle: x.libelleNiveauAlpha ?? x.libelleNiveau ?? x.libelle ?? undefined,
+          })),
+        );
         this.loading = false;
       },
       error: (e) => {
@@ -300,52 +369,164 @@ export class AlphaCentresComponent {
 
   localiteLabel(id: number | null | undefined): string {
     const found = this.localites.find((x) => x.id === id);
-    if (!found) return '—';
-    return `${found.codeLocalite ?? 'LOC'} · ${found.nomLocalite ?? ''}`.trim();
+    return found ? this.localiteOptionLabel(found) : '—';
   }
 
   iepLabel(id: number | null | undefined): string {
     const found = this.ieps.find((x) => x.id === id);
-    if (!found) return '—';
-    return `${found.codeIep ?? 'IEP'} · ${found.nomIep ?? ''}`.trim();
+    return found ? this.iepOptionLabel(found) : '—';
   }
 
   natureLabel(id: number | null | undefined): string {
     const found = this.natures.find((x) => x.id === id);
-    if (!found) return '—';
-    return `${found.codeNatureCentre ?? 'NAT'} · ${found.libelleNatureCentre ?? ''}`.trim();
+    return found ? this.natureOptionLabel(found) : '—';
   }
 
   periodiciteLabel(id: number | null | undefined): string {
     const found = this.periodicites.find((x) => x.id === id);
-    if (!found) return '—';
-    return `${found.codePeriodicite ?? 'PER'} · ${found.libellePeriodicite ?? ''}`.trim();
+    return found ? this.periodiciteOptionLabel(found) : '—';
   }
 
   autoriteLabel(id: number | null | undefined): string {
     const found = this.autorites.find((x) => x.id === id);
-    if (!found) return '—';
-    return `${found.codeAutorisation ?? 'AUT'} · ${found.libelleAutoriteAutorisation ?? ''}`.trim();
+    return found ? this.autoriteOptionLabel(found) : '—';
+  }
+
+  drenaLabel(id: number | null | undefined): string {
+    const found = this.drenas.find((x) => x.id === id);
+    return found ? this.refOptionLibelle(found) : '—';
+  }
+
+  departementLabel(id: number | null | undefined): string {
+    const found = this.departements.find((x) => x.id === id);
+    return found ? this.refOptionLibelle(found) : '—';
+  }
+
+  communeLabel(id: number | null | undefined): string {
+    const found = this.communes.find((x) => x.id === id);
+    return found ? this.refOptionLibelle(found) : '—';
+  }
+
+  filteredEditIeps(): IepOption[] {
+    if (this.editDrenaId == null) return this.ieps;
+    return this.ieps.filter((iep) => iep.drena?.id === this.editDrenaId);
+  }
+
+  filteredEditCommunes(): RefOption[] {
+    if (this.editDepartementId == null) return this.communes;
+    const communeIds = new Set(
+      this.localites
+        .filter((localite) => this.localiteDepartementId(localite) === this.editDepartementId)
+        .map((localite) => localite.commune?.id)
+        .filter((id): id is number => id != null),
+    );
+    return this.communes.filter((commune) => communeIds.has(commune.id));
+  }
+
+  filteredEditLocalites(): LocaliteOption[] {
+    return this.localites.filter((localite) => {
+      const matchesDepartement = this.editDepartementId == null || this.localiteDepartementId(localite) === this.editDepartementId;
+      const matchesCommune = this.editCommuneId == null || localite.commune?.id === this.editCommuneId;
+      return matchesDepartement && matchesCommune;
+    });
+  }
+
+  onEditDrenaChange(): void {
+    if (this.editForm.idIep != null && !this.filteredEditIeps().some((iep) => iep.id === this.editForm.idIep)) {
+      this.editForm.idIep = null;
+    }
+  }
+
+  onEditIepChange(): void {
+    const iep = this.ieps.find((item) => item.id === this.editForm.idIep);
+    this.editDrenaId = iep?.drena?.id ?? null;
+  }
+
+  onEditDepartementChange(): void {
+    if (this.editCommuneId != null && !this.filteredEditCommunes().some((commune) => commune.id === this.editCommuneId)) {
+      this.editCommuneId = null;
+    }
+    if (this.editForm.idLocalite != null && !this.filteredEditLocalites().some((localite) => localite.id === this.editForm.idLocalite)) {
+      this.editForm.idLocalite = null;
+    }
+  }
+
+  onEditCommuneChange(): void {
+    if (this.editForm.idLocalite != null && !this.filteredEditLocalites().some((localite) => localite.id === this.editForm.idLocalite)) {
+      this.editForm.idLocalite = null;
+    }
+  }
+
+  onEditLocaliteChange(): void {
+    const localite = this.localites.find((item) => item.id === this.editForm.idLocalite);
+    this.editCommuneId = localite?.commune?.id ?? null;
+    this.editDepartementId = localite ? this.localiteDepartementId(localite) : null;
   }
 
   campagneLabel(id: number | null | undefined): string {
     const found = this.campagnes.find((x) => x.id === id);
-    return found ? this.refOptionLabel(found) : '—';
+    return found ? this.refOptionLibelle(found) : '—';
   }
 
   categorieLabel(id: number | null | undefined): string {
     const found = this.categories.find((x) => x.id === id);
-    return found ? this.refOptionLabel(found) : '—';
+    return found ? this.refOptionLibelle(found) : '—';
   }
 
   typeAlphaLabel(id: number | null | undefined): string {
     const found = this.typesAlpha.find((x) => x.id === id);
-    return found ? this.refOptionLabel(found) : '—';
+    return found ? this.refOptionLibelle(found) : '—';
   }
 
   regimeLabel(id: number | null | undefined): string {
     const found = this.regimes.find((x) => x.id === id);
-    return found ? this.refOptionLabel(found) : '—';
+    return found ? this.refOptionLibelle(found) : '—';
+  }
+
+  isAlphaNiveauSelected(id: number): boolean {
+    return this.selectedNiveauAlphaOptionIds.includes(id);
+  }
+
+  toggleAlphaNiveau(option: RefOption, checked: boolean): void {
+    if (checked) {
+      if (!this.selectedNiveauAlphaOptionIds.includes(option.id)) {
+        this.selectedNiveauAlphaOptionIds = [...this.selectedNiveauAlphaOptionIds, option.id];
+      }
+    } else {
+      this.selectedNiveauAlphaOptionIds = this.selectedNiveauAlphaOptionIds.filter((id) => id !== option.id);
+    }
+    this.model.niveaux = this.selectedNiveauAlphaOptions().map((selected) => ({
+      codeNiveauAlpha: selected.code ?? null,
+      libelleNiveauAlpha: selected.libelle ?? this.refOptionLibelle(selected),
+    }));
+  }
+
+  selectedNiveauAlphaOptions(): RefOption[] {
+    return this.alphaNiveauOptionsForIds(this.selectedNiveauAlphaOptionIds);
+  }
+
+  editSelectedNiveauAlphaOptions(): RefOption[] {
+    return this.alphaNiveauOptionsForIds(this.editSelectedNiveauAlphaOptionIds);
+  }
+
+  isEditAlphaNiveauSelected(id: number): boolean {
+    return this.editSelectedNiveauAlphaOptionIds.includes(id);
+  }
+
+  toggleEditAlphaNiveau(option: RefOption, checked: boolean): void {
+    if (checked) {
+      if (!this.editSelectedNiveauAlphaOptionIds.includes(option.id)) {
+        this.editSelectedNiveauAlphaOptionIds = [...this.editSelectedNiveauAlphaOptionIds, option.id];
+      }
+      return;
+    }
+    this.editSelectedNiveauAlphaOptionIds = this.editSelectedNiveauAlphaOptionIds.filter((id) => id !== option.id);
+  }
+
+  private alphaNiveauOptionsForIds(ids: number[]): RefOption[] {
+    return ids
+      .map((id) => this.niveauAlphaOptions.find((option) => option.id === id))
+      .filter((option): option is RefOption => option != null);
   }
 
   submit(): void {
@@ -360,6 +541,7 @@ export class AlphaCentresComponent {
       libelleAlpha: this.model.libelleAlpha,
       promoteur: this.buildPromoteurPayload(),
       centre: { ...this.model.centre },
+      niveaux: this.buildAlphaNiveauxPayload(),
     };
 
     this.http.post(`${this.apiBaseUrl}/api/alpha`, payload).subscribe({
@@ -417,12 +599,25 @@ export class AlphaCentresComponent {
           aDeLeau: d.aDeLeau ?? null,
           estElectrifie: d.estElectrifie ?? null,
           nombreVisite: d.nombreVisite ?? null,
+          totalApprenants: d.totalApprenants ?? null,
+          totalHommes: d.totalHommes ?? null,
+          totalFemmes: d.totalFemmes ?? null,
+          latitudeGps: d.latitudeGps ?? null,
+          longitudeGps: d.longitudeGps ?? null,
+          gpsValide: d.gpsValide ?? null,
+          structurePartenaire: d.structurePartenaire ?? null,
+          nomPartenaire: d.nomPartenaire ?? null,
           localisationCentre: d.localisationCentre ?? null,
           nomMilieuImplentation: d.nomMilieuImplentation ?? null,
           encadreurNonMena: d.encadreurNonMena ?? null,
           encadrerParMena: d.encadrerParMena ?? null,
           idPromoteur: d.promoteur?.idPromoteur ?? d.idPromoteur ?? null,
         };
+        this.editDrenaId = d.drena?.id ?? this.ieps.find((iep) => iep.id === d.idIep)?.drena?.id ?? null;
+        const selectedLocalite = this.localites.find((localite) => localite.id === d.idLocalite);
+        this.editCommuneId = d.commune?.id ?? selectedLocalite?.commune?.id ?? null;
+        this.editDepartementId = d.departement?.id ?? (selectedLocalite ? this.localiteDepartementId(selectedLocalite) : null);
+        this.editSelectedNiveauAlphaOptionIds = this.alphaNiveauOptionIdsFromDetails(d.niveaux ?? []);
         this.editLoading = false;
       },
       error: (e) => {
@@ -436,6 +631,10 @@ export class AlphaCentresComponent {
   closeEdit(): void {
     this.editRowId = null;
     this.editLoading = false;
+    this.editSelectedNiveauAlphaOptionIds = [];
+    this.editDrenaId = null;
+    this.editDepartementId = null;
+    this.editCommuneId = null;
   }
 
   canSaveEdit(): boolean {
@@ -446,7 +645,11 @@ export class AlphaCentresComponent {
     if (!this.canSaveEdit()) return;
     const id = this.editRowId!;
     this.saving = true;
-    this.http.put(`${this.apiBaseUrl}/api/alpha/${id}/infos`, this.editForm).subscribe({
+    const payload = {
+      ...this.editForm,
+      niveauxAlpha: this.buildAlphaNiveauxPayloadFromIds(this.editSelectedNiveauAlphaOptionIds),
+    };
+    this.http.put(`${this.apiBaseUrl}/api/alpha/${id}/infos`, payload).subscribe({
       next: () => {
         this.saving = false;
         this.closeEdit();
@@ -480,10 +683,20 @@ export class AlphaCentresComponent {
         estElectrifie: false,
         aDeLeau: false,
         nombreVisite: 0,
+        totalApprenants: null,
+        totalHommes: null,
+        totalFemmes: null,
+        latitudeGps: '',
+        longitudeGps: '',
+        gpsValide: null,
+        structurePartenaire: '',
+        nomPartenaire: '',
         localisationCentre: '',
         nomMilieuImplentation: '',
       },
+      niveaux: [],
     };
+    this.selectedNiveauAlphaOptionIds = [];
     this.promoteurMode = 'existing';
   }
 
@@ -587,6 +800,14 @@ export class AlphaCentresComponent {
       estElectrifie: (x['estElectrifie'] as boolean | null | undefined) ?? null,
       aDeLeau: this.pickBool(x, 'aDeLeau', 'adeLeau', 'ADeLeau'),
       nombreVisite: (x['nombreVisite'] as number | null | undefined) ?? null,
+      totalApprenants: (x['totalApprenants'] as number | null | undefined) ?? null,
+      totalHommes: (x['totalHommes'] as number | null | undefined) ?? null,
+      totalFemmes: (x['totalFemmes'] as number | null | undefined) ?? null,
+      latitudeGps: (x['latitudeGps'] as string | undefined) ?? null,
+      longitudeGps: (x['longitudeGps'] as string | undefined) ?? null,
+      gpsValide: this.pickBool(x, 'gpsValide'),
+      structurePartenaire: (x['structurePartenaire'] as string | undefined) ?? null,
+      nomPartenaire: (x['nomPartenaire'] as string | undefined) ?? null,
       localisationCentre: (x['localisationCentre'] as string | undefined) ?? null,
       nomMilieuImplentation: (x['nomMilieuImplentation'] as string | undefined) ?? null,
       encadreurNonMena: (x['encadreurNonMena'] as string | undefined) ?? null,
@@ -605,6 +826,11 @@ export class AlphaCentresComponent {
       idRegimeAlpha: this.optionalPositiveInt(x['idRegimeAlpha']),
       localite: this.asCentreRef(x['localite']),
       iep: this.asCentreRef(x['iep']),
+      drena: this.asCentreRef(x['drena']),
+      commune: this.asCentreRef(x['commune']),
+      sousPrefecture: this.asCentreRef(x['sousPrefecture']),
+      departement: this.asCentreRef(x['departement']),
+      region: this.asCentreRef(x['region']),
       naturecentre: this.asCentreRef(x['naturecentre']),
       periodicite: this.asCentreRef(x['periodicite']),
       autoriteAutorisation: this.asCentreRef(x['autoriteAutorisation']),
@@ -612,16 +838,16 @@ export class AlphaCentresComponent {
       categorieCentreAlpha: this.asCentreRef(x['categorieCentreAlpha']),
       typeAlpha: this.asCentreRef(x['typeAlpha']),
       regimeAlpha: this.asCentreRef(x['regimeAlpha']),
+      niveaux: this.asNiveauDetailsArray(x['niveaux']),
     };
   }
 
   refCentreLabel(ref: CentreRefDetails | null | undefined, fallback: () => string): string {
     if (!ref) return fallback();
-    const c = ref.code?.trim();
     const l = ref.libelle?.trim();
-    if (c && l) return `${c} — ${l}`;
-    if (c) return c;
     if (l) return l;
+    const c = ref.code?.trim();
+    if (c) return c;
     if (ref.id != null) return `#${ref.id}`;
     return fallback();
   }
@@ -632,6 +858,38 @@ export class AlphaCentresComponent {
 
   detailIepLabel(d: CentreDetailRow): string {
     return this.refCentreLabel(d.iep, () => this.iepLabel(d.idIep ?? null));
+  }
+
+  detailDrenaLabel(d: CentreDetailRow): string {
+    return this.refCentreLabel(d.drena, () => {
+      const iep = this.ieps.find((x) => x.id === d.idIep);
+      return this.drenaLabel(iep?.drena?.id ?? null);
+    });
+  }
+
+  detailCommuneLabel(d: CentreDetailRow): string {
+    return this.refCentreLabel(d.commune, () => {
+      const localite = this.localites.find((x) => x.id === d.idLocalite);
+      return this.communeLabel(localite?.commune?.id ?? null);
+    });
+  }
+
+  detailSousPrefectureLabel(d: CentreDetailRow): string {
+    return this.refCentreLabel(d.sousPrefecture, () => {
+      const localite = this.localites.find((x) => x.id === d.idLocalite);
+      return localite?.sousPrefecture ? this.refOptionLibelle(localite.sousPrefecture as RefOption) : '—';
+    });
+  }
+
+  detailDepartementLabel(d: CentreDetailRow): string {
+    return this.refCentreLabel(d.departement, () => {
+      const localite = this.localites.find((x) => x.id === d.idLocalite);
+      return this.departementLabel(localite ? this.localiteDepartementId(localite) : null);
+    });
+  }
+
+  detailRegionLabel(d: CentreDetailRow): string {
+    return this.refCentreLabel(d.region, () => '—');
   }
 
   detailNatureLabel(d: CentreDetailRow): string {
@@ -691,6 +949,35 @@ export class AlphaCentresComponent {
     };
   }
 
+  private refOptionFromApi(value: Record<string, unknown>): RefOption {
+    return {
+      id: Number(value['id'] ?? 0),
+      code: (
+        value['code'] ??
+        value['codeDrena'] ??
+        value['codeDepartement'] ??
+        value['codeCommune'] ??
+        value['codeSousPrefecture'] ??
+        undefined
+      ) as string | undefined,
+      libelle: (
+        value['libelle'] ??
+        value['nomDrena'] ??
+        value['nomDepartement'] ??
+        value['nomCommune'] ??
+        value['nomSousPrefecture'] ??
+        undefined
+      ) as string | undefined,
+    };
+  }
+
+  private localiteDepartementId(localite: LocaliteOption): number | null {
+    const sousPrefectureId = localite.sousPrefecture?.id;
+    if (sousPrefectureId == null) return null;
+    const sousPrefecture = this.sousPrefectures.find((item) => item.id === sousPrefectureId);
+    return sousPrefecture?.departement?.id ?? null;
+  }
+
   promoteurSummary(row: AlphaRow): string {
     const p = row.promoteur;
     if (p) {
@@ -716,12 +1003,73 @@ export class AlphaCentresComponent {
     return p ? this.refOptionLabel(p) : `#${id}`;
   }
 
+  recapWizardExistingPromoteurDetails(): PromoteurOption | null {
+    const id = this.model.promoteur?.id;
+    if (id == null) return null;
+    return this.promoteurs.find((x) => x.id === id) ?? null;
+  }
+
   /** Libellé du type personne morale sélectionné (récap wizard). */
   recapWizardTypePersonneMoraleLabel(): string {
     const id = this.model.promoteur?.personneMorale?.idTypePersonneMorale;
     if (id == null) return '—';
     const t = this.typePersonneMoraleOptions.find((x) => x.id === id);
     return t ? this.refOptionLabel(t) : `#${id}`;
+  }
+
+  private buildAlphaNiveauxPayload(): AlphaNiveauPayload[] {
+    return this.buildAlphaNiveauxPayloadFromIds(this.selectedNiveauAlphaOptionIds);
+  }
+
+  private buildAlphaNiveauxPayloadFromIds(ids: number[]): AlphaNiveauPayload[] {
+    return this.alphaNiveauOptionsForIds(ids)
+      .map((option) => ({
+        codeNiveauAlpha: option.code?.trim() || null,
+        libelleNiveauAlpha: String(option.libelle ?? this.refOptionLibelle(option)).trim(),
+      }));
+  }
+
+  private alphaNiveauOptionIdsFromDetails(niveaux: CentreNiveauDetails[]): number[] {
+    const ids: number[] = [];
+    for (const niveau of niveaux) {
+      const libelle = String(niveau.libelleNiveau ?? '').trim().toLowerCase();
+      const code = String(niveau.codeNiveau ?? '').trim().toLowerCase();
+      const found = this.niveauAlphaOptions.find((option) => {
+        const optionLibelle = String(option.libelle ?? '').trim().toLowerCase();
+        const optionCode = String(option.code ?? '').trim().toLowerCase();
+        return (libelle !== '' && optionLibelle === libelle) || (code !== '' && optionCode === code);
+      });
+      if (found && !ids.includes(found.id)) ids.push(found.id);
+    }
+    return ids;
+  }
+
+  private asNiveauDetailsArray(value: unknown): CentreNiveauDetails[] {
+    if (!Array.isArray(value)) return [];
+    return value
+      .filter((item): item is Record<string, unknown> => item != null && typeof item === 'object')
+      .map((item) => ({
+        id: this.optionalPositiveInt(item['id']),
+        niveauId: this.optionalPositiveInt(item['niveauId']),
+        codeNiveau: (item['codeNiveau'] as string | undefined) ?? null,
+        libelleNiveau: (item['libelleNiveau'] as string | undefined) ?? null,
+        anneeScolaire: this.asCentreRef(item['anneeScolaire']),
+        nombreSalle: this.optionalPositiveInt(item['nombreSalle']),
+      }));
+  }
+
+  private uniqueRefOptions(options: RefOption[]): RefOption[] {
+    const seen = new Set<string>();
+    const result: RefOption[] = [];
+    for (const option of options) {
+      const label = option.libelle?.trim();
+      if (!label) continue;
+      const key = label.toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      result.push(option);
+    }
+    return result;
   }
 
   private buildPromoteurPayload(): PromoteurUpsertPayload {
