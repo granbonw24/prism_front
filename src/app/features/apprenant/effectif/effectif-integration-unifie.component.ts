@@ -13,8 +13,6 @@ import {
   EFFECTIF_PROMU_SIE_CREATE_FIELDS,
   EFFECTIF_REVERSE_FORMEL_SIE_CREATE_FIELDS,
 } from './effectif-integration-forms.data';
-import type { ListStatsContext } from '@core/config/list-stats-context.types';
-import { integrationListStatsContext } from './effectif-list-stats-context';
 
 type IntegrationKind =
   | 'cepeCp'
@@ -29,6 +27,7 @@ type IntegrationConfig = {
   title: string;
   apiPath: string;
   createFields: ReferentielFormField[];
+  listColumnKeys: string[];
 };
 
 type KindOption = { value: IntegrationKind; label: string };
@@ -38,47 +37,99 @@ const INTEGRATION_CONFIG: Record<IntegrationKind, IntegrationConfig> = {
     title: 'Apprenant — CEPE (centre CP)',
     apiPath: '/api/effectif-cepe-cp',
     createFields: EFFECTIF_CEPE_CP_CREATE_FIELDS,
+    listColumnKeys: [
+      'codeEffectifCepeCp',
+      'anneeScolaire',
+      'centre',
+      'effectifCepeCandidatFCp',
+      'effectifCepeCandidatHCp',
+      'effectifCepeAdmisFCp',
+      'effectifCepeAdmisHCp',
+    ],
   },
   cepeCec: {
     title: 'Apprenant — CEPE (centres CEC)',
     apiPath: '/api/effectif-cepe-cec',
     createFields: EFFECTIF_CEPE_CEC_CREATE_FIELDS,
+    listColumnKeys: [
+      'codeEffectifCepeCec',
+      'anneeScolaire',
+      'centre',
+      'cecIdCentre',
+      'effectifCepeCandidatFilleCec',
+      'effectifCepeCandidatGarconCec',
+      'effectifCepeAdmisFilleCec',
+      'effectifCepeAdmisGarconCec',
+    ],
   },
   admisCp: {
     title: 'Apprenant — Admis intégration (CP)',
     apiPath: '/api/effectif-admis-integration-cp',
     createFields: EFFECTIF_ADMIS_INTEGRATION_CP_CREATE_FIELDS,
+    listColumnKeys: [
+      'codeEffectifAdmisIntegrationCp',
+      'anneeScolaire',
+      'centre',
+      'niveauCp',
+      'effectifAdmisIntegrationCp911IvoirienH',
+      'effectifAdmisIntegrationCp911IvoirienF',
+      'effectifAdmisIntegrationCpNiveauCp',
+    ],
   },
   formelCp: {
     title: 'Apprenant — Intégration formelle (CP)',
     apiPath: '/api/effectif-integration-formel-cp',
     createFields: EFFECTIF_INTEGRATION_FORMEL_CP_CREATE_FIELDS,
+    listColumnKeys: [
+      'codeEffectifIntegrationFormelCp',
+      'anneeScolaire',
+      'centre',
+      'niveauCp',
+      'effectifIntegrationFormelCp911IvoirienH',
+      'effectifIntegrationFormelCp911IvoirienF',
+      'effectifIntegrationFormelCpNiveauCp',
+    ],
   },
   promuSie: {
     title: 'Apprenant — Promu (SIE)',
     apiPath: '/api/effectif-promu-sie',
     createFields: EFFECTIF_PROMU_SIE_CREATE_FIELDS,
+    listColumnKeys: [
+      'codeEffectifPromuSie',
+      'anneeScolaire',
+      'niveauSie',
+      'effectifPromuSie3IvoirienH',
+      'effectifPromuSie3IvoirienF',
+      'effectifPromuSieNiveauSie',
+    ],
   },
   promuCec: {
     title: 'Apprenant — Promu (CEC)',
     apiPath: '/api/effectif-promu-cec',
     createFields: EFFECTIF_PROMU_CEC_CREATE_FIELDS,
+    listColumnKeys: [
+      'codeEffectifPromuCec',
+      'anneeScolaire',
+      'centre',
+      'niveauSie',
+      'effectifPromuCecMoins3F',
+      'effectifPromuCecMoins3H',
+      'effectifPromuCecNiveauCec',
+    ],
   },
   reverseSie: {
     title: 'Apprenant — Reverse formel (SIE)',
     apiPath: '/api/effectif-reverse-formel-sie',
     createFields: EFFECTIF_REVERSE_FORMEL_SIE_CREATE_FIELDS,
+    listColumnKeys: [
+      'codeEffectifReverseFormelSie',
+      'anneeScolaire',
+      'niveauSie',
+      'effectifReverseFormelSie3IvoirienH',
+      'effectifReverseFormelSie3IvoirienF',
+      'effectifReverseFormelSieNiveauSie',
+    ],
   },
-};
-
-const INTEGRATION_STATS: Record<IntegrationKind, ListStatsContext> = {
-  cepeCp: integrationListStatsContext('cepeCp'),
-  cepeCec: integrationListStatsContext('cepeCec'),
-  admisCp: integrationListStatsContext('admisCp'),
-  formelCp: integrationListStatsContext('formelCp'),
-  promuSie: integrationListStatsContext('promuSie'),
-  promuCec: integrationListStatsContext('promuCec'),
-  reverseSie: integrationListStatsContext('reverseSie'),
 };
 
 @Component({
@@ -91,7 +142,7 @@ const INTEGRATION_STATS: Record<IntegrationKind, ListStatsContext> = {
       [inputSubtitle]="pageSubtitle"
       [inputApiPath]="activeConfig.apiPath"
       [inputCreateFields]="activeConfig.createFields"
-      [inputStatsContext]="listStatsContext"
+      [inputListColumnKeys]="activeConfig.listColumnKeys"
       [addFormContextLabel]="'Type d’effectif'"
       [addFormContextValue]="selectedKind"
       [addFormContextOptions]="kindOptions"
@@ -149,10 +200,6 @@ export class EffectifIntegrationUnifieComponent implements OnInit, OnDestroy {
 
   get activeConfig(): IntegrationConfig {
     return INTEGRATION_CONFIG[this.selectedKind];
-  }
-
-  get listStatsContext(): ListStatsContext {
-    return INTEGRATION_STATS[this.selectedKind];
   }
 
   private normalizeKind(value: unknown): IntegrationKind | null {

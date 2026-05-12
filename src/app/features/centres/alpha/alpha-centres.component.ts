@@ -54,6 +54,7 @@ export class AlphaCentresComponent {
   loading = false;
   saving = false;
   errorMessage: string | null = null;
+  private refsLoaded = false;
 
   rows: AlphaRow[] = [];
   campagnes: RefOption[] = [];
@@ -254,6 +255,31 @@ export class AlphaCentresComponent {
   }
 
   loadAll(): void {
+    if (this.refsLoaded) {
+      this.loadRows();
+      return;
+    }
+    this.loadRefsAndRows();
+  }
+
+  private loadRows(): void {
+    this.loading = true;
+    this.errorMessage = null;
+    this.http.get<SpringPage<Record<string, unknown>>>(`${this.apiBaseUrl}/api/alpha`, {
+      params: this.buildAlphaListParams(),
+    }).subscribe({
+      next: (page) => {
+        this.applyRowsPage(page);
+        this.loading = false;
+      },
+      error: (e) => {
+        this.errorMessage = this.formatError(e);
+        this.loading = false;
+      },
+    });
+  }
+
+  private loadRefsAndRows(): void {
     this.loading = true;
     this.errorMessage = null;
     forkJoin({
@@ -280,73 +306,9 @@ export class AlphaCentresComponent {
       niveauxAlpha: this.http.get<any[]>(`${this.apiBaseUrl}/api/niveaualpha`),
     }).subscribe({
       next: (res) => {
-        const page = res.rows;
-        const list = page.content ?? [];
-        this.totalElements = page.totalElements ?? 0;
-        this.totalPages = page.totalPages ?? 0;
-        this.rows = list.map((x) => this.mapAlphaRow(x));
-        this.campagnes = (res.campagnes ?? []).map((x: any) => ({
-          id: x.id,
-          code: x.codeCampagne ?? undefined,
-          libelle:
-            x.dateDebutCampagne != null && x.dateFinCampagne != null
-              ? `${x.dateDebutCampagne} → ${x.dateFinCampagne}`
-              : undefined,
-        }));
-        this.categories = (res.categories ?? []).map((x: any) => ({
-          id: x.id,
-          code: x.codeCategorieCentreAlpha ?? undefined,
-          libelle: x.libelleCategorieCentreAlpha ?? undefined,
-        }));
-        this.typesAlpha = (res.typesAlpha ?? []).map((x: any) => ({
-          id: x.id,
-          code: x.codeTypeAlpha ?? x.code ?? undefined,
-          libelle: x.libelleTypeAlpha ?? x.libelle ?? undefined,
-        }));
-        this.regimes = (res.regimes ?? []).map((x: any) => ({
-          id: x.id,
-          code: x.codeRegimeAlpha ?? x.code ?? undefined,
-          libelle: x.libelleRegimeAlpha ?? x.libelle ?? undefined,
-        }));
-        this.localites = res.localites ?? [];
-        this.ieps = res.ieps ?? [];
-        this.regions = (res.regions ?? []).map((x: any) => this.refOptionFromApi(x));
-        this.drenas = (res.drenas ?? []).map((x: any) => this.refOptionFromApi(x));
-        this.departements = (res.departements ?? []).map((x: any) => ({
-          ...this.refOptionFromApi(x),
-          region: this.asCentreRef(x.region),
-        }));
-        this.drenaDepartements = (res.drenaDepartements ?? []).map((x: any) => ({
-          ...this.refOptionFromApi(x),
-          drena: this.asCentreRef(x.drena),
-          departement: this.asCentreRef(x.departement),
-        }));
-        this.communes = (res.communes ?? []).map((x: any) => this.refOptionFromApi(x));
-        this.sousPrefectures = (res.sousPrefectures ?? []).map((x: any) => ({
-          ...this.refOptionFromApi(x),
-          departement: this.asCentreRef(x.departement),
-        }));
-        this.natures = res.natures ?? [];
-        this.periodicites = res.periodicites ?? [];
-        this.autorites = res.autorites ?? [];
-        this.promoteurs = (res.promoteurs ?? []).map((x: any) => ({
-          id: x.id,
-          code: x.codePromoteur ?? undefined,
-          libelle: x.libellePromoteur ?? undefined,
-          details: promoteurDetailsFromApi(x),
-        }));
-        this.typePersonneMoraleOptions = (res.typePersonneMorales ?? []).map((x: any) => ({
-          id: x.id,
-          code: undefined,
-          libelle: x.libelle ?? undefined,
-        }));
-        this.niveauAlphaOptions = this.uniqueRefOptions(
-          (res.niveauxAlpha ?? []).map((x: any) => ({
-            id: x.id,
-            code: x.codeNiveauAlpha ?? x.code ?? undefined,
-            libelle: x.libelleNiveauAlpha ?? x.libelleNiveau ?? x.libelle ?? undefined,
-          })),
-        );
+        this.applyRowsPage(res.rows);
+        this.applyReferenceOptions(res);
+        this.refsLoaded = true;
         this.loading = false;
       },
       error: (e) => {
@@ -354,6 +316,97 @@ export class AlphaCentresComponent {
         this.loading = false;
       },
     });
+  }
+
+  private applyRowsPage(page: SpringPage<Record<string, unknown>>): void {
+    const list = page.content ?? [];
+    this.totalElements = page.totalElements ?? 0;
+    this.totalPages = page.totalPages ?? 0;
+    this.rows = list.map((x) => this.mapAlphaRow(x));
+  }
+
+  private applyReferenceOptions(res: {
+    campagnes?: any[];
+    categories?: any[];
+    typesAlpha?: any[];
+    regimes?: any[];
+    localites?: LocaliteOption[];
+    ieps?: IepOption[];
+    regions?: any[];
+    drenas?: any[];
+    departements?: any[];
+    drenaDepartements?: any[];
+    communes?: any[];
+    sousPrefectures?: any[];
+    natures?: NatureOption[];
+    periodicites?: PeriodiciteOption[];
+    autorites?: AutoriteOption[];
+    promoteurs?: any[];
+    typePersonneMorales?: any[];
+    niveauxAlpha?: any[];
+  }): void {
+    this.campagnes = (res.campagnes ?? []).map((x: any) => ({
+      id: x.id,
+      code: x.codeCampagne ?? undefined,
+      libelle:
+        x.dateDebutCampagne != null && x.dateFinCampagne != null
+          ? `${x.dateDebutCampagne} → ${x.dateFinCampagne}`
+          : undefined,
+    }));
+    this.categories = (res.categories ?? []).map((x: any) => ({
+      id: x.id,
+      code: x.codeCategorieCentreAlpha ?? undefined,
+      libelle: x.libelleCategorieCentreAlpha ?? undefined,
+    }));
+    this.typesAlpha = (res.typesAlpha ?? []).map((x: any) => ({
+      id: x.id,
+      code: x.codeTypeAlpha ?? x.code ?? undefined,
+      libelle: x.libelleTypeAlpha ?? x.libelle ?? undefined,
+    }));
+    this.regimes = (res.regimes ?? []).map((x: any) => ({
+      id: x.id,
+      code: x.codeRegimeAlpha ?? x.code ?? undefined,
+      libelle: x.libelleRegimeAlpha ?? x.libelle ?? undefined,
+    }));
+    this.localites = res.localites ?? [];
+    this.ieps = res.ieps ?? [];
+    this.regions = (res.regions ?? []).map((x: any) => this.refOptionFromApi(x));
+    this.drenas = (res.drenas ?? []).map((x: any) => this.refOptionFromApi(x));
+    this.departements = (res.departements ?? []).map((x: any) => ({
+      ...this.refOptionFromApi(x),
+      region: this.asCentreRef(x.region),
+    }));
+    this.drenaDepartements = (res.drenaDepartements ?? []).map((x: any) => ({
+      ...this.refOptionFromApi(x),
+      drena: this.asCentreRef(x.drena),
+      departement: this.asCentreRef(x.departement),
+    }));
+    this.communes = (res.communes ?? []).map((x: any) => this.refOptionFromApi(x));
+    this.sousPrefectures = (res.sousPrefectures ?? []).map((x: any) => ({
+      ...this.refOptionFromApi(x),
+      departement: this.asCentreRef(x.departement),
+    }));
+    this.natures = res.natures ?? [];
+    this.periodicites = res.periodicites ?? [];
+    this.autorites = res.autorites ?? [];
+    this.promoteurs = (res.promoteurs ?? []).map((x: any) => ({
+      id: x.id,
+      code: x.codePromoteur ?? undefined,
+      libelle: x.libellePromoteur ?? undefined,
+      details: promoteurDetailsFromApi(x),
+    }));
+    this.typePersonneMoraleOptions = (res.typePersonneMorales ?? []).map((x: any) => ({
+      id: x.id,
+      code: undefined,
+      libelle: x.libelle ?? undefined,
+    }));
+    this.niveauAlphaOptions = this.uniqueRefOptions(
+      (res.niveauxAlpha ?? []).map((x: any) => ({
+        id: x.id,
+        code: x.codeNiveauAlpha ?? x.code ?? undefined,
+        libelle: x.libelleNiveauAlpha ?? x.libelleNiveau ?? x.libelle ?? undefined,
+      })),
+    );
   }
 
   canGoNext(): boolean {

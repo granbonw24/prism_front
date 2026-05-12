@@ -162,7 +162,9 @@ export class ActivitesCentreControleComponent implements OnInit {
     this.errorMessage = null;
     forkJoin({
       controles: this.http.get<unknown>(`${this.apiBaseUrl}/api/controle`),
-      alphas: this.http.post<unknown>(`${this.apiBaseUrl}/api/alpha/search`, {}),
+      alphas: this.http.get<unknown>(`${this.apiBaseUrl}/api/alpha`, {
+        params: { page: '0', size: '2000' },
+      }),
       niveaux: this.http.get<unknown>(`${this.apiBaseUrl}/api/niveaualpha`),
       manuels: this.http.get<unknown>(`${this.apiBaseUrl}/api/manuels`),
     }).subscribe({

@@ -189,11 +189,11 @@ export const REFERENTIEL_ROUTE_DATA: ReferentielRouteData[] = [
         optionValueKey: 'id',
         optionLabelKeys: ['codeTypeDocument', 'libelleTypeDocument'],
       }),
-      F('idCentre', 'Centre alpha', 'select', {
+      F('idCentre', 'Centre', 'select', {
         required: true,
-        optionsApiPath: '/api/alpha',
-        optionValueKey: 'idCentre',
-        optionLabelKeys: ['codeType', 'libelle', 'codeCentre'],
+        optionsApiPath: '/api/centres',
+        optionValueKey: 'id',
+        optionLabelKeys: ['codeCentre', 'localisationCentre'],
       }),
       F('existe', 'Existe', 'text', { maxLength: 30 }),
       F('ajour', 'À jour', 'text', { maxLength: 30 }),

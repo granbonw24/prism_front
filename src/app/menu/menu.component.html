@@ -111,7 +111,7 @@
           aria-controls="collapseActivitesCentre"
         >
           <i class="fas fa-fw fa-clipboard-check" aria-hidden="true"></i>
-          <span>ACTIVITES CENTRE ALPHA</span>
+          <span>ACTIVITES CENTRE</span>
         </a>
         <div
           id="collapseActivitesCentre"
@@ -121,6 +121,14 @@
           data-parent="#accordionSidebar"
         >
           <div class="bg-white py-2 collapse-inner rounded">
+            <a
+              *ngIf="canViewActivitesCentrePartenariat()"
+              class="collapse-item"
+              routerLink="/activites-centre/dossier-centre"
+              routerLinkActive="active"
+              [routerLinkActiveOptions]="{ exact: true }"
+              >Dossier centre</a
+            >
             <a
               *ngIf="canViewActivitesCentrePartenariat()"
               class="collapse-item"

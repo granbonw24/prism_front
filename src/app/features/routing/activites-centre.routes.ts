@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 import type { ReferentielFormField } from '@core/config/referentiel-form.types';
 import { ActivitesCentreControleComponent } from '@features/activites-centre/controle/activites-centre-controle.component';
+import { DossierCentreComponent } from '@features/activites-centre/dossier-centre/dossier-centre.component';
 import { ActivitesCentreEvaluationComponent } from '@features/activites-centre/evaluation/activites-centre-evaluation.component';
 import { AlphaCentresComponent } from '@features/centres/alpha/alpha-centres.component';
 import { ReferentielListPageComponent } from '@shared/referentiel-list-page/referentiel-list-page.component';
@@ -33,6 +34,13 @@ const alphaField = F('idAlpha', 'Centre Alpha', 'select', {
 });
 
 export const activitesCentreFeatureRoutes: Routes = [
+  {
+    path: 'activites-centre/dossier-centre',
+    component: DossierCentreComponent,
+    data: {
+      title: 'ACTIVITES CENTRE — Dossier centre',
+    },
+  },
   {
     path: 'activites-centre/partenariat',
     component: ReferentielListPageComponent,

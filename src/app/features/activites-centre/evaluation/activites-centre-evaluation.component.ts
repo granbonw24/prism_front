@@ -142,7 +142,9 @@ export class ActivitesCentreEvaluationComponent implements OnInit {
     this.errorMessage = null;
     forkJoin({
       evaluations: this.http.get<unknown>(`${this.apiBaseUrl}/api/evaluation`),
-      alphas: this.http.post<unknown>(`${this.apiBaseUrl}/api/alpha/search`, {}),
+      alphas: this.http.get<unknown>(`${this.apiBaseUrl}/api/alpha`, {
+        params: { page: '0', size: '2000' },
+      }),
       periodes: this.http.get<unknown>(`${this.apiBaseUrl}/api/periodes-evaluation`),
       niveaux: this.http.get<unknown>(`${this.apiBaseUrl}/api/niveaux-evaluation`),
       themes: this.http.get<unknown>(`${this.apiBaseUrl}/api/themes-evaluation`),
