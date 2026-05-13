@@ -118,6 +118,17 @@
                   <i class="fas fa-clipboard-check" aria-hidden="true"></i>
                 </button>
                 <button
+                  *ngIf="mode === 'conseiller' && canSubmitVisiteWorkflow(row)"
+                  class="btn btn-sm btn-outline-warning mr-1"
+                  type="button"
+                  title="Soumettre pour validation"
+                  aria-label="Soumettre pour validation"
+                  (click)="submitVisiteWorkflow(row)"
+                  [disabled]="saving || workflowSubmittingId === row.id"
+                >
+                  <i class="fas fa-paper-plane" aria-hidden="true"></i>
+                </button>
+                <button
                   *ngIf="mode !== 'conseiller' && mode !== 'centrale' && canManageSuivi"
                   class="btn btn-sm btn-outline-primary mr-1"
                   type="button"
@@ -135,9 +146,31 @@
                   [title]="isRowValidated(row) ? 'Déjà validé' : 'Valider'"
                   aria-label="Valider"
                   (click)="askValidation(row)"
-                  [disabled]="saving || !canValidateRow(row)"
+                  [disabled]="saving || workflowSubmittingId === row.id || !canValidateRow(row)"
                 >
                   <i class="fas fa-check" aria-hidden="true"></i>
+                </button>
+                <button
+                  *ngIf="canRejectOrReturnVisiteWorkflow(row)"
+                  class="btn btn-sm btn-outline-danger mr-1"
+                  type="button"
+                  title="Rejeter avec motif"
+                  aria-label="Rejeter avec motif"
+                  (click)="openWorkflowDecisionVisite(row, 'rejeter')"
+                  [disabled]="saving || workflowSubmittingId === row.id"
+                >
+                  <i class="fas fa-times" aria-hidden="true"></i>
+                </button>
+                <button
+                  *ngIf="canRejectOrReturnVisiteWorkflow(row)"
+                  class="btn btn-sm btn-outline-secondary mr-1"
+                  type="button"
+                  title="Retourner pour correction"
+                  aria-label="Retourner pour correction"
+                  (click)="openWorkflowDecisionVisite(row, 'retourner')"
+                  [disabled]="saving || workflowSubmittingId === row.id"
+                >
+                  <i class="fas fa-reply" aria-hidden="true"></i>
                 </button>
                 <button
                   *ngIf="mode !== 'centrale'"
@@ -146,7 +179,7 @@
                   title="Supprimer"
                   aria-label="Supprimer"
                   (click)="askDelete(row)"
-                  [disabled]="saving"
+                  [disabled]="saving || isDeleteLocked(row)"
                 >
                   <i class="fas fa-trash" aria-hidden="true"></i>
                 </button>
@@ -264,6 +297,57 @@
   </div>
 </div>
 <div *ngIf="deleteTarget" class="modal-backdrop fade show"></div>
+
+<div *ngIf="workflowDecisionOpen" class="modal fade show d-block" tabindex="-1" role="dialog" aria-modal="true">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content mena-modal">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          {{ workflowDecisionAction === 'rejeter' ? 'Rejeter la donnée' : 'Retourner pour correction' }}
+        </h5>
+        <button type="button" class="close" aria-label="Fermer" (click)="closeWorkflowDecisionVisite()">
+          <span aria-hidden="true">×</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div *ngIf="workflowDecisionError" class="alert alert-danger small">{{ workflowDecisionError }}</div>
+        <label class="small font-weight-bold">
+          {{
+            workflowDecisionAction === 'rejeter'
+              ? 'Motif du rejet (obligatoire)'
+              : 'Commentaire de retour (facultatif)'
+          }}
+        </label>
+        <textarea
+          class="form-control"
+          rows="4"
+          maxlength="500"
+          [(ngModel)]="workflowDecisionText"
+          [disabled]="workflowSubmittingId != null"
+        ></textarea>
+      </div>
+      <div class="modal-footer">
+        <button
+          type="button"
+          class="btn btn-outline-secondary"
+          (click)="closeWorkflowDecisionVisite()"
+          [disabled]="workflowSubmittingId != null"
+        >
+          Annuler
+        </button>
+        <button
+          type="button"
+          class="btn btn-primary"
+          (click)="confirmWorkflowDecisionVisite()"
+          [disabled]="workflowSubmittingId != null"
+        >
+          Confirmer
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+<div *ngIf="workflowDecisionOpen" class="modal-backdrop fade show"></div>
 
 <div *ngIf="validationTarget" class="modal fade show d-block" tabindex="-1" role="dialog" aria-modal="true">
   <div class="modal-dialog" role="document">

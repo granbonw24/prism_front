@@ -57,6 +57,8 @@ const HANDICAP_TYPE_CONFIG: Record<HandicapCentreType, HandicapConfig> = {
     <app-referentiel-list-page
       [inputTitle]="activeConfig.title"
       [inputApiPath]="activeConfig.apiPath"
+      [inputPermissionFeature]="'SAISIE_DONNEES'"
+      [inputWorkflowFeature]="'SAISIE_DONNEES'"
       [inputCreateFields]="activeConfig.createFields"
       [inputStatsContext]="listStatsContext"
       [addFormContextLabel]="'Type de centre'"

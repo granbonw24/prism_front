@@ -230,6 +230,7 @@ export type AutoriteOption = {
 };
 
 export type AlphaNiveauPayload = {
+  niveauAlphaId: number;
   codeNiveauAlpha?: string | null;
   libelleNiveauAlpha: string;
 };

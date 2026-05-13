@@ -4,7 +4,18 @@ import { Component, Inject, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { unwrapListBody } from '@core/http/unwrap-spring-page';
 import { API_BASE_URL } from '@core/tokens/api-base-url.token';
+import { AuthService } from '@services/auth.service';
 import { forkJoin } from 'rxjs';
+
+type CentreType = 'alpha' | 'cec' | 'cp' | 'sie';
+type WorkflowStatus =
+  | 'BROUILLON'
+  | 'SOUMIS'
+  | 'VALIDEE_COORDONNATEUR'
+  | 'VALIDEE_SUPERVISEUR'
+  | 'VALIDEE_CENTRALE'
+  | 'REJETE'
+  | 'RETOURNE';
 
 type Ref = {
   id?: number | null;
@@ -13,8 +24,11 @@ type Ref = {
 };
 
 type CentreOption = {
+  idCentre?: number | null;
   id?: number | null;
   codeCentre?: string | null;
+  codeType?: string | null;
+  libelle?: string | null;
   localisationCentre?: string | null;
 };
 
@@ -38,6 +52,10 @@ type DocumentRow = {
   bientenu?: string | null;
   respmethode?: string | null;
   bienrensigne?: string | null;
+  workflowStatut?: WorkflowStatus | null;
+  workflowEditable?: boolean | null;
+  workflowMotifRejet?: string | null;
+  workflowCommentaireRetour?: string | null;
 };
 
 type AppuiForm = {
@@ -56,6 +74,8 @@ type DocumentForm = {
   respmethode: string;
   bienrensigne: string;
 };
+
+type DossierSection = 'appuis' | 'documents';
 
 @Component({
   selector: 'app-dossier-centre',
@@ -80,52 +100,95 @@ type DocumentForm = {
 
       <div class="card border-0 shadow-sm mb-3">
         <div class="card-body">
-          <label class="small text-muted mb-1">Centre</label>
-          <select class="form-control" [(ngModel)]="selectedCentreId" (ngModelChange)="onCentreChange()">
-            <option [ngValue]="null">Sélectionner un centre</option>
-            <option *ngFor="let centre of centres" [ngValue]="centre.id ?? null">{{ centreLabel(centre) }}</option>
-          </select>
+          <div class="form-row">
+            <div class="form-group col-md-4 mb-md-0">
+              <label class="small text-muted mb-1">Type de centre</label>
+              <select class="form-control" [(ngModel)]="selectedCentreType" (ngModelChange)="onCentreTypeChange()">
+                <option [ngValue]="null">Sélectionner</option>
+                <option *ngFor="let option of centreTypeOptions" [ngValue]="option.value">{{ option.label }}</option>
+              </select>
+            </div>
+            <div class="form-group col-md-8 mb-0">
+              <label class="small text-muted mb-1">Centre</label>
+              <select class="form-control" [(ngModel)]="selectedCentreId" (ngModelChange)="onCentreChange()" [disabled]="!selectedCentreType || centresLoading">
+                <option [ngValue]="null">{{ centresLoading ? 'Chargement...' : 'Sélectionner un centre' }}</option>
+                <option *ngFor="let centre of centres" [ngValue]="centreId(centre)">{{ centreLabel(centre) }}</option>
+              </select>
+            </div>
+          </div>
         </div>
       </div>
 
       <div *ngIf="loading" class="small text-muted py-3">Chargement...</div>
 
-      <div *ngIf="!loading && selectedCentreId == null" class="alert alert-info py-2">
-        Sélectionner un centre pour définir son dossier.
+      <div *ngIf="!loading && selectedCentreType == null" class="alert alert-info py-2">
+        Sélectionner d’abord le type de centre.
       </div>
 
-      <div *ngIf="!loading && selectedCentreId != null" class="row">
-        <div class="col-lg-6 mb-3">
+      <div *ngIf="!loading && selectedCentreType != null && selectedCentreId == null" class="alert alert-info py-2">
+        Sélectionner ensuite le centre concerné.
+      </div>
+
+      <div *ngIf="!loading && selectedCentreId != null" class="card border-0 shadow-sm mb-3">
+        <div class="card-body py-2">
+          <div class="btn-group btn-group-sm" role="group" aria-label="Sections du dossier centre">
+            <button
+              type="button"
+              class="btn"
+              [class.btn-primary]="activeSection === 'appuis'"
+              [class.btn-outline-primary]="activeSection !== 'appuis'"
+              (click)="activeSection = 'appuis'"
+            >
+              Appuis et partenariats
+            </button>
+            <button
+              type="button"
+              class="btn"
+              [class.btn-primary]="activeSection === 'documents'"
+              [class.btn-outline-primary]="activeSection !== 'documents'"
+              (click)="activeSection = 'documents'"
+            >
+              Documents du centre
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div *ngIf="!loading && selectedCentreId != null">
+        <div *ngIf="activeSection === 'appuis'" class="mb-3">
           <div class="card border-0 shadow-sm h-100">
             <div class="card-header bg-white">
               <h6 class="m-0 font-weight-bold text-primary">Appuis et partenariats</h6>
             </div>
             <div class="card-body">
-              <div class="form-row">
-                <div class="form-group col-md-6">
-                  <label>Partenaire</label>
-                  <select class="form-control" [(ngModel)]="appuiForm.idPartenaire">
-                    <option [ngValue]="null">Sélectionner</option>
-                    <option *ngFor="let p of partenaires" [ngValue]="p.id ?? null">{{ refLabel(p) }}</option>
-                  </select>
+              <div class="border rounded bg-light p-3 mb-3">
+                <h6 class="font-weight-bold mb-3">Ajouter un appui</h6>
+                <div class="form-row">
+                  <div class="form-group col-md-6">
+                    <label>Partenaire</label>
+                    <select class="form-control" [(ngModel)]="appuiForm.idPartenaire">
+                      <option [ngValue]="null">Sélectionner</option>
+                      <option *ngFor="let p of partenaires" [ngValue]="p.id ?? null">{{ refLabel(p) }}</option>
+                    </select>
+                  </div>
+                  <div class="form-group col-md-6">
+                    <label>Catégorie d'appui</label>
+                    <select class="form-control" [(ngModel)]="appuiForm.idCategorieAppui">
+                      <option [ngValue]="null">Sélectionner</option>
+                      <option *ngFor="let c of categoriesAppui" [ngValue]="c.id ?? null">{{ refLabel(c) }}</option>
+                    </select>
+                  </div>
                 </div>
-                <div class="form-group col-md-6">
-                  <label>Catégorie d'appui</label>
-                  <select class="form-control" [(ngModel)]="appuiForm.idCategorieAppui">
-                    <option [ngValue]="null">Sélectionner</option>
-                    <option *ngFor="let c of categoriesAppui" [ngValue]="c.id ?? null">{{ refLabel(c) }}</option>
-                  </select>
+                <div class="form-group">
+                  <label>Libellé de l'appui</label>
+                  <input class="form-control" [(ngModel)]="appuiForm.libelleAppuiPartenaire" maxlength="150" />
                 </div>
+                <button class="btn btn-sm btn-primary" type="button" (click)="saveAppui()" [disabled]="saving">
+                  Ajouter l'appui
+                </button>
               </div>
-              <div class="form-group">
-                <label>Libellé de l'appui</label>
-                <input class="form-control" [(ngModel)]="appuiForm.libelleAppuiPartenaire" maxlength="150" />
-              </div>
-              <button class="btn btn-sm btn-primary" type="button" (click)="saveAppui()" [disabled]="saving">
-                Ajouter l'appui
-              </button>
 
-              <hr />
+              <h6 class="font-weight-bold text-muted">Appuis enregistrés</h6>
               <div *ngIf="filteredAppuis.length === 0" class="small text-muted">Aucun appui enregistré pour ce centre.</div>
               <div class="table-responsive" *ngIf="filteredAppuis.length > 0">
                 <table class="table table-sm table-bordered">
@@ -143,7 +206,6 @@ type DocumentForm = {
                       <td>{{ refLabel(row.categorieAppui) }}</td>
                       <td>
                         <div>{{ row.libelleAppuiPartenaire || '-' }}</div>
-                        <div class="small text-muted">{{ row.codeAppuiPartenaire || '' }}</div>
                       </td>
                       <td class="text-center">
                         <button class="btn btn-sm btn-outline-danger" type="button" (click)="deleteAppui(row)" [disabled]="saving">Supprimer</button>
@@ -156,7 +218,7 @@ type DocumentForm = {
           </div>
         </div>
 
-        <div class="col-lg-6 mb-3">
+        <div *ngIf="activeSection === 'documents'" class="mb-3">
           <div class="card border-0 shadow-sm h-100">
             <div class="card-header bg-white d-flex justify-content-between align-items-center">
               <h6 class="m-0 font-weight-bold text-primary">Documents du centre</h6>
@@ -165,75 +227,78 @@ type DocumentForm = {
               </span>
             </div>
             <div class="card-body">
-              <div class="form-row">
-                <div class="form-group col-md-6">
-                  <label>Nature</label>
-                  <select class="form-control" [(ngModel)]="documentForm.idNatureDocument">
-                    <option [ngValue]="null">Sélectionner</option>
-                    <option *ngFor="let n of naturesDocument" [ngValue]="n.id ?? null">{{ refLabel(n) }}</option>
-                  </select>
+              <div class="border rounded bg-light p-3 mb-3">
+                <h6 class="font-weight-bold mb-3">{{ editingDocumentId == null ? 'Ajouter un document' : 'Modifier le document' }}</h6>
+                <div class="form-row">
+                  <div class="form-group col-md-6">
+                    <label>Nature</label>
+                    <select class="form-control" [(ngModel)]="documentForm.idNatureDocument">
+                      <option [ngValue]="null">Sélectionner</option>
+                      <option *ngFor="let n of naturesDocument" [ngValue]="n.id ?? null">{{ refLabel(n) }}</option>
+                    </select>
+                  </div>
+                  <div class="form-group col-md-6">
+                    <label>Type</label>
+                    <select class="form-control" [(ngModel)]="documentForm.idTypeDocument">
+                      <option [ngValue]="null">Sélectionner</option>
+                      <option *ngFor="let t of typesDocument" [ngValue]="t.id ?? null">{{ refLabel(t) }}</option>
+                    </select>
+                  </div>
                 </div>
-                <div class="form-group col-md-6">
-                  <label>Type</label>
-                  <select class="form-control" [(ngModel)]="documentForm.idTypeDocument">
-                    <option [ngValue]="null">Sélectionner</option>
-                    <option *ngFor="let t of typesDocument" [ngValue]="t.id ?? null">{{ refLabel(t) }}</option>
-                  </select>
+                <div class="form-row">
+                  <div class="form-group col-md-6">
+                    <label>Code document</label>
+                    <input class="form-control" [(ngModel)]="documentForm.codeDocument" maxlength="50" />
+                  </div>
+                  <div class="form-group col-md-6">
+                    <label>Existe</label>
+                    <select class="form-control" [(ngModel)]="documentForm.existe">
+                      <option value="">Non renseigné</option>
+                      <option *ngFor="let option of yesNoOptions" [value]="option">{{ option }}</option>
+                    </select>
+                  </div>
                 </div>
-              </div>
-              <div class="form-row">
-                <div class="form-group col-md-6">
-                  <label>Code document</label>
-                  <input class="form-control" [(ngModel)]="documentForm.codeDocument" maxlength="50" />
+                <div class="form-row">
+                  <div class="form-group col-md-4">
+                    <label>À jour</label>
+                    <select class="form-control" [(ngModel)]="documentForm.ajour">
+                      <option value="">Non renseigné</option>
+                      <option *ngFor="let option of yesNoOptions" [value]="option">{{ option }}</option>
+                    </select>
+                  </div>
+                  <div class="form-group col-md-4">
+                    <label>Bien tenu</label>
+                    <select class="form-control" [(ngModel)]="documentForm.bientenu">
+                      <option value="">Non renseigné</option>
+                      <option *ngFor="let option of yesNoOptions" [value]="option">{{ option }}</option>
+                    </select>
+                  </div>
+                  <div class="form-group col-md-4">
+                    <label>Bien renseigné</label>
+                    <select class="form-control" [(ngModel)]="documentForm.bienrensigne">
+                      <option value="">Non renseigné</option>
+                      <option *ngFor="let option of yesNoOptions" [value]="option">{{ option }}</option>
+                    </select>
+                  </div>
                 </div>
-                <div class="form-group col-md-6">
-                  <label>Existe</label>
-                  <select class="form-control" [(ngModel)]="documentForm.existe">
+                <div class="form-group">
+                  <label>Responsable méthode</label>
+                  <select class="form-control" [(ngModel)]="documentForm.respmethode">
                     <option value="">Non renseigné</option>
                     <option *ngFor="let option of yesNoOptions" [value]="option">{{ option }}</option>
                   </select>
                 </div>
-              </div>
-              <div class="form-row">
-                <div class="form-group col-md-4">
-                  <label>À jour</label>
-                  <select class="form-control" [(ngModel)]="documentForm.ajour">
-                    <option value="">Non renseigné</option>
-                    <option *ngFor="let option of yesNoOptions" [value]="option">{{ option }}</option>
-                  </select>
+                <div class="d-flex flex-wrap gap-1">
+                  <button class="btn btn-sm btn-primary mr-1" type="button" (click)="saveDocument()" [disabled]="saving">
+                    {{ editingDocumentId == null ? 'Ajouter le document' : 'Mettre à jour le document' }}
+                  </button>
+                  <button *ngIf="editingDocumentId != null" class="btn btn-sm btn-light" type="button" (click)="cancelDocumentEdit()" [disabled]="saving">
+                    Annuler
+                  </button>
                 </div>
-                <div class="form-group col-md-4">
-                  <label>Bien tenu</label>
-                  <select class="form-control" [(ngModel)]="documentForm.bientenu">
-                    <option value="">Non renseigné</option>
-                    <option *ngFor="let option of yesNoOptions" [value]="option">{{ option }}</option>
-                  </select>
-                </div>
-                <div class="form-group col-md-4">
-                  <label>Bien renseigné</label>
-                  <select class="form-control" [(ngModel)]="documentForm.bienrensigne">
-                    <option value="">Non renseigné</option>
-                    <option *ngFor="let option of yesNoOptions" [value]="option">{{ option }}</option>
-                  </select>
-                </div>
-              </div>
-              <div class="form-group">
-                <label>Responsable méthode</label>
-                <select class="form-control" [(ngModel)]="documentForm.respmethode">
-                  <option value="">Non renseigné</option>
-                  <option *ngFor="let option of yesNoOptions" [value]="option">{{ option }}</option>
-                </select>
-              </div>
-              <div class="d-flex flex-wrap gap-1">
-                <button class="btn btn-sm btn-primary mr-1" type="button" (click)="saveDocument()" [disabled]="saving">
-                  {{ editingDocumentId == null ? 'Ajouter le document' : 'Mettre à jour le document' }}
-                </button>
-                <button *ngIf="editingDocumentId != null" class="btn btn-sm btn-light" type="button" (click)="cancelDocumentEdit()" [disabled]="saving">
-                  Annuler
-                </button>
               </div>
 
-              <hr />
+              <h6 class="font-weight-bold text-muted">Documents enregistrés</h6>
               <div *ngIf="filteredDocuments.length === 0" class="small text-muted">Aucun document enregistré pour ce centre.</div>
               <div class="table-responsive" *ngIf="filteredDocuments.length > 0">
                 <table class="table table-sm table-bordered">
@@ -243,6 +308,7 @@ type DocumentForm = {
                       <th>Existe</th>
                       <th>À jour</th>
                       <th>Qualité</th>
+                      <th>Validation</th>
                       <th class="text-center">Actions</th>
                     </tr>
                   </thead>
@@ -259,9 +325,18 @@ type DocumentForm = {
                         <div>Resp. méthode : {{ row.respmethode || '-' }}</div>
                         <div>Bien renseigné : {{ row.bienrensigne || '-' }}</div>
                       </td>
+                      <td>
+                        <span class="badge" [ngClass]="documentWorkflowBadge(row)" [title]="documentWorkflowTooltip(row)">
+                          {{ documentWorkflowLabel(row) }}
+                        </span>
+                      </td>
                       <td class="text-center text-nowrap">
-                        <button class="btn btn-sm btn-outline-primary mr-1" type="button" (click)="editDocument(row)" [disabled]="saving">Modifier</button>
-                        <button class="btn btn-sm btn-outline-danger" type="button" (click)="deleteDocument(row)" [disabled]="saving">Supprimer</button>
+                        <button class="btn btn-sm btn-outline-primary mr-1" type="button" (click)="editDocument(row)" [disabled]="saving || !documentEditable(row)">Modifier</button>
+                        <button class="btn btn-sm btn-outline-warning mr-1" type="button" (click)="submitDocument(row)" *ngIf="canSubmitDocument(row)" [disabled]="saving">Soumettre</button>
+                        <button class="btn btn-sm btn-outline-success mr-1" type="button" (click)="validateDocument(row)" *ngIf="canDecideDocument(row)" [disabled]="saving">Valider</button>
+                        <button class="btn btn-sm btn-outline-danger mr-1" type="button" (click)="rejectDocument(row)" *ngIf="canDecideDocument(row)" [disabled]="saving">Rejeter</button>
+                        <button class="btn btn-sm btn-outline-secondary mr-1" type="button" (click)="returnDocument(row)" *ngIf="canDecideDocument(row)" [disabled]="saving">Retourner</button>
+                        <button class="btn btn-sm btn-outline-danger" type="button" (click)="deleteDocument(row)" [disabled]="saving || !documentEditable(row)">Supprimer</button>
                       </td>
                     </tr>
                   </tbody>
@@ -276,6 +351,18 @@ type DocumentForm = {
 })
 export class DossierCentreComponent implements OnInit {
   readonly yesNoOptions = ['Oui', 'Non'];
+  readonly centreTypeOptions: Array<{ value: CentreType; label: string }> = [
+    { value: 'alpha', label: 'Alpha' },
+    { value: 'cec', label: 'CEC' },
+    { value: 'cp', label: 'CP' },
+    { value: 'sie', label: 'SIE' },
+  ];
+  private readonly centreApiByType: Record<CentreType, string> = {
+    alpha: '/api/alpha',
+    cec: '/api/cec',
+    cp: '/api/cp',
+    sie: '/api/sie',
+  };
 
   centres: CentreOption[] = [];
   appuis: AppuiRow[] = [];
@@ -285,8 +372,11 @@ export class DossierCentreComponent implements OnInit {
   naturesDocument: Ref[] = [];
   typesDocument: Ref[] = [];
 
+  selectedCentreType: CentreType | null = null;
   selectedCentreId: number | null = null;
+  activeSection: DossierSection = 'appuis';
   loading = false;
+  centresLoading = false;
   saving = false;
   errorMessage: string | null = null;
   successMessage: string | null = null;
@@ -297,6 +387,7 @@ export class DossierCentreComponent implements OnInit {
 
   constructor(
     private readonly http: HttpClient,
+    private readonly auth: AuthService,
     @Inject(API_BASE_URL) private readonly apiBaseUrl: string,
   ) {}
 
@@ -323,7 +414,6 @@ export class DossierCentreComponent implements OnInit {
     this.loading = true;
     this.errorMessage = null;
     forkJoin({
-      centres: this.http.get<unknown>(`${this.apiBaseUrl}/api/centres`),
       appuis: this.http.get<unknown>(`${this.apiBaseUrl}/api/appui-partenaire`),
       documents: this.http.get<unknown>(`${this.apiBaseUrl}/api/documents`),
       partenaires: this.http.get<unknown>(`${this.apiBaseUrl}/api/Partenaires`),
@@ -332,17 +422,45 @@ export class DossierCentreComponent implements OnInit {
       typesDocument: this.http.get<unknown>(`${this.apiBaseUrl}/api/TypeDocuments`),
     }).subscribe({
       next: (res) => {
-        this.centres = unwrapListBody(res.centres) as CentreOption[];
         this.appuis = unwrapListBody(res.appuis) as AppuiRow[];
         this.documents = unwrapListBody(res.documents) as DocumentRow[];
-        this.partenaires = unwrapListBody(res.partenaires).map((row) => this.refFromAny(row, 'codePartenaire', 'libellePartenaire'));
-        this.categoriesAppui = unwrapListBody(res.categoriesAppui).map((row) => this.refFromAny(row, 'codeCategorieAppui', 'libelleCategorieAppui'));
-        this.naturesDocument = unwrapListBody(res.naturesDocument).map((row) => this.refFromAny(row, null, 'libelleNatureDocument'));
-        this.typesDocument = unwrapListBody(res.typesDocument).map((row) => this.refFromAny(row, 'codeTypeDocument', 'libelleTypeDocument'));
+        this.partenaires = unwrapListBody(res.partenaires).map((row) => this.refFromAny(row, 'libellePartenaire'));
+        this.categoriesAppui = unwrapListBody(res.categoriesAppui).map((row) => this.refFromAny(row, 'libelleCategorieAppui'));
+        this.naturesDocument = unwrapListBody(res.naturesDocument).map((row) => this.refFromAny(row, 'libelleNatureDocument'));
+        this.typesDocument = unwrapListBody(res.typesDocument).map((row) => this.refFromAny(row, 'libelleTypeDocument'));
         this.loading = false;
+        this.loadDocumentWorkflowStatuses();
+        if (this.selectedCentreType) {
+          this.loadCentresForType(this.selectedCentreType);
+        }
       },
       error: (err: HttpErrorResponse) => {
         this.loading = false;
+        this.errorMessage = this.httpError(err);
+      },
+    });
+  }
+
+  onCentreTypeChange(): void {
+    this.selectedCentreId = null;
+    this.centres = [];
+    this.onCentreChange();
+    if (this.selectedCentreType) {
+      this.loadCentresForType(this.selectedCentreType);
+    }
+  }
+
+  private loadCentresForType(type: CentreType): void {
+    this.centresLoading = true;
+    this.http.get<unknown>(`${this.apiBaseUrl}${this.centreApiByType[type]}`, {
+      params: { page: '0', size: '2000', sort: 'id,asc' },
+    }).subscribe({
+      next: (body) => {
+        this.centres = unwrapListBody(body) as CentreOption[];
+        this.centresLoading = false;
+      },
+      error: (err: HttpErrorResponse) => {
+        this.centresLoading = false;
         this.errorMessage = this.httpError(err);
       },
     });
@@ -434,6 +552,7 @@ export class DossierCentreComponent implements OnInit {
   }
 
   editDocument(row: DocumentRow): void {
+    if (!this.documentEditable(row)) return;
     this.editingDocumentId = row.id ?? null;
     this.documentForm = {
       idNatureDocument: row.natureDocument?.id ?? null,
@@ -453,6 +572,7 @@ export class DossierCentreComponent implements OnInit {
   }
 
   deleteDocument(row: DocumentRow): void {
+    if (!this.documentEditable(row)) return;
     if (row.id == null || !window.confirm('Supprimer ce document ?')) return;
     this.saving = true;
     this.http.delete(`${this.apiBaseUrl}/api/documents/${row.id}`).subscribe({
@@ -469,21 +589,209 @@ export class DossierCentreComponent implements OnInit {
   }
 
   centreLabel(centre: CentreOption): string {
-    return [centre.codeCentre, centre.localisationCentre].filter(Boolean).join(' — ') || `Centre ${centre.id ?? ''}`;
+    return centre.libelle?.trim() || centre.localisationCentre?.trim() || 'Sans libellé';
+  }
+
+  centreId(centre: CentreOption): number | null {
+    return centre.idCentre ?? centre.id ?? null;
   }
 
   refLabel(ref: Ref | null | undefined): string {
     if (!ref) return '-';
-    return [ref.code, ref.libelle].filter(Boolean).join(' — ') || `#${ref.id ?? ''}`;
+    return ref.libelle?.trim() || 'Sans libellé';
   }
 
-  private refFromAny(raw: unknown, codeKey: string | null, libelleKey: string): Ref {
+  documentEditable(row: DocumentRow): boolean {
+    if (typeof row.workflowEditable === 'boolean') {
+      return row.workflowEditable;
+    }
+    const status = row.workflowStatut ?? 'BROUILLON';
+    return status === 'BROUILLON' || status === 'RETOURNE';
+  }
+
+  documentWorkflowLabel(row: DocumentRow): string {
+    const status = row.workflowStatut ?? 'BROUILLON';
+    switch (status) {
+      case 'BROUILLON':
+        return 'Brouillon';
+      case 'SOUMIS':
+        return 'Soumis';
+      case 'VALIDEE_COORDONNATEUR':
+        return 'Validé coordonnateur';
+      case 'VALIDEE_SUPERVISEUR':
+        return 'Validé superviseur';
+      case 'VALIDEE_CENTRALE':
+        return 'Validé central';
+      case 'REJETE':
+        return 'Rejeté';
+      case 'RETOURNE':
+        return 'Retourné';
+      default: {
+        const _exhaustive: never = status;
+        return _exhaustive;
+      }
+    }
+  }
+
+  documentWorkflowBadge(row: DocumentRow): string {
+    const status = row.workflowStatut ?? 'BROUILLON';
+    switch (status) {
+      case 'VALIDEE_CENTRALE':
+        return 'badge-success';
+      case 'VALIDEE_SUPERVISEUR':
+        return 'badge-primary';
+      case 'VALIDEE_COORDONNATEUR':
+        return 'badge-info';
+      case 'SOUMIS':
+        return 'badge-warning';
+      case 'REJETE':
+        return 'badge-danger';
+      case 'BROUILLON':
+      case 'RETOURNE':
+        return 'badge-secondary';
+      default: {
+        const _exhaustive: never = status;
+        return _exhaustive;
+      }
+    }
+  }
+
+  documentWorkflowTooltip(row: DocumentRow): string {
+    const motif = row.workflowMotifRejet?.trim();
+    if (motif) return `Motif rejet : ${motif}`;
+    const commentaire = row.workflowCommentaireRetour?.trim();
+    if (commentaire) return `Commentaire retour : ${commentaire}`;
+    return this.documentWorkflowLabel(row);
+  }
+
+  canSubmitDocument(row: DocumentRow): boolean {
+    return (
+      row.id != null &&
+      this.documentEditable(row) &&
+      this.auth.hasPermission('SAISIE_DONNEES:MODIFIER')
+    );
+  }
+
+  canDecideDocument(row: DocumentRow): boolean {
+    return row.id != null && this.nextDocumentValidationStatus(row) != null;
+  }
+
+  submitDocument(row: DocumentRow): void {
+    if (row.id == null) return;
+    this.runDocumentWorkflow('soumettre', row.id, {});
+  }
+
+  validateDocument(row: DocumentRow): void {
+    if (row.id == null) return;
+    this.runDocumentWorkflow('valider', row.id, {});
+  }
+
+  rejectDocument(row: DocumentRow): void {
+    if (row.id == null) return;
+    const motif = window.prompt('Motif du rejet (obligatoire)');
+    if (motif == null) return;
+    if (!motif.trim()) {
+      this.errorMessage = 'Le motif de rejet est obligatoire.';
+      return;
+    }
+    this.runDocumentWorkflow('rejeter', row.id, { motif: motif.trim() });
+  }
+
+  returnDocument(row: DocumentRow): void {
+    if (row.id == null) return;
+    const commentaire = window.prompt('Commentaire de retour (facultatif)', '');
+    if (commentaire == null) return;
+    this.runDocumentWorkflow('retourner', row.id, { commentaire: commentaire.trim() || null });
+  }
+
+  private refFromAny(raw: unknown, specificLibelleKey: string): Ref {
     const row = raw as Record<string, unknown>;
+    const libelle = row['libelle'] ?? row[specificLibelleKey];
     return {
       id: typeof row['id'] === 'number' ? row['id'] : null,
-      code: codeKey && row[codeKey] != null ? String(row[codeKey]) : null,
-      libelle: row[libelleKey] != null ? String(row[libelleKey]) : null,
+      code: null,
+      libelle: libelle != null ? String(libelle) : null,
     };
+  }
+
+  private loadDocumentWorkflowStatuses(): void {
+    const ids = this.documents
+      .map((row) => row.id)
+      .filter((id): id is number => id != null);
+    if (!ids.length) return;
+    this.http.get<Record<string, Partial<DocumentRow>>>(`${this.apiBaseUrl}/api/saisie-workflows/statuses`, {
+      params: {
+        resource: '/api/documents',
+        ids: ids.join(','),
+      },
+    }).subscribe({
+      next: (statuses) => {
+        this.documents = this.documents.map((row) => {
+          const status = row.id == null ? null : statuses[String(row.id)];
+          return status ? { ...row, ...status } : row;
+        });
+      },
+      error: () => {
+        /* La page reste utilisable sans statuts workflow. */
+      },
+    });
+  }
+
+  private nextDocumentValidationStatus(row: DocumentRow): WorkflowStatus | null {
+    if (!this.auth.hasPermission('SAISIE_DONNEES:VALIDER')) {
+      return null;
+    }
+    const status = row.workflowStatut ?? 'BROUILLON';
+    switch (status) {
+      case 'SOUMIS':
+        return this.hasValidatorRole(['COORDONNATEUR']) ? 'VALIDEE_COORDONNATEUR' : null;
+      case 'VALIDEE_COORDONNATEUR':
+        return this.hasValidatorRole(['SUPERVISEUR']) ? 'VALIDEE_SUPERVISEUR' : null;
+      case 'VALIDEE_SUPERVISEUR':
+        return this.hasValidatorRole(['SUPERVISEUR_AENF', 'DIRECTEUR']) ? 'VALIDEE_CENTRALE' : null;
+      case 'BROUILLON':
+      case 'VALIDEE_CENTRALE':
+      case 'REJETE':
+      case 'RETOURNE':
+        return null;
+      default: {
+        const _exhaustive: never = status;
+        return _exhaustive;
+      }
+    }
+  }
+
+  private runDocumentWorkflow(action: 'soumettre' | 'valider' | 'rejeter' | 'retourner', recordId: number, payload: Record<string, unknown>): void {
+    this.saving = true;
+    this.errorMessage = null;
+    this.http.put(`${this.apiBaseUrl}/api/saisie-workflows/${action}`, payload, {
+      params: {
+        resource: '/api/documents',
+        recordId,
+        feature: 'SAISIE_DONNEES',
+      },
+    }).subscribe({
+      next: () => {
+        this.saving = false;
+        this.successMessage =
+          action === 'soumettre'
+            ? 'Document soumis pour validation.'
+            : action === 'valider'
+              ? 'Document validé.'
+              : action === 'rejeter'
+                ? 'Document rejeté.'
+                : 'Document retourné pour correction.';
+        this.loadDocumentWorkflowStatuses();
+      },
+      error: (err: HttpErrorResponse) => {
+        this.saving = false;
+        this.errorMessage = this.httpError(err);
+      },
+    });
+  }
+
+  private hasValidatorRole(roles: string[]): boolean {
+    return this.auth.hasAnyRole([...roles, 'ADMIN', 'SUPER_ADMIN', 'SUPER_ROOT']);
   }
 
   private emptyAppuiForm(): AppuiForm {

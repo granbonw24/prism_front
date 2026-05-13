@@ -18,6 +18,8 @@ export const referentielFeatureRoutes: Routes = REFERENTIEL_ROUTE_DATA.filter((r
       data: {
         title: r.title,
         apiPath: r.apiPath,
+        permissionFeature: r.permissionFeature ?? null,
+        workflowFeature: r.workflowFeature ?? null,
         createFields: r.createFields ?? [],
         columnLabels: r.columnLabels ?? {},
       },

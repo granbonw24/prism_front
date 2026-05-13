@@ -46,6 +46,16 @@
   color: #6e707e;
 }
 
+.validation-brouillon {
+  background: #eef1f6;
+  color: #555;
+}
+
+.validation-rejet {
+  background: #fdecea;
+  color: #b83226;
+}
+
 .mena-rating-grid {
   row-gap: 0.5rem;
 }

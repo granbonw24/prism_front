@@ -34,6 +34,13 @@ export type PersonnelListQuery = {
   q?: string;
 };
 
+/** Paramètres optionnels pour la liste paginée des utilisateurs (administration). */
+export type AppUsersListQuery = {
+  q?: string;
+  roleId?: number;
+  actif?: boolean;
+};
+
 @Injectable({ providedIn: 'root' })
 export class AdministrationService {
   constructor(
@@ -110,11 +117,28 @@ export class AdministrationService {
     );
   }
 
-  getUsersPage(page: number, size: number): Observable<SpringPage<AppUserAdmin>> {
-    const params = new HttpParams()
+  getUsersPage(
+    page: number,
+    size: number,
+    query: AppUsersListQuery = {},
+  ): Observable<SpringPage<AppUserAdmin>> {
+    let params = new HttpParams()
       .set('page', String(page))
       .set('size', String(size))
       .set('sort', 'id,asc');
+    const q = String(query.q ?? '').trim();
+    if (q) {
+      params = params.set('q', q);
+    }
+    if (query.roleId != null && Number.isFinite(query.roleId)) {
+      params = params.set('roleId', String(query.roleId));
+    }
+    if (query.actif === true) {
+      params = params.set('actif', 'true');
+    }
+    if (query.actif === false) {
+      params = params.set('actif', 'false');
+    }
     return this.http.get<SpringPage<AppUserAdmin>>(`${this.apiBaseUrl}/api/app-users`, { params });
   }
 

@@ -48,6 +48,8 @@ const EFFECTIF_LIST_SUMMARY_COLUMNS: Record<CentreType, string[]> = {
     <app-referentiel-list-page
       [inputTitle]="activeConfig.title"
       [inputApiPath]="activeConfig.apiPath"
+      [inputPermissionFeature]="'SAISIE_DONNEES'"
+      [inputWorkflowFeature]="'SAISIE_DONNEES'"
       [inputCreateFields]="activeConfig.createFields"
       [inputListColumnKeys]="listColumnKeys"
       [addFormContextLabel]="'Type de centre'"

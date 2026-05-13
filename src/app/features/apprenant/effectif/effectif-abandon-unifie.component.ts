@@ -83,6 +83,8 @@ const ABANDON_TYPE_CONFIG: Record<AbandonCentreType, AbandonConfig> = {
     <app-referentiel-list-page
       [inputTitle]="activeConfig.title"
       [inputApiPath]="activeConfig.apiPath"
+      [inputPermissionFeature]="'SAISIE_DONNEES'"
+      [inputWorkflowFeature]="'SAISIE_DONNEES'"
       [inputCreateFields]="activeConfig.createFields"
       [inputListColumnKeys]="listColumnKeys"
       [addFormContextLabel]="'Type de centre'"

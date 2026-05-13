@@ -40,7 +40,7 @@
               <th>Période</th>
               <th>Niveau</th>
               <th>Type d’évaluation</th>
-              <th>Thèmes et taux</th>
+              <th>Thèmes</th>
               <th class="text-center">Actions</th>
             </tr>
           </thead>
@@ -56,7 +56,17 @@
               <td>{{ typeLabel(row.typeEvaluation) }}</td>
               <td>{{ themesTauxLabel(row) }}</td>
               <td class="text-center text-nowrap">
+                <button class="btn btn-sm btn-outline-secondary mr-1" type="button" (click)="openDetail(row)">Détail</button>
                 <button *ngIf="canEdit" class="btn btn-sm btn-outline-primary mr-1" type="button" (click)="openEdit(row)" [disabled]="isLocked(row)">Modifier</button>
+                <button
+                  *ngIf="canSubmitWorkflow(row)"
+                  class="btn btn-sm btn-outline-secondary mr-1"
+                  type="button"
+                  (click)="submitWorkflow(row)"
+                  [disabled]="workflowSubmittingId === row.id"
+                >
+                  Soumettre
+                </button>
                 <button *ngIf="canValidateRow(row)" class="btn btn-sm btn-outline-success mr-1" type="button" (click)="validateRow(row)" [disabled]="validatingId === row.id">Valider</button>
                 <button *ngIf="canEdit" class="btn btn-sm btn-outline-danger" type="button" (click)="deleteRow(row)" [disabled]="isLocked(row)">Supprimer</button>
               </td>
@@ -111,7 +121,6 @@
                 {{ typeLabel(type) }}
               </option>
             </select>
-            <small class="form-text text-muted">Niveau 1 : formative ou sommative. Niveau 2/Post Alpha : sommative ou certificative.</small>
           </div>
         </div>
         <div class="theme-taux-box">
@@ -142,6 +151,57 @@
         <button class="btn btn-primary" type="button" (click)="save()" [disabled]="saving">
           {{ saving ? 'Enregistrement...' : 'Enregistrer' }}
         </button>
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="detailRow" class="evaluation-modal-backdrop">
+    <div class="evaluation-detail-modal card border-0 shadow-lg">
+      <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Détail de l’évaluation</h5>
+        <button type="button" class="close" aria-label="Fermer" (click)="closeDetail()">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="card-body">
+        <dl class="row mb-3">
+          <dt class="col-sm-4">Centre</dt>
+          <dd class="col-sm-8">{{ refLabel(detailRow.alpha) }}</dd>
+          <dt class="col-sm-4">Période</dt>
+          <dd class="col-sm-8">{{ refLabel(detailRow.periodeEvaluation) }}</dd>
+          <dt class="col-sm-4">Niveau</dt>
+          <dd class="col-sm-8">{{ refLabel(detailRow.niveauEvaluation) }}</dd>
+          <dt class="col-sm-4">Type</dt>
+          <dd class="col-sm-8">{{ typeLabel(detailRow.typeEvaluation) }}</dd>
+          <dt class="col-sm-4">Validation</dt>
+          <dd class="col-sm-8">
+            <span class="badge" [ngClass]="validationClass(detailRow)">{{ validationLabel(detailRow) }}</span>
+          </dd>
+        </dl>
+
+        <h6 class="font-weight-bold text-primary">Thèmes et taux</h6>
+        <div class="table-responsive">
+          <table class="table table-sm table-bordered mb-0">
+            <thead class="thead-light">
+              <tr>
+                <th>Thème</th>
+                <th class="text-right">Taux</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let item of detailRow.themesTaux ?? []">
+                <td>{{ refLabel(item.themeEvaluation) }}</td>
+                <td class="text-right">{{ item.taux ?? '-' }}%</td>
+              </tr>
+              <tr *ngIf="(detailRow.themesTaux ?? []).length === 0">
+                <td colspan="2" class="text-center text-muted">Aucun thème renseigné.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card-footer bg-white d-flex justify-content-end">
+        <button class="btn btn-light" type="button" (click)="closeDetail()">Fermer</button>
       </div>
     </div>
   </div>

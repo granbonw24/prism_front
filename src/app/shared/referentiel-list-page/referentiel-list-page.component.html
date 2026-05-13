@@ -291,7 +291,9 @@
             <tr *ngFor="let row of pagedRows; let i = index">
               <td>{{ listPageStart + i + 1 }}</td>
               <td *ngIf="hasWorkflow">
-                <span [class]="workflowStatusClass(row)">{{ workflowStatusLabel(row) }}</span>
+                <span [class]="workflowStatusClass(row)" [title]="workflowTooltip(row)">
+                  {{ workflowStatusLabel(row) }}
+                </span>
               </td>
               <td
                 *ngFor="let col of columns"
@@ -308,9 +310,19 @@
                     *ngIf="hasCreateForm && canUpdateRecord && resolveRowId(row) != null"
                     (click)="openEditModal(row)"
                     title="Modifier"
-                    [disabled]="bool(row['valideeCoordonnateur'])"
+                    [disabled]="!isWorkflowEditable(row)"
                   >
                     <i class="fas fa-pen"></i>
+                  </button>
+                  <button
+                    type="button"
+                    class="btn btn-outline-warning btn-sm mena-btn-action"
+                    *ngIf="hasWorkflow && canSubmitWorkflow(row)"
+                    (click)="submitWorkflowRow(row)"
+                    title="Soumettre pour validation"
+                    [disabled]="workflowSubmittingId === resolveRowId(row)"
+                  >
+                    <i class="fas fa-paper-plane"></i>
                   </button>
                   <button
                     type="button"
@@ -325,10 +337,30 @@
                   <button
                     type="button"
                     class="btn btn-outline-danger btn-sm mena-btn-action"
+                    *ngIf="hasWorkflow && canRejectOrReturnWorkflow(row)"
+                    (click)="openWorkflowDecision(row, 'rejeter')"
+                    title="Rejeter avec motif"
+                    [disabled]="workflowSubmittingId === resolveRowId(row)"
+                  >
+                    <i class="fas fa-times"></i>
+                  </button>
+                  <button
+                    type="button"
+                    class="btn btn-outline-secondary btn-sm mena-btn-action"
+                    *ngIf="hasWorkflow && canRejectOrReturnWorkflow(row)"
+                    (click)="openWorkflowDecision(row, 'retourner')"
+                    title="Retourner pour correction"
+                    [disabled]="workflowSubmittingId === resolveRowId(row)"
+                  >
+                    <i class="fas fa-reply"></i>
+                  </button>
+                  <button
+                    type="button"
+                    class="btn btn-outline-danger btn-sm mena-btn-action"
                     *ngIf="canDeleteRecord && resolveRowId(row) != null"
                     (click)="openDeleteModal(row)"
                     title="Supprimer"
-                    [disabled]="bool(row['valideeCoordonnateur'])"
+                    [disabled]="!isWorkflowEditable(row)"
                   >
                     <i class="fas fa-trash-alt"></i>
                   </button>
@@ -571,3 +603,68 @@
   (cancelled)="cancelDelete()"
   (confirmed)="confirmDelete()"
 />
+
+<!-- Modal décision workflow -->
+<div
+  class="modal-backdrop fade mena-modal-backdrop"
+  *ngIf="workflowDecisionOpen"
+  (click)="closeWorkflowDecision()"
+></div>
+<div
+  class="modal fade mena-modal"
+  role="dialog"
+  aria-modal="true"
+  [class.show]="workflowDecisionOpen"
+  [style.display]="workflowDecisionOpen ? 'block' : 'none'"
+  *ngIf="workflowDecisionOpen"
+>
+  <div class="modal-dialog modal-dialog-centered" (click)="$event.stopPropagation()">
+    <div class="modal-content mena-modal-content border-0 shadow">
+      <div class="modal-header border-0 mena-modal-header">
+        <h5 class="modal-title font-weight-bold">
+          {{ workflowDecisionAction === 'rejeter' ? 'Rejeter la donnée' : 'Retourner pour correction' }}
+        </h5>
+        <button
+          type="button"
+          class="close"
+          aria-label="Fermer"
+          (click)="closeWorkflowDecision()"
+        >
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div *ngIf="workflowDecisionError" class="alert alert-danger small">
+          {{ workflowDecisionError }}
+        </div>
+        <label class="small font-weight-bold">
+          {{ workflowDecisionAction === 'rejeter' ? 'Motif du rejet (obligatoire)' : 'Commentaire de retour (facultatif)' }}
+        </label>
+        <textarea
+          class="form-control"
+          rows="4"
+          maxlength="500"
+          [(ngModel)]="workflowDecisionText"
+        ></textarea>
+        <div class="d-flex justify-content-end gap-2 mt-3">
+          <button
+            type="button"
+            class="btn btn-light btn-sm"
+            (click)="closeWorkflowDecision()"
+            [disabled]="workflowSubmittingId != null"
+          >
+            Annuler
+          </button>
+          <button
+            type="button"
+            class="btn btn-primary btn-sm"
+            (click)="confirmWorkflowDecision()"
+            [disabled]="workflowSubmittingId != null"
+          >
+            Confirmer
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

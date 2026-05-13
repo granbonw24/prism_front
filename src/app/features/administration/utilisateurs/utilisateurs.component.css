@@ -2,3 +2,29 @@ table input[type='checkbox'] {
   transform: scale(1.05);
 }
 
+/** Modales ajout / modification utilisateur : en-tête & pied fixes, formulaire défilant */
+.mena-user-form-modal-dialog {
+  max-height: calc(100vh - 2rem);
+  margin: 1rem auto;
+}
+
+.mena-user-form-modal-content {
+  max-height: calc(100vh - 2rem);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.mena-user-form-modal-content .modal-header,
+.mena-user-form-modal-content .modal-footer {
+  flex-shrink: 0;
+}
+
+.mena-user-form-modal-content .modal-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+

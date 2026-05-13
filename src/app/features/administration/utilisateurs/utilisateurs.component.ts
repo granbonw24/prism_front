@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
@@ -10,7 +10,7 @@ import {
   AppUserAdmin,
   AppUserAdminUpsertRequest,
 } from '@models/administration';
-import { AdministrationService } from '@services/administration.service';
+import { AdministrationService, type AppUsersListQuery } from '@services/administration.service';
 
 type ScopeKey =
   | 'idRegion'
@@ -38,7 +38,7 @@ const SCOPE_DESCENDANTS: Record<ScopeKey, ScopeKey[]> = {
   templateUrl: './utilisateurs.component.html',
   styleUrl: './utilisateurs.component.css',
 })
-export class UtilisateursComponent implements OnInit {
+export class UtilisateursComponent implements OnInit, OnDestroy {
   loading = false;
   saving = false;
   errorMessage: string | null = null;
@@ -109,10 +109,23 @@ export class UtilisateursComponent implements OnInit {
   createSelectedRoleId: number | null = null;
   editSelectedRoleId: number | null = null;
 
+  /** Recherche / filtres liste (requête serveur paginée). */
+  listSearchText = '';
+  listFilterRoleId: number | null = null;
+  listFilterActif: 'all' | 'yes' | 'no' = 'all';
+  private listSearchDebounceHandle: ReturnType<typeof setTimeout> | null = null;
+
   constructor(private readonly admin: AdministrationService) {}
 
   async ngOnInit(): Promise<void> {
     await this.reload();
+  }
+
+  ngOnDestroy(): void {
+    if (this.listSearchDebounceHandle != null) {
+      clearTimeout(this.listSearchDebounceHandle);
+      this.listSearchDebounceHandle = null;
+    }
   }
 
   async reload(): Promise<void> {
@@ -154,8 +167,67 @@ export class UtilisateursComponent implements OnInit {
     this.localites = localites;
   }
 
+  private listUsersQuery(): AppUsersListQuery {
+    const q = this.listSearchText.trim();
+    const actif =
+      this.listFilterActif === 'yes' ? true : this.listFilterActif === 'no' ? false : undefined;
+    return {
+      ...(q ? { q } : {}),
+      ...(this.listFilterRoleId != null ? { roleId: this.listFilterRoleId } : {}),
+      ...(actif !== undefined ? { actif } : {}),
+    };
+  }
+
+  get hasActiveListFilters(): boolean {
+    return (
+      this.listSearchText.trim() !== '' ||
+      this.listFilterRoleId != null ||
+      this.listFilterActif !== 'all'
+    );
+  }
+
+  onListSearchChange(): void {
+    if (this.listSearchDebounceHandle != null) {
+      clearTimeout(this.listSearchDebounceHandle);
+    }
+    this.listSearchDebounceHandle = setTimeout(() => {
+      this.listSearchDebounceHandle = null;
+      void this.applyListFilters();
+    }, 400);
+  }
+
+  applyListFilters(): void {
+    void this.runListFilters();
+  }
+
+  private async runListFilters(): Promise<void> {
+    this.pageIndex = 0;
+    this.loading = true;
+    this.errorMessage = null;
+    try {
+      await this.loadUsersPage();
+    } catch (e) {
+      this.errorMessage = this.formatError(e);
+    } finally {
+      this.loading = false;
+    }
+  }
+
+  clearListFilters(): void {
+    this.listSearchText = '';
+    this.listFilterRoleId = null;
+    this.listFilterActif = 'all';
+    if (this.listSearchDebounceHandle != null) {
+      clearTimeout(this.listSearchDebounceHandle);
+      this.listSearchDebounceHandle = null;
+    }
+    this.applyListFilters();
+  }
+
   private async loadUsersPage(): Promise<void> {
-    const page = await firstValueFrom(this.admin.getUsersPage(this.pageIndex, this.pageSize));
+    const page = await firstValueFrom(
+      this.admin.getUsersPage(this.pageIndex, this.pageSize, this.listUsersQuery()),
+    );
     this.users = page.content ?? [];
     this.totalPages = page.totalPages ?? 0;
     this.totalElements = page.totalElements ?? 0;
@@ -461,6 +533,10 @@ export class UtilisateursComponent implements OnInit {
 
   trackRoleById(_idx: number, r: AppRole): number {
     return r.id;
+  }
+
+  trackUserById(_idx: number, u: AppUserAdmin): number {
+    return u.id;
   }
 
   trackScopeById(_idx: number, option: AdminScopeOption): number {

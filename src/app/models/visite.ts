@@ -23,6 +23,14 @@ export type VisiteRow = {
   valideeCoordonnateur?: boolean | null;
   valideeIepp?: boolean | null;
   valideeSuperviseur?: boolean | null;
+  /** Renseignés après fusion avec `/api/saisie-workflows/statuses` (mode conseiller / points). */
+  workflowStatut?: string | null;
+  workflowStatutLibelle?: string | null;
+  workflowEditable?: boolean | null;
+  workflowMotifRejet?: string | null;
+  workflowCommentaireRetour?: string | null;
+  workflowSoumisPar?: string | null;
+  workflowProprietaire?: string | null;
 };
 
 export type VisitePayload = {

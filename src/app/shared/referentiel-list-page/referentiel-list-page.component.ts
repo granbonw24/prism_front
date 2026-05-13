@@ -26,6 +26,17 @@ import { AuthService } from '@services/auth.service';
  */
 const CENTRE_OPTIONS_PAGE_PARAMS = { page: '0', size: '2000' };
 
+type WorkflowStatus =
+  | 'BROUILLON'
+  | 'SOUMIS'
+  | 'VALIDEE_COORDONNATEUR'
+  | 'VALIDEE_SUPERVISEUR'
+  | 'VALIDEE_CENTRALE'
+  | 'REJETE'
+  | 'RETOURNE';
+
+type WorkflowDecisionAction = 'rejeter' | 'retourner';
+
 @Component({
   selector: 'app-referentiel-list-page',
   standalone: true,
@@ -38,6 +49,8 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
   /** Texte d’aide sous le titre (ex. périmètre métier Alpha uniquement). */
   @Input() inputSubtitle?: string;
   @Input() inputApiPath?: string;
+  @Input() inputPermissionFeature?: string | null;
+  @Input() inputWorkflowFeature?: string | null;
   @Input() inputCreateFields?: ReferentielFormField[];
   @Input() addFormContextLabel?: string;
   @Input() addFormContextOptions?: Array<{ value: string; label: string }>;
@@ -117,6 +130,11 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
   deleteSubmitting = false;
   deleteError: string | null = null;
   workflowSubmittingId: string | number | null = null;
+  workflowDecisionOpen = false;
+  workflowDecisionAction: WorkflowDecisionAction | null = null;
+  workflowDecisionTarget: Record<string, unknown> | null = null;
+  workflowDecisionText = '';
+  workflowDecisionError: string | null = null;
   fieldOptions: Record<string, Array<{ value: string | number; label: string }>> = {};
 
   /** Évite de relancer les GET d’options quand le cache est déjà rempli par l’API. */
@@ -156,8 +174,8 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
       this.title = this.inputTitle ?? routeTitle;
       this.subtitle = this.inputSubtitle ?? routeSubtitle;
       this.apiPath = this.inputApiPath ?? routeApiPath;
-      this.permissionFeature = routePermissionFeature;
-      this.workflowFeature = routeWorkflowFeature;
+      this.permissionFeature = this.inputPermissionFeature ?? routePermissionFeature;
+      this.workflowFeature = this.inputWorkflowFeature ?? routeWorkflowFeature;
       this.createFields =
         this.inputCreateFields != null ? this.inputCreateFields : routeCreateFields;
       this.columnLabels = routeColumnLabels;
@@ -192,6 +210,8 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
     if (this.inputTitle != null) this.title = this.inputTitle;
     if (this.inputSubtitle != null) this.subtitle = this.inputSubtitle;
     if (this.inputApiPath != null) this.apiPath = this.inputApiPath;
+    if (this.inputPermissionFeature !== undefined) this.permissionFeature = this.inputPermissionFeature;
+    if (this.inputWorkflowFeature !== undefined) this.workflowFeature = this.inputWorkflowFeature;
     if (this.inputCreateFields != null) this.createFields = this.inputCreateFields;
   }
 
@@ -435,41 +455,142 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
   }
 
   workflowStatusLabel(row: Record<string, unknown>): string {
+    const genericStatus = this.workflowStatus(row);
+    if (genericStatus) {
+      return this.workflowStatusText(genericStatus);
+    }
     if (this.bool(row['valideeCentrale'])) return 'Validé central';
     if (this.bool(row['valideeSuperviseur'])) return 'Validé superviseur';
     if (this.bool(row['valideeCoordonnateur'])) return 'Validé coordonnateur';
-    return 'En attente coordonnateur';
+    return 'Brouillon';
   }
 
   workflowStatusClass(row: Record<string, unknown>): string {
+    const genericStatus = this.workflowStatus(row);
+    if (genericStatus === 'VALIDEE_CENTRALE') return 'badge badge-success';
+    if (genericStatus === 'VALIDEE_SUPERVISEUR') return 'badge badge-primary';
+    if (genericStatus === 'VALIDEE_COORDONNATEUR') return 'badge badge-info';
+    if (genericStatus === 'SOUMIS') return 'badge badge-warning';
+    if (genericStatus === 'REJETE') return 'badge badge-danger';
+    if (genericStatus === 'RETOURNE') return 'badge badge-secondary';
     if (this.bool(row['valideeCentrale'])) return 'badge badge-success';
     if (this.bool(row['valideeSuperviseur'])) return 'badge badge-primary';
     if (this.bool(row['valideeCoordonnateur'])) return 'badge badge-info';
     return 'badge badge-secondary';
   }
 
+  workflowTooltip(row: Record<string, unknown>): string {
+    const motif = String(row['workflowMotifRejet'] ?? '').trim();
+    if (motif) {
+      return `Motif rejet : ${motif}`;
+    }
+    const commentaire = String(row['workflowCommentaireRetour'] ?? '').trim();
+    if (commentaire) {
+      return `Commentaire retour : ${commentaire}`;
+    }
+    return this.workflowStatusLabel(row);
+  }
+
+  canSubmitWorkflow(row: Record<string, unknown>): boolean {
+    if (!this.hasWorkflow || !this.canUpdateRecord || this.workflowSubmittingId !== null) {
+      return false;
+    }
+    const id = this.resolveRowId(row);
+    if (id == null) {
+      return false;
+    }
+    const status = this.workflowStatus(row);
+    return status === null || status === 'BROUILLON' || status === 'RETOURNE';
+  }
+
   canValidateWorkflow(row: Record<string, unknown>): boolean {
-    return this.nextWorkflowStep(row) !== null;
+    return this.nextWorkflowStatus(row) !== null && this.workflowSubmittingId === null;
+  }
+
+  canRejectOrReturnWorkflow(row: Record<string, unknown>): boolean {
+    return this.nextWorkflowStatus(row) !== null && this.workflowSubmittingId === null;
+  }
+
+  submitWorkflowRow(row: Record<string, unknown>): void {
+    this.runWorkflowAction(row, 'soumettre', {});
   }
 
   validateWorkflowRow(row: Record<string, unknown>): void {
+    this.runWorkflowAction(row, 'valider', {});
+  }
+
+  openWorkflowDecision(row: Record<string, unknown>, action: WorkflowDecisionAction): void {
     const id = this.resolveRowId(row);
-    const step = this.nextWorkflowStep(row);
-    if (!this.apiPath || id == null || step == null || this.workflowSubmittingId !== null) {
+    if (id == null || !this.canRejectOrReturnWorkflow(row)) {
+      return;
+    }
+    this.workflowDecisionOpen = true;
+    this.workflowDecisionAction = action;
+    this.workflowDecisionTarget = row;
+    this.workflowDecisionText = '';
+    this.workflowDecisionError = null;
+  }
+
+  closeWorkflowDecision(): void {
+    this.workflowDecisionOpen = false;
+    this.workflowDecisionAction = null;
+    this.workflowDecisionTarget = null;
+    this.workflowDecisionText = '';
+    this.workflowDecisionError = null;
+  }
+
+  confirmWorkflowDecision(): void {
+    if (!this.workflowDecisionTarget || !this.workflowDecisionAction) {
+      return;
+    }
+    const text = this.workflowDecisionText.trim();
+    if (this.workflowDecisionAction === 'rejeter' && !text) {
+      this.workflowDecisionError = 'Le motif de rejet est obligatoire.';
+      return;
+    }
+    const payload =
+      this.workflowDecisionAction === 'rejeter'
+        ? { motif: text }
+        : { commentaire: text || null };
+    this.runWorkflowAction(this.workflowDecisionTarget, this.workflowDecisionAction, payload);
+  }
+
+  private runWorkflowAction(
+    row: Record<string, unknown>,
+    action: 'soumettre' | 'valider' | WorkflowDecisionAction,
+    payload: Record<string, unknown>,
+  ): void {
+    const id = this.resolveRowId(row);
+    if (!this.apiPath || id == null || this.workflowSubmittingId !== null) {
       return;
     }
     this.workflowSubmittingId = id;
     this.errorMessage = null;
-    const url = `${this.apiBaseUrl}${this.apiPath}/${encodeURIComponent(String(id))}/${step}`;
-    this.http.put<unknown>(url, {}).subscribe({
+    this.workflowDecisionError = null;
+    const params: Record<string, string> = {
+      resource: this.apiPath,
+      recordId: String(id),
+    };
+    const feature = this.workflowFeature ?? this.permissionFeature;
+    if (feature) {
+      params['feature'] = feature;
+    }
+    const url = `${this.apiBaseUrl}/api/saisie-workflows/${action}`;
+    this.http.put<unknown>(url, payload, { params }).subscribe({
       next: () => {
         this.workflowSubmittingId = null;
-        this.successMessage = 'Validation effectuée.';
+        this.closeWorkflowDecision();
+        this.successMessage = this.workflowSuccessMessage(action);
         this.fetch();
       },
       error: (err: HttpErrorResponse) => {
         this.workflowSubmittingId = null;
-        this.errorMessage = formatHttpError(err, 'Validation refusée.');
+        const msg = formatHttpError(err, 'Action de workflow refusée.');
+        if (this.workflowDecisionOpen) {
+          this.workflowDecisionError = msg;
+        } else {
+          this.errorMessage = msg;
+        }
       },
     });
   }
@@ -542,14 +663,7 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
     if (parts.length) {
       return parts.join(' — ');
     }
-    const id = o['id'];
-    if (typeof id === 'number' && Number.isFinite(id)) {
-      return `#${id}`;
-    }
-    if (typeof id === 'string' && id.trim() !== '') {
-      return `#${id.trim()}`;
-    }
-    return null;
+    return '—';
   }
 
   /** Extrait un identifiant scalaire pour filtres / agrégations (ref `{ id }` ou nombre / chaîne). */
@@ -622,6 +736,21 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
     return value === true || value === 1 || value === '1' || value === 'true';
   }
 
+  isWorkflowEditable(row: Record<string, unknown>): boolean {
+    if (!this.hasWorkflow) {
+      return true;
+    }
+    const editable = row['workflowEditable'];
+    if (typeof editable === 'boolean') {
+      return editable;
+    }
+    const status = this.workflowStatus(row);
+    if (status === null) {
+      return !this.bool(row['valideeCoordonnateur']);
+    }
+    return status === 'BROUILLON' || status === 'RETOURNE';
+  }
+
   resetListPage(): void {
     this.listPageIndex = 0;
   }
@@ -676,7 +805,7 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
   }
 
   openEditModal(row: Record<string, unknown>): void {
-    if (!this.hasCreateForm || !this.canUpdateRecord || this.bool(row['valideeCoordonnateur'])) {
+    if (!this.hasCreateForm || !this.canUpdateRecord || !this.isWorkflowEditable(row)) {
       return;
     }
     const id = this.resolveRowId(row);
@@ -715,8 +844,21 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
 
     if (this.formMode === 'create') {
       const url = `${this.apiBaseUrl}${this.apiPath}`;
-      this.http.post<unknown>(url, payload).subscribe({
-        next: () => this.onFormSuccess('Enregistrement créé avec succès.'),
+      this.http.post<Record<string, unknown>>(url, payload).subscribe({
+        next: (created) => {
+          const id = this.resolveRowId(created);
+          const done = () => this.onFormSuccess('Enregistrement créé avec succès.');
+          if (this.hasWorkflow && this.workflowFeature && this.auth.hasRole('CONSEILLER') && id != null) {
+            const feat = this.workflowFeature ?? 'SAISIE_DONNEES';
+            this.http
+              .post(`${this.apiBaseUrl}/api/saisie-workflows/claim`, {}, {
+                params: { resource: this.apiPath, recordId: String(id), feature: feat },
+              })
+              .subscribe({ next: () => done(), error: () => done() });
+            return;
+          }
+          done();
+        },
         error: (err: HttpErrorResponse) => this.onFormHttpError(err),
       });
       return;
@@ -749,7 +891,7 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
   }
 
   openDeleteModal(row: Record<string, unknown>): void {
-    if (!this.canDeleteRecord || this.bool(row['valideeCoordonnateur'])) {
+    if (!this.canDeleteRecord || !this.isWorkflowEditable(row)) {
       return;
     }
     const id = this.resolveRowId(row);
@@ -808,7 +950,7 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
         }
       }
     }
-    return `#${id}`;
+    return 'Cet enregistrement';
   }
 
   private hasPermission(permission: string): boolean {
@@ -818,26 +960,88 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
     return this.auth.hasPermission(`${this.permissionFeature}:${permission}`);
   }
 
-  private nextWorkflowStep(row: Record<string, unknown>): string | null {
-    if (!this.workflowFeature || !this.auth.hasPermission(`${this.workflowFeature}:VALIDER`)) {
+  private workflowStatus(row: Record<string, unknown>): WorkflowStatus | null {
+    const raw = row['workflowStatut'];
+    if (typeof raw !== 'string') {
       return null;
     }
-    if (!this.bool(row['valideeCoordonnateur']) && this.hasValidatorRole(['COORDONNATEUR'])) {
-      return 'valider-coordonnateur';
+    switch (raw) {
+      case 'BROUILLON':
+      case 'SOUMIS':
+      case 'VALIDEE_COORDONNATEUR':
+      case 'VALIDEE_SUPERVISEUR':
+      case 'VALIDEE_CENTRALE':
+      case 'REJETE':
+      case 'RETOURNE':
+        return raw;
+      default: {
+        const _exhaustive: never = raw as never;
+        void _exhaustive;
+        return null;
+      }
+    }
+  }
+
+  private workflowStatusText(status: WorkflowStatus): string {
+    switch (status) {
+      case 'BROUILLON':
+        return 'Brouillon';
+      case 'SOUMIS':
+        return 'Soumis';
+      case 'VALIDEE_COORDONNATEUR':
+        return 'Validé coordonnateur';
+      case 'VALIDEE_SUPERVISEUR':
+        return 'Validé superviseur';
+      case 'VALIDEE_CENTRALE':
+        return 'Validé central';
+      case 'REJETE':
+        return 'Rejeté';
+      case 'RETOURNE':
+        return 'Retourné';
+      default: {
+        const _exhaustive: never = status;
+        return _exhaustive;
+      }
+    }
+  }
+
+  private workflowSuccessMessage(action: 'soumettre' | 'valider' | WorkflowDecisionAction): string {
+    switch (action) {
+      case 'soumettre':
+        return 'Donnée soumise pour validation.';
+      case 'valider':
+        return 'Validation effectuée.';
+      case 'rejeter':
+        return 'Donnée rejetée.';
+      case 'retourner':
+        return 'Donnée retournée pour correction.';
+      default: {
+        const _exhaustive: never = action;
+        return _exhaustive;
+      }
+    }
+  }
+
+  private nextWorkflowStatus(row: Record<string, unknown>): WorkflowStatus | null {
+    const feature = this.workflowFeature ?? this.permissionFeature;
+    if (feature && !this.auth.hasPermission(`${feature}:VALIDER`)) {
+      return null;
+    }
+    const status = this.workflowStatus(row);
+    if (status === 'SOUMIS' && this.hasValidatorRole(['COORDONNATEUR'])) {
+      return 'VALIDEE_COORDONNATEUR';
     }
     if (
-      this.bool(row['valideeCoordonnateur']) &&
-      !this.bool(row['valideeSuperviseur']) &&
+      status === 'VALIDEE_COORDONNATEUR' &&
       this.hasValidatorRole(['SUPERVISEUR'])
     ) {
-      return 'valider-superviseur';
+      return 'VALIDEE_SUPERVISEUR';
     }
     if (
-      this.bool(row['valideeSuperviseur']) &&
-      !this.bool(row['valideeCentrale']) &&
+      status === 'VALIDEE_SUPERVISEUR' &&
       this.hasValidatorRole(['SUPERVISEUR_AENF', 'DIRECTEUR'])
     ) {
-      return 'valider-centrale';
+      return 'VALIDEE_CENTRALE';
     }
     return null;
   }
@@ -1378,6 +1582,7 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
         this.lastSyncedAt = new Date();
         this.loading = false;
         this.loadStatsReferenceData();
+        this.loadWorkflowStatuses();
       },
       error: (err: HttpErrorResponse) => {
         this.errorMessage = formatHttpError(
@@ -1404,22 +1609,150 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
       (k) => !k.startsWith('_') && k !== 'hibernateLazyInitializer',
     );
     const hiddenIds = new Set<string>();
+    /** Clé primaire : jamais affichée en liste (évite la colonne « Réf. » / id brut). */
+    hiddenIds.add('id');
     for (const k of keys) {
+      const nestedFk = k.match(/^id([A-Z][\w]*)$/);
+      if (nestedFk) {
+        const rest = nestedFk[1];
+        const nestedKey = rest.charAt(0).toLowerCase() + rest.slice(1);
+        const nested = first[nestedKey];
+        if (nested != null && typeof nested === 'object' && !Array.isArray(nested)) {
+          hiddenIds.add(k);
+        }
+      }
       if (!k.startsWith('id') || k.length <= 2) continue;
       const suffix = k.slice(2);
       const labelCandidates = [`nom${suffix}`, `libelle${suffix}`, `label${suffix}`];
       if (labelCandidates.some((c) => c in first)) hiddenIds.add(k);
     }
     const visibleKeys = keys.filter((k) => !hiddenIds.has(k));
-    visibleKeys.sort();
-    this.filterableKeys = visibleKeys;
+    const workflowKeys = new Set([
+      'workflowStatut',
+      'workflowStatutLibelle',
+      'workflowEditable',
+      'workflowMotifRejet',
+      'workflowCommentaireRetour',
+      'workflowSoumisPar',
+      'workflowProprietaire',
+      'workflowDecidePar',
+      'workflowDateSoumission',
+      'workflowDateDecision',
+      'resourcePath',
+      'recordId',
+    ]);
+    const businessVisibleKeys = visibleKeys.filter((k) => !workflowKeys.has(k));
+    businessVisibleKeys.sort();
+    this.filterableKeys = businessVisibleKeys;
 
     const preferred = this.inputListColumnKeys ?? this.routeListColumnKeys;
     if (preferred != null && preferred.length > 0) {
-      this.columns = preferred.filter((k) => k in first);
+      this.columns = preferred.filter(
+        (k) => k in first && !hiddenIds.has(k) && !workflowKeys.has(k),
+      );
       return;
     }
-    this.columns = visibleKeys.slice(0, 18);
+    this.columns = businessVisibleKeys.slice(0, 18);
+  }
+
+  private loadWorkflowStatuses(): void {
+    if (!this.hasWorkflow || !this.apiPath || !this.rows.length) {
+      return;
+    }
+    const ids = this.rows
+      .map((row) => this.resolveRowId(row))
+      .filter((id): id is string | number => id != null)
+      .map((id) => String(id));
+    if (!ids.length) {
+      return;
+    }
+    this.http.get<Record<string, Record<string, unknown>>>(
+      `${this.apiBaseUrl}/api/saisie-workflows/statuses`,
+      {
+        params: {
+          resource: this.apiPath,
+          ids: ids.join(','),
+        },
+      },
+    ).subscribe({
+      next: (statuses) => {
+        this.rows = this.rows.map((row) => {
+          const id = this.resolveRowId(row);
+          const status = id == null ? null : statuses[String(id)];
+          return status ? { ...row, ...status } : row;
+        });
+        this.applyCommissionSaisieListFilter();
+        this.buildColumns();
+      },
+      error: () => {
+        /* silencieux : la liste reste disponible, sans statut transversal */
+      },
+    });
+  }
+
+  /**
+   * Conseiller : lignes dont il est propriétaire / soumissionnaire (ou brouillon sans propriétaire en base).
+   * Coordinateur et rôles de validation : hors brouillon, filtré par IEP lorsque l’utilisateur et la ligne ont un idIep.
+   */
+  private applyCommissionSaisieListFilter(): void {
+    if (!this.hasWorkflow || !this.workflowFeature) {
+      return;
+    }
+    const s = this.auth.currentSession;
+    if (!s) {
+      return;
+    }
+    if (this.auth.hasAnyRole(['ADMIN', 'SUPER_ADMIN', 'SUPER_ROOT'])) {
+      return;
+    }
+    this.rows = this.rows.filter((row) => this.rowVisibleForCommissionSession(row));
+  }
+
+  private rowVisibleForCommissionSession(row: Record<string, unknown>): boolean {
+    const s = this.auth.currentSession;
+    if (!s) {
+      return true;
+    }
+    const st = (row['workflowStatut'] as string | undefined) ?? 'BROUILLON';
+    const prop = row['workflowProprietaire'] as string | null | undefined;
+    const soum = row['workflowSoumisPar'] as string | null | undefined;
+    const rowIep = this.resolveRowIepId(row);
+    if (this.auth.hasRole('CONSEILLER')) {
+      if (prop === s.username || soum === s.username) {
+        return true;
+      }
+      return st === 'BROUILLON' && prop == null && soum == null;
+    }
+    if (
+      this.auth.hasAnyRole([
+        'COORDONNATEUR',
+        'SUPERVISEUR',
+        'SUPERVISEUR_AENF',
+        'DIRECTEUR',
+        'IEPP',
+      ])
+    ) {
+      if (st === 'BROUILLON') {
+        return false;
+      }
+      if (s.idIep != null && rowIep != null && rowIep !== s.idIep) {
+        return false;
+      }
+      return true;
+    }
+    return true;
+  }
+
+  private resolveRowIepId(row: Record<string, unknown>): number | null {
+    const v = row['idIep'];
+    if (typeof v === 'number' && Number.isFinite(v)) {
+      return v;
+    }
+    if (typeof v === 'string' && v.trim() !== '') {
+      const n = Number(v);
+      return Number.isFinite(n) ? n : null;
+    }
+    return null;
   }
 
   private columnLooksLikeBooleanFlag(columnKey: string | undefined): boolean {

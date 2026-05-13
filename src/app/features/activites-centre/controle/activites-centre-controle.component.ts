@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { unwrapListBody } from '@core/http/unwrap-spring-page';
 import { API_BASE_URL } from '@core/tokens/api-base-url.token';
+import { formatHttpError } from '@core/utils/http-error.util';
 import { Component, Inject, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { forkJoin } from 'rxjs';
@@ -49,7 +50,13 @@ type ControleRow = {
   valideeCentrale?: boolean | null;
   horairesFormation?: HoraireRow[] | null;
   kitsManuels?: KitRow[] | null;
+  workflowStatut?: string | null;
+  workflowStatutLibelle?: string | null;
+  workflowEditable?: boolean | null;
 };
+
+const WORKFLOW_RESOURCE = '/api/controle';
+const WORKFLOW_FEATURE = 'ACTIVITES_CENTRE_CONTROLE';
 
 type HoraireForm = {
   jourSemaine: string;
@@ -98,6 +105,7 @@ export class ActivitesCentreControleComponent implements OnInit {
   loading = false;
   saving = false;
   validatingId: number | null = null;
+  workflowSubmittingId: number | null = null;
   errorMessage: string | null = null;
   successMessage: string | null = null;
   searchText = '';
@@ -174,6 +182,7 @@ export class ActivitesCentreControleComponent implements OnInit {
         this.niveaux = unwrapListBody(niveaux) as Ref[];
         this.manuels = unwrapListBody(manuels) as Ref[];
         this.loading = false;
+        this.loadWorkflowStatuses();
       },
       error: (err: HttpErrorResponse) => {
         this.loading = false;
@@ -244,14 +253,21 @@ export class ActivitesCentreControleComponent implements OnInit {
     this.errorMessage = null;
     const request =
       this.formMode === 'edit' && this.editingId != null
-        ? this.http.put(`${this.apiBaseUrl}/api/controle/${this.editingId}`, payload)
-        : this.http.post(`${this.apiBaseUrl}/api/controle`, payload);
+        ? this.http.put<ControleRow>(`${this.apiBaseUrl}/api/controle/${this.editingId}`, payload)
+        : this.http.post<ControleRow>(`${this.apiBaseUrl}/api/controle`, payload);
 
     request.subscribe({
-      next: () => {
+      next: (body) => {
         this.saving = false;
         this.formOpen = false;
         this.successMessage = this.formMode === 'edit' ? 'Contrôle modifié.' : 'Contrôle enregistré.';
+        if (this.formMode === 'create' && body?.id != null) {
+          const newId = Number(body.id);
+          if (!Number.isNaN(newId)) {
+            this.claimWorkflowThenReload(newId);
+            return;
+          }
+        }
         this.reload();
       },
       error: (err: HttpErrorResponse) => {
@@ -279,6 +295,11 @@ export class ActivitesCentreControleComponent implements OnInit {
   validateRow(row: ControleRow): void {
     const step = this.nextValidationStep(row);
     if (row.id == null || step == null || this.validatingId != null) return;
+    if (step === 'valider-coordonnateur' && this.readWorkflowStatut(row) !== 'SOUMIS') {
+      this.errorMessage =
+        'Le conseiller doit d’abord soumettre la ligne pour validation (bouton Soumettre).';
+      return;
+    }
     this.validatingId = row.id;
     this.errorMessage = null;
     this.http.put(`${this.apiBaseUrl}/api/controle/${row.id}/${step}`, {}).subscribe({
@@ -319,10 +340,7 @@ export class ActivitesCentreControleComponent implements OnInit {
   }
 
   niveauxForSelectedAlpha(): Ref[] {
-    if (this.form.idAlpha == null) {
-      return this.niveaux;
-    }
-    return this.niveaux.filter((niveau) => niveau.alpha?.id === this.form.idAlpha);
+    return this.niveaux;
   }
 
   alphaLabel(row: ControleRow): string {
@@ -339,6 +357,11 @@ export class ActivitesCentreControleComponent implements OnInit {
     if (row.valideeCentrale) return 'Validé central';
     if (row.valideeSuperviseur) return 'Validé superviseur';
     if (row.valideeCoordonnateur) return 'Validé coordonnateur';
+    const st = this.readWorkflowStatut(row);
+    if (st === 'SOUMIS') return 'En attente coordonnateur';
+    if (st === 'RETOURNE') return 'Retourné pour correction';
+    if (st === 'REJETE') return 'Rejeté';
+    if (st === 'BROUILLON') return 'Brouillon (à soumettre)';
     return 'En attente coordonnateur';
   }
 
@@ -346,11 +369,51 @@ export class ActivitesCentreControleComponent implements OnInit {
     if (row.valideeCentrale) return 'badge-success';
     if (row.valideeSuperviseur) return 'badge-primary';
     if (row.valideeCoordonnateur) return 'badge-info';
+    const st = this.readWorkflowStatut(row);
+    if (st === 'REJETE') return 'badge-danger';
+    if (st === 'RETOURNE' || st === 'BROUILLON') return 'badge-warning';
+    if (st === 'SOUMIS') return 'badge-secondary';
     return 'badge-secondary';
   }
 
   isLocked(row: ControleRow): boolean {
-    return Boolean(row.valideeCoordonnateur || row.valideeSuperviseur || row.valideeCentrale);
+    if (Boolean(row.valideeCoordonnateur || row.valideeSuperviseur || row.valideeCentrale)) {
+      return true;
+    }
+    return this.isTransversalWorkflowLocked(row);
+  }
+
+  canSubmitWorkflow(row: ControleRow): boolean {
+    if (row.id == null || this.workflowSubmittingId != null) return false;
+    if (!this.auth.hasPermission(`${WORKFLOW_FEATURE}:MODIFIER`)) return false;
+    const st = this.readWorkflowStatut(row);
+    return st === 'BROUILLON' || st === 'RETOURNE';
+  }
+
+  submitWorkflow(row: ControleRow): void {
+    const id = row.id;
+    if (id == null || this.workflowSubmittingId != null) return;
+    this.workflowSubmittingId = id;
+    this.errorMessage = null;
+    this.http
+      .put<unknown>(`${this.apiBaseUrl}/api/saisie-workflows/soumettre`, {}, {
+        params: {
+          resource: WORKFLOW_RESOURCE,
+          recordId: String(id),
+          feature: WORKFLOW_FEATURE,
+        },
+      })
+      .subscribe({
+        next: () => {
+          this.workflowSubmittingId = null;
+          this.successMessage = 'Donnée soumise pour validation.';
+          this.reload();
+        },
+        error: (err: unknown) => {
+          this.workflowSubmittingId = null;
+          this.errorMessage = formatHttpError(err, 'Soumission refusée.');
+        },
+      });
   }
 
   canValidateRow(row: ControleRow): boolean {
@@ -450,7 +513,10 @@ export class ActivitesCentreControleComponent implements OnInit {
 
   private nextValidationStep(row: ControleRow): string | null {
     if (!this.canValidate) return null;
-    if (!row.valideeCoordonnateur && this.hasValidatorRole(['COORDONNATEUR'])) return 'valider-coordonnateur';
+    if (!row.valideeCoordonnateur && this.hasValidatorRole(['COORDONNATEUR'])) {
+      if (this.readWorkflowStatut(row) !== 'SOUMIS') return null;
+      return 'valider-coordonnateur';
+    }
     if (row.valideeCoordonnateur && !row.valideeSuperviseur && this.hasValidatorRole(['SUPERVISEUR'])) {
       return 'valider-superviseur';
     }
@@ -458,6 +524,64 @@ export class ActivitesCentreControleComponent implements OnInit {
       return 'valider-centrale';
     }
     return null;
+  }
+
+  private loadWorkflowStatuses(): void {
+    const ids = this.rows
+      .map((r) => r.id)
+      .filter((id): id is number => id != null && Number.isFinite(Number(id)))
+      .map((id) => String(id));
+    if (!ids.length) return;
+    this.http
+      .get<Record<string, Record<string, unknown>>>(`${this.apiBaseUrl}/api/saisie-workflows/statuses`, {
+        params: {
+          resource: WORKFLOW_RESOURCE,
+          ids: ids.join(','),
+        },
+      })
+      .subscribe({
+        next: (statuses) => {
+          this.rows = this.rows.map((row) => {
+            const id = row.id;
+            const st = id == null ? null : statuses[String(id)];
+            return st ? { ...row, ...st } : row;
+          });
+        },
+        error: () => {
+          /* liste utilisable sans enrichissement workflow */
+        },
+      });
+  }
+
+  private claimWorkflowThenReload(recordId: number): void {
+    this.http
+      .post<unknown>(
+        `${this.apiBaseUrl}/api/saisie-workflows/claim`,
+        {},
+        {
+          params: {
+            resource: WORKFLOW_RESOURCE,
+            recordId: String(recordId),
+            feature: WORKFLOW_FEATURE,
+          },
+        },
+      )
+      .subscribe({
+        next: () => this.reload(),
+        error: () => this.reload(),
+      });
+  }
+
+  private readWorkflowStatut(row: ControleRow): string | null {
+    const raw = row.workflowStatut;
+    if (typeof raw !== 'string' || !raw.trim()) return null;
+    return raw.trim();
+  }
+
+  private isTransversalWorkflowLocked(row: ControleRow): boolean {
+    const st = this.readWorkflowStatut(row);
+    if (st == null) return false;
+    return st !== 'BROUILLON' && st !== 'RETOURNE';
   }
 
   private hasValidatorRole(roles: string[]): boolean {

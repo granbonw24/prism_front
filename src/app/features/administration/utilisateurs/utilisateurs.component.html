@@ -22,6 +22,71 @@
       </div>
 
       <div *ngIf="!loading && !errorMessage">
+        <div class="card border bg-light mb-3 mena-users-filters">
+          <div class="card-body py-3">
+            <div class="form-row align-items-end">
+              <div class="form-group col-lg-4 col-md-6 mb-2 mb-lg-0">
+                <label class="small font-weight-bold text-muted mb-1 d-block" for="users-list-search">Recherche</label>
+                <div class="input-group input-group-sm">
+                  <div class="input-group-prepend">
+                    <span class="input-group-text bg-white" aria-hidden="true"><i class="fas fa-search text-muted"></i></span>
+                  </div>
+                  <input
+                    id="users-list-search"
+                    type="search"
+                    class="form-control"
+                    placeholder="Username ou e-mail…"
+                    [(ngModel)]="listSearchText"
+                    (ngModelChange)="onListSearchChange()"
+                    [disabled]="saving"
+                    autocomplete="off"
+                  />
+                </div>
+              </div>
+              <div class="form-group col-md-4 col-lg-3 mb-2 mb-lg-0">
+                <label class="small font-weight-bold text-muted mb-1 d-block" for="users-filter-role">Rôle</label>
+                <select
+                  id="users-filter-role"
+                  class="form-control form-control-sm"
+                  [(ngModel)]="listFilterRoleId"
+                  (ngModelChange)="applyListFilters()"
+                  [disabled]="saving"
+                >
+                  <option [ngValue]="null">Tous les rôles</option>
+                  <option *ngFor="let r of roles; trackBy: trackRoleById" [ngValue]="r.id">
+                    {{ r.libelleRole ?? r.codeRole ?? r.id }}
+                  </option>
+                </select>
+              </div>
+              <div class="form-group col-md-4 col-lg-3 mb-2 mb-lg-0">
+                <label class="small font-weight-bold text-muted mb-1 d-block" for="users-filter-actif">État</label>
+                <select
+                  id="users-filter-actif"
+                  class="form-control form-control-sm"
+                  [(ngModel)]="listFilterActif"
+                  (ngModelChange)="applyListFilters()"
+                  [disabled]="saving"
+                >
+                  <option ngValue="all">Tous les états</option>
+                  <option ngValue="yes">Actifs uniquement</option>
+                  <option ngValue="no">Inactifs uniquement</option>
+                </select>
+              </div>
+              <div class="form-group col-lg-2 col-md-12 mb-0 text-md-right">
+                <button
+                  type="button"
+                  class="btn btn-sm btn-outline-secondary"
+                  (click)="clearListFilters()"
+                  [disabled]="saving || !hasActiveListFilters"
+                  title="Effacer recherche et filtres"
+                >
+                  Réinitialiser
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div class="table-responsive">
           <table class="table table-bordered align-middle">
             <thead class="thead-light">
@@ -32,7 +97,7 @@
               </tr>
             </thead>
             <tbody>
-              <tr *ngFor="let u of users">
+              <tr *ngFor="let u of users; trackBy: trackUserById">
                 <td>
                   <div class="d-flex align-items-start justify-content-between" style="gap: 0.75rem;">
                     <div style="min-width: 0;">
@@ -143,8 +208,8 @@
 
 <!-- Modal Ajouter -->
 <div *ngIf="createOpen" class="modal fade show d-block" tabindex="-1" role="dialog" aria-modal="true">
-  <div class="modal-dialog modal-lg" role="document">
-    <div class="modal-content mena-modal">
+  <div class="modal-dialog modal-lg mena-user-form-modal-dialog" role="document">
+    <div class="modal-content mena-modal mena-user-form-modal-content">
       <div class="modal-header">
         <h5 class="modal-title">Ajouter un utilisateur</h5>
         <button type="button" class="close" aria-label="Close" (click)="closeCreate()">
@@ -316,8 +381,8 @@
 
 <!-- Modal Modifier -->
 <div *ngIf="editUserId != null" class="modal fade show d-block" tabindex="-1" role="dialog" aria-modal="true">
-  <div class="modal-dialog modal-lg" role="document">
-    <div class="modal-content mena-modal">
+  <div class="modal-dialog modal-lg mena-user-form-modal-dialog" role="document">
+    <div class="modal-content mena-modal mena-user-form-modal-content">
       <div class="modal-header">
         <h5 class="modal-title">Modifier utilisateur</h5>
         <button type="button" class="close" aria-label="Close" (click)="closeEdit()">

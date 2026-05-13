@@ -21,6 +21,8 @@ export interface ReferentielRouteData {
   menuGroup: ReferentielMenuGroupId;
   /** Chemin relatif depuis l’origine API (ex. `/api/anneescolaire`). */
   apiPath: string;
+  permissionFeature?: string;
+  workflowFeature?: string;
   createFields?: ReferentielFormField[];
   /** Surcharges de libellés de colonnes (clé JSON → libellé affiché). */
   columnLabels?: Record<string, string>;
@@ -176,6 +178,8 @@ export const REFERENTIEL_ROUTE_DATA: ReferentielRouteData[] = [
     title: 'Documents',
     menuGroup: 'documents',
     apiPath: '/api/documents',
+    permissionFeature: 'SAISIE_DONNEES',
+    workflowFeature: 'SAISIE_DONNEES',
     createFields: [
       F('idNatureDocument', 'Nature du document', 'select', {
         required: true,
@@ -385,6 +389,8 @@ export const REFERENTIEL_ROUTE_DATA: ReferentielRouteData[] = [
     title: 'Matériel alpha',
     menuGroup: 'pedagogie',
     apiPath: '/api/materielalpha',
+    permissionFeature: 'SAISIE_DONNEES',
+    workflowFeature: 'SAISIE_DONNEES',
     createFields: [
       F('idCentre', 'Centre alpha', 'select', {
         required: true,
@@ -502,12 +508,6 @@ export const REFERENTIEL_ROUTE_DATA: ReferentielRouteData[] = [
     menuGroup: 'pedagogie',
     apiPath: '/api/niveaualpha',
     createFields: [
-      F('idCentre', 'Centre alpha', 'select', {
-        required: true,
-        optionsApiPath: '/api/alpha',
-        optionValueKey: 'idCentre',
-        optionLabelKeys: ['codeType', 'libelle', 'codeCentre'],
-      }),
       F('libelleNiveauAlpha', 'Libellé niveau', 'text', {
         required: true,
         maxLength: 100,

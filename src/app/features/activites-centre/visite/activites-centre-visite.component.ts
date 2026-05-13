@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import { unwrapListBody } from '@core/http/unwrap-spring-page';
+import { formatHttpError } from '@core/utils/http-error.util';
 import { API_BASE_URL } from '@core/tokens/api-base-url.token';
 import type { SpringPage } from '@models/centre';
 import type { VisitePayload, VisiteRow, VisiteSuiviMode } from '@models/visite';
@@ -114,6 +115,13 @@ const API_PATH_BY_MODE: Record<VisiteSuiviMode, string> = {
   centrale: '/api/suivi-superviseur',
 };
 
+/** Workflow transversal (saisie_workflow) pour les points de visite conseiller. */
+const VISITE_WORKFLOW_RESOURCE = '/api/visite';
+const VISITE_WORKFLOW_FEATURE_SUBMIT = 'POINTS_VISITES';
+const VISITE_WORKFLOW_FEATURE_COORD = 'VALIDATION_VISITES_CONSEILLER';
+
+type WorkflowDecisionAction = 'rejeter' | 'retourner';
+
 @Component({
   selector: 'app-activites-centre-visite',
   standalone: true,
@@ -138,6 +146,13 @@ export class ActivitesCentreVisiteComponent implements OnInit {
   editTarget: VisiteRow | null = null;
   deleteTarget: VisiteRow | null = null;
   validationTarget: VisiteRow | null = null;
+  workflowSubmittingId: number | null = null;
+  workflowDecisionOpen = false;
+  workflowDecisionAction: WorkflowDecisionAction | null = null;
+  workflowDecisionTarget: CentralRow | null = null;
+  workflowDecisionText = '';
+  workflowDecisionError: string | null = null;
+
   form: VisitePayload = this.emptyForm();
   formMode: VisiteFormMode = 'suivi';
 
@@ -263,6 +278,7 @@ export class ActivitesCentreVisiteComponent implements OnInit {
         this.rows = (unwrapListBody(visites) as VisiteRow[]).sort((a, b) => Number(a.id ?? 0) - Number(b.id ?? 0));
         this.alphas = unwrapListBody(alphas) as AlphaOption[];
         this.loading = false;
+        this.loadVisiteWorkflowStatuses();
       },
       error: (err) => this.onError(err),
     });
@@ -428,13 +444,21 @@ export class ActivitesCentreVisiteComponent implements OnInit {
       : this.http.put<VisiteRow>(`${this.apiBaseUrl}${this.apiPath()}/${encodeURIComponent(String(editId))}`, apiPayload);
 
     request$.subscribe({
-      next: () => {
+      next: (created) => {
         this.saving = false;
         this.createOpen = false;
         this.editTarget = null;
         this.form = this.emptyForm();
         const label = this.formMode === 'points' ? 'Points des visites' : 'Suivi de visite';
         this.successMessage = editId == null ? `${label} créé.` : `${label} mis à jour.`;
+        const newId =
+          this.formMode === 'points' && this.mode === 'conseiller' && editId == null && created?.id != null
+            ? Number(created.id)
+            : null;
+        if (newId != null && !Number.isNaN(newId)) {
+          this.claimVisiteWorkflowThenReload(newId);
+          return;
+        }
         this.reload();
       },
       error: (err) => {
@@ -521,7 +545,13 @@ export class ActivitesCentreVisiteComponent implements OnInit {
       return 'Validé';
     }
     if (this.mode === 'conseiller') {
-      return row.valideeCoordonnateur ? 'Validé coordonnateur' : 'En attente coordonnateur';
+      if (row.valideeCoordonnateur) return 'Validé coordonnateur';
+      const st = this.readWorkflowStatut(row);
+      if (st === 'SOUMIS') return 'En attente coordonnateur';
+      if (st === 'RETOURNE') return 'Retourné pour correction';
+      if (st === 'REJETE') return 'Rejeté';
+      if (st === 'BROUILLON') return 'Brouillon (à soumettre)';
+      return 'En attente coordonnateur';
     }
     if (this.mode === 'iepp') {
       return row.valideeIepp ? 'Validé IEPP' : 'En attente IEPP';
@@ -534,10 +564,19 @@ export class ActivitesCentreVisiteComponent implements OnInit {
 
   validationIndicatorClass(row: CentralRow): string {
     if (this.mode === 'centrale' || this.isRowValidated(row)) {
-      if (row.centralSource === 'Coordonnateur' || this.mode === 'conseiller') return 'validation-badge validation-coordonnateur';
+      if (row.centralSource === 'Coordonnateur' || this.mode === 'conseiller')
+        return 'validation-badge validation-coordonnateur';
       if (row.centralSource === 'IEPP' || this.mode === 'iepp') return 'validation-badge validation-iepp';
-      if (row.centralSource === 'Superviseur' || this.mode === 'superviseur') return 'validation-badge validation-superviseur';
+      if (row.centralSource === 'Superviseur' || this.mode === 'superviseur')
+        return 'validation-badge validation-superviseur';
       return 'validation-badge validation-ok';
+    }
+    if (this.mode === 'conseiller') {
+      const st = this.readWorkflowStatut(row);
+      if (st === 'REJETE') return 'validation-badge validation-rejet';
+      if (st === 'RETOURNE') return 'validation-badge validation-brouillon';
+      if (st === 'BROUILLON') return 'validation-badge validation-brouillon';
+      if (st === 'SOUMIS') return 'validation-badge validation-pending';
     }
     return 'validation-badge validation-pending';
   }
@@ -573,7 +612,8 @@ export class ActivitesCentreVisiteComponent implements OnInit {
   }
 
   isConseillerLocked(row: VisiteRow): boolean {
-    return Boolean(row.valideeCoordonnateur);
+    const r = row as CentralRow;
+    return Boolean(row.valideeCoordonnateur) || !this.isPointsWorkflowEditable(r);
   }
 
   isSuiviLocked(row: VisiteRow): boolean {
@@ -584,8 +624,13 @@ export class ActivitesCentreVisiteComponent implements OnInit {
   }
 
   lockReason(row: VisiteRow): string {
-    if (this.mode === 'conseiller' && row.valideeCoordonnateur) {
-      return 'Modification impossible : le coordonnateur a déjà validé cette visite.';
+    if (this.mode === 'conseiller') {
+      if (row.valideeCoordonnateur) {
+        return 'Modification impossible : le coordonnateur a déjà validé cette visite.';
+      }
+      if (!this.isPointsWorkflowEditable(row as CentralRow)) {
+        return 'Modification impossible : la donnée est soumise ou en cours de validation.';
+      }
     }
     if (this.mode === 'iepp' && row.valideeIepp) {
       return 'Modification impossible : le suivi IEPP est déjà validé.';
@@ -598,27 +643,61 @@ export class ActivitesCentreVisiteComponent implements OnInit {
 
   validateRow(row: VisiteRow): void {
     if (row.id == null || this.saving) return;
-    const path = this.mode === 'conseiller' ? `${this.apiPath()}/${row.id}/valider-coordonnateur` : `${this.apiPath()}/${row.id}/valider`;
+    const id = row.id;
     this.saving = true;
     this.errorMessage = null;
     this.successMessage = null;
-    this.http.put<VisiteRow>(`${this.apiBaseUrl}${path}`, {}).subscribe({
-      next: () => {
+
+    const finalizeOk = (): void => {
+      this.saving = false;
+      this.validationTarget = null;
+      this.successMessage = 'Validation effectuée.';
+      this.reload();
+    };
+    const finalizeErr = (err: unknown): void => {
+      this.saving = false;
+      this.validationTarget = null;
+      this.errorMessage = this.formatError(err);
+    };
+
+    if (this.mode === 'conseiller') {
+      const st = this.readWorkflowStatut(row as CentralRow);
+      const pathCoord = `${this.apiBaseUrl}${this.apiPath()}/${id}/valider-coordonnateur`;
+      if (st !== 'SOUMIS') {
         this.saving = false;
         this.validationTarget = null;
-        this.successMessage = 'Validation effectuée.';
-        this.reload();
-      },
-      error: (err) => {
+        this.errorMessage =
+          'Le conseiller doit d’abord soumettre la ligne pour validation (bouton Soumettre).';
+        return;
+      }
+      if (!this.canValidateCoordonnateur) {
         this.saving = false;
         this.validationTarget = null;
-        this.errorMessage = this.formatError(err);
-      },
+        this.errorMessage = 'Vous n’avez pas la permission de valider cette ligne.';
+        return;
+      }
+      this.http.put<VisiteRow>(pathCoord, {}).subscribe({
+        next: () => finalizeOk(),
+        error: (err) => finalizeErr(err),
+      });
+      return;
+    }
+
+    const path = `${this.apiBaseUrl}${this.apiPath()}/${id}/valider`;
+    this.http.put<VisiteRow>(path, {}).subscribe({
+      next: () => finalizeOk(),
+      error: (err) => finalizeErr(err),
     });
   }
 
   canValidateRow(row: VisiteRow): boolean {
-    return (this.canValidateCoordonnateur || this.canValidateSuivi) && !this.isRowValidated(row);
+    if (!(this.canValidateCoordonnateur || this.canValidateSuivi) || this.isRowValidated(row)) {
+      return false;
+    }
+    if (this.mode === 'conseiller' && this.canValidateCoordonnateur) {
+      return this.readWorkflowStatut(row as CentralRow) === 'SOUMIS';
+    }
+    return true;
   }
 
   isRowValidated(row: VisiteRow): boolean {
@@ -637,11 +716,198 @@ export class ActivitesCentreVisiteComponent implements OnInit {
     return `rating-${value.toLowerCase()}`;
   }
 
+  isDeleteLocked(row: VisiteRow): boolean {
+    if (this.mode === 'conseiller') {
+      return this.isConseillerLocked(row);
+    }
+    return this.isSuiviLocked(row);
+  }
+
   deleteTargetLabel(): string {
     if (!this.deleteTarget) {
       return '';
     }
     return `${this.alphaLabel(this.deleteTarget)} (#${this.deleteTarget.id ?? '—'})`;
+  }
+
+  canSubmitVisiteWorkflow(row: CentralRow): boolean {
+    if (this.mode !== 'conseiller' || this.saving || row.id == null) {
+      return false;
+    }
+    if (!this.auth.hasPermission(`${VISITE_WORKFLOW_FEATURE_SUBMIT}:MODIFIER`)) {
+      return false;
+    }
+    if (this.workflowSubmittingId != null && this.workflowSubmittingId === row.id) {
+      return false;
+    }
+    const st = this.readWorkflowStatut(row);
+    return st === 'BROUILLON' || st === 'RETOURNE';
+  }
+
+  submitVisiteWorkflow(row: CentralRow): void {
+    const id = row.id;
+    if (id == null || this.workflowSubmittingId != null) {
+      return;
+    }
+    this.workflowSubmittingId = id;
+    this.errorMessage = null;
+    this.http
+      .put<unknown>(`${this.apiBaseUrl}/api/saisie-workflows/soumettre`, {}, {
+        params: {
+          resource: VISITE_WORKFLOW_RESOURCE,
+          recordId: String(id),
+          feature: VISITE_WORKFLOW_FEATURE_SUBMIT,
+        },
+      })
+      .subscribe({
+        next: () => {
+          this.workflowSubmittingId = null;
+          this.successMessage = 'Donnée soumise pour validation.';
+          this.reload();
+        },
+        error: (err: unknown) => {
+          this.workflowSubmittingId = null;
+          this.errorMessage = formatHttpError(err, 'Soumission refusée.');
+        },
+      });
+  }
+
+  canRejectOrReturnVisiteWorkflow(row: CentralRow): boolean {
+    if (this.mode !== 'conseiller' || !this.canValidateCoordonnateur || this.workflowSubmittingId != null) {
+      return false;
+    }
+    return this.readWorkflowStatut(row) === 'SOUMIS';
+  }
+
+  openWorkflowDecisionVisite(row: CentralRow, action: WorkflowDecisionAction): void {
+    if (!this.canRejectOrReturnVisiteWorkflow(row)) {
+      return;
+    }
+    this.workflowDecisionOpen = true;
+    this.workflowDecisionAction = action;
+    this.workflowDecisionTarget = row;
+    this.workflowDecisionText = '';
+    this.workflowDecisionError = null;
+  }
+
+  closeWorkflowDecisionVisite(): void {
+    this.workflowDecisionOpen = false;
+    this.workflowDecisionAction = null;
+    this.workflowDecisionTarget = null;
+    this.workflowDecisionText = '';
+    this.workflowDecisionError = null;
+  }
+
+  confirmWorkflowDecisionVisite(): void {
+    if (!this.workflowDecisionTarget || !this.workflowDecisionAction) {
+      return;
+    }
+    const text = this.workflowDecisionText.trim();
+    if (this.workflowDecisionAction === 'rejeter' && !text) {
+      this.workflowDecisionError = 'Le motif de rejet est obligatoire.';
+      return;
+    }
+    const payload =
+      this.workflowDecisionAction === 'rejeter' ? { motif: text } : { commentaire: text || null };
+    const id = this.workflowDecisionTarget.id;
+    if (id == null) {
+      return;
+    }
+    const actionKind = this.workflowDecisionAction;
+    this.workflowSubmittingId = id;
+    this.workflowDecisionError = null;
+    const actionPath = this.workflowDecisionAction === 'rejeter' ? 'rejeter' : 'retourner';
+    this.http
+      .put<unknown>(`${this.apiBaseUrl}/api/saisie-workflows/${actionPath}`, payload, {
+        params: {
+          resource: VISITE_WORKFLOW_RESOURCE,
+          recordId: String(id),
+          feature: VISITE_WORKFLOW_FEATURE_COORD,
+        },
+      })
+      .subscribe({
+        next: () => {
+          this.workflowSubmittingId = null;
+          this.closeWorkflowDecisionVisite();
+          this.successMessage =
+            actionKind === 'rejeter' ? 'Donnée rejetée.' : 'Donnée retournée pour correction.';
+          this.reload();
+        },
+        error: (err: unknown) => {
+          this.workflowSubmittingId = null;
+          this.workflowDecisionError = formatHttpError(err, 'Action refusée.');
+        },
+      });
+  }
+
+  private loadVisiteWorkflowStatuses(): void {
+    if (this.mode !== 'conseiller' || !this.rows.length) {
+      return;
+    }
+    const ids = this.rows
+      .map((r) => r.id)
+      .filter((id): id is number => id != null && Number.isFinite(Number(id)))
+      .map((id) => String(id));
+    if (!ids.length) {
+      return;
+    }
+    this.http
+      .get<Record<string, Record<string, unknown>>>(`${this.apiBaseUrl}/api/saisie-workflows/statuses`, {
+        params: {
+          resource: VISITE_WORKFLOW_RESOURCE,
+          ids: ids.join(','),
+        },
+      })
+      .subscribe({
+        next: (statuses) => {
+          this.rows = this.rows.map((row) => {
+            const id = row.id;
+            const st = id == null ? null : statuses[String(id)];
+            return st ? { ...row, ...st } : row;
+          });
+        },
+        error: () => {
+          /* liste utilisable sans statut workflow */
+        },
+      });
+  }
+
+  private claimVisiteWorkflowThenReload(recordId: number): void {
+    this.http
+      .post<unknown>(
+        `${this.apiBaseUrl}/api/saisie-workflows/claim`,
+        {},
+        {
+          params: {
+            resource: VISITE_WORKFLOW_RESOURCE,
+            recordId: String(recordId),
+            feature: VISITE_WORKFLOW_FEATURE_SUBMIT,
+          },
+        },
+      )
+      .subscribe({
+        next: () => this.reload(),
+        error: () => this.reload(),
+      });
+  }
+
+  private readWorkflowStatut(row: CentralRow): string | null {
+    const raw = row.workflowStatut;
+    if (typeof raw !== 'string' || !raw.trim()) {
+      return null;
+    }
+    return raw.trim();
+  }
+
+  private isPointsWorkflowEditable(row: CentralRow): boolean {
+    if (this.mode !== 'conseiller') {
+      return true;
+    }
+    const editable = row.workflowEditable;
+    if (typeof editable === 'boolean') {
+      return editable;
+    }
+    return true;
   }
 
   private onError(err: unknown): void {

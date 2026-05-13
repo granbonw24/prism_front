@@ -680,6 +680,7 @@ export class AlphaCentresComponent {
       this.selectedNiveauAlphaOptionIds = this.selectedNiveauAlphaOptionIds.filter((id) => id !== option.id);
     }
     this.model.niveaux = this.selectedNiveauAlphaOptions().map((selected) => ({
+      niveauAlphaId: selected.id,
       codeNiveauAlpha: selected.code ?? null,
       libelleNiveauAlpha: selected.libelle ?? this.refOptionLibelle(selected),
     }));
@@ -1335,6 +1336,7 @@ export class AlphaCentresComponent {
   private buildAlphaNiveauxPayloadFromIds(ids: number[]): AlphaNiveauPayload[] {
     return this.alphaNiveauOptionsForIds(ids)
       .map((option) => ({
+        niveauAlphaId: option.id,
         codeNiveauAlpha: option.code?.trim() || null,
         libelleNiveauAlpha: String(option.libelle ?? this.refOptionLibelle(option)).trim(),
       }));
@@ -1343,6 +1345,11 @@ export class AlphaCentresComponent {
   private alphaNiveauOptionIdsFromDetails(niveaux: CentreNiveauDetails[]): number[] {
     const ids: number[] = [];
     for (const niveau of niveaux) {
+      if (niveau.niveauId != null) {
+        const foundById = this.niveauAlphaOptions.find((option) => option.id === niveau.niveauId);
+        if (foundById && !ids.includes(foundById.id)) ids.push(foundById.id);
+        continue;
+      }
       const libelle = String(niveau.libelleNiveau ?? '').trim().toLowerCase();
       const code = String(niveau.codeNiveau ?? '').trim().toLowerCase();
       const found = this.niveauAlphaOptions.find((option) => {

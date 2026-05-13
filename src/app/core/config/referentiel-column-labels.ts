@@ -5,7 +5,6 @@ import { tryEffectifColumnLabel } from '@core/config/effectif-column-labels';
  * Les clés absentes passent par {@link humanizeApiPropertyKey}.
  */
 export const REFERENTIEL_COLUMN_LABELS: Record<string, string> = {
-  id: 'Réf.',
   code: 'Code',
   libelle: 'Libellé',
   existe: 'Existe',

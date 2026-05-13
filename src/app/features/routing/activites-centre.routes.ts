@@ -49,6 +49,7 @@ export const activitesCentreFeatureRoutes: Routes = [
       subtitle: 'Appuis et partenariats rattachés aux centres.',
       apiPath: '/api/appui-partenaire',
       permissionFeature: 'ACTIVITES_CENTRE_PARTENARIAT',
+      workflowFeature: 'ACTIVITES_CENTRE_PARTENARIAT',
       listColumnKeys: ['centre', 'partenaire', 'categorieAppui', 'codeAppuiPartenaire', 'libelleAppuiPartenaire'],
       createFields: [
         F('idCentre', 'Centre', 'select', {
