@@ -10,14 +10,12 @@ import {
   Validators,
 } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
-import { forkJoin, Subscription } from 'rxjs';
+import { Subscription } from 'rxjs';
 import type { ReferentielFormField } from '@core/config/referentiel-form.types';
-import type { ContextChartPanel, ListStatsContext } from '@core/config/list-stats-context.types';
 import { resolveColumnHeaderLabel } from '@core/config/referentiel-column-labels';
 import { API_BASE_URL } from '@core/tokens/api-base-url.token';
 import { formatHttpError } from '@core/utils/http-error.util';
 import { ConfirmDeleteComponent } from '@shared/confirm-delete/confirm-delete.component';
-import { MenaChartComponent } from '@shared/mena-chart/mena-chart.component';
 import { AuthService } from '@services/auth.service';
 
 /**
@@ -40,7 +38,7 @@ type WorkflowDecisionAction = 'rejeter' | 'retourner';
 @Component({
   selector: 'app-referentiel-list-page',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, FormsModule, MenaChartComponent, ConfirmDeleteComponent],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule, ConfirmDeleteComponent],
   templateUrl: './referentiel-list-page.component.html',
   styleUrl: './referentiel-list-page.component.css',
 })
@@ -58,11 +56,6 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
   @Output() addFormContextValueChange = new EventEmitter<string>();
 
   /**
-   * Statistiques / filtres contextualisés (effectif : centres, périodes, années…).
-   * Null = comportement liste simple (référentiel générique).
-   */
-  @Input() inputStatsContext: ListStatsContext | null = null;
-  /**
    * Colonnes affichées dans le tableau (ordre conservé). Si absent, comportement par défaut
    * (échantillon des clés API, max 18). Les autres champs restent visibles dans le formulaire détail.
    */
@@ -72,6 +65,8 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
    * avec zone interne défilante (voir menus Apprenant / effectif centre).
    */
   @Input() inputEffectifDenseForm = false;
+  /** Menus multi-types (Alpha / CEC / CP / SIE) : sélecteur « Type de centre » visible dans la page. */
+  @Input() inputShowToolbarCentreTypeFilter = false;
 
   title = '';
   subtitle = '';
@@ -93,25 +88,6 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
   listPageIndex = 0;
   listPageSize = 20;
   readonly listPageSizeOptions = [10, 20, 50, 100, 200];
-
-  /** Filtres structurés (centre, période, année, niveau) */
-  filterCentreId = '';
-  filterSecondaryCentreId = '';
-  filterPeriodeId = '';
-  filterAnneeId = '';
-  filterNiveauId = '';
-
-  centreIdToLabel: Record<string, string> = {};
-  centreIdToCodeType: Record<string, string> = {};
-  secondaryCentreIdToLabel: Record<string, string> = {};
-  centreFilterOptions: Array<{ value: string; label: string }> = [];
-  secondaryCentreFilterOptions: Array<{ value: string; label: string }> = [];
-  periodeIdToLabel: Record<string, string> = {};
-  periodeFilterOptions: Array<{ value: string; label: string }> = [];
-  anneeIdToLabel: Record<string, string> = {};
-  anneeFilterOptions: Array<{ value: string; label: string }> = [];
-  niveauIdToLabel: Record<string, string> = {};
-  niveauFilterOptions: Array<{ value: string; label: string }> = [];
 
   /**
    * Colonne booléenne détectée (ex. etatAnneeScolaire, etatCampagne) pour la carte répartition ;
@@ -152,7 +128,6 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
 
   private dataSub?: Subscription;
   private loadSub?: Subscription;
-  private statsLoadSub?: Subscription;
   private optionSubs: Subscription[] = [];
   /** Clés utilisées pour le filtre texte (toutes les colonnes « métier », pas seulement l’affichage). */
   private filterableKeys: string[] = [];
@@ -195,8 +170,8 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
     if (!this.dataSub) {
       return;
     }
-    if (changes['inputStatsContext'] || changes['inputApiPath']) {
-      this.clearStructuredFilters();
+    if (changes['inputApiPath']) {
+      this.clearListFilter();
     }
     if (changes['inputCreateFields']) {
       this.fieldOptions = {};
@@ -230,7 +205,6 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
   ngOnDestroy(): void {
     this.dataSub?.unsubscribe();
     this.loadSub?.unsubscribe();
-    this.statsLoadSub?.unsubscribe();
     for (const s of this.optionSubs) s.unsubscribe();
   }
 
@@ -258,22 +232,8 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
     return !this.loading && this.etatStatsColumn != null;
   }
 
-  get hasStatsContext(): boolean {
-    return this.inputStatsContext != null;
-  }
-
-  get hasActiveStructuredFilter(): boolean {
-    return !!(
-      this.filterCentreId ||
-      this.filterSecondaryCentreId ||
-      this.filterPeriodeId ||
-      this.filterAnneeId ||
-      this.filterNiveauId
-    );
-  }
-
   get hasActiveFilter(): boolean {
-    return this.hasActiveStructuredFilter || !!this.listFilter?.trim();
+    return !!this.listFilter?.trim();
   }
 
   get canGoPrevListPage(): boolean {
@@ -285,15 +245,11 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
   }
 
   get filteredRows(): Record<string, unknown>[] {
-    let list = this.rows;
-    if (this.inputStatsContext) {
-      list = list.filter((row) => this.rowPassesStructuredFilters(row));
-    }
     const q = this.listFilter.trim().toLowerCase();
     if (!q) {
-      return list;
+      return this.rows;
     }
-    return list.filter((row) => this.rowMatchesFilter(row, q));
+    return this.rows.filter((row) => this.rowMatchesFilter(row, q));
   }
 
   get filteredRowCount(): number {
@@ -318,101 +274,6 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
 
   get pagedRows(): Record<string, unknown>[] {
     return this.filteredRows.slice(this.listPageStart, this.listPageEnd);
-  }
-
-  /** Graphiques (données filtrées = même périmètre que le tableau). */
-  get contextChartPanels(): ContextChartPanel[] {
-    const ctx = this.inputStatsContext;
-    if (!ctx || this.loading || this.errorMessage) {
-      return [];
-    }
-    const fr = this.filteredRows;
-    if (!fr.length) {
-      return [];
-    }
-    const panels: ContextChartPanel[] = [];
-    const maxBar = 12;
-
-    if (ctx.rowCentreIdKey && ctx.centresApiPath && Object.keys(this.centreIdToLabel).length) {
-      const agg = this.aggregateByRowKey(fr, ctx.rowCentreIdKey, this.centreIdToLabel, 'Centre inconnu');
-      if (agg.labels.length) {
-        panels.push({
-          title: `Enregistrements par centre (${ctx.scopeLabel})`,
-          kind: 'bar',
-          labels: agg.labels.slice(0, maxBar),
-          data: agg.data.slice(0, maxBar),
-        });
-      }
-      const typeMap = new Map<string, number>();
-      for (const row of fr) {
-        const centreIdVal: unknown = row[ctx.rowCentreIdKey!];
-        const sid = this.scalarIdFromCell(centreIdVal);
-        const ct = sid ? (this.centreIdToCodeType[sid] ?? '—') : '—';
-        typeMap.set(ct, (typeMap.get(ct) ?? 0) + 1);
-      }
-      const typeEntries = [...typeMap.entries()].sort((a, b) => b[1] - a[1]);
-      if (typeEntries.length) {
-        panels.push({
-          title: 'Répartition par code « type » de structure',
-          kind: 'doughnut',
-          labels: typeEntries.map((e) => e[0]),
-          data: typeEntries.map((e) => e[1]),
-        });
-      }
-    }
-
-    if (
-      panels.length < 3 &&
-      ctx.rowPeriodeIdKey &&
-      Object.keys(this.periodeIdToLabel).length &&
-      this.columns.includes(ctx.rowPeriodeIdKey)
-    ) {
-      const agg = this.aggregateByRowKey(fr, ctx.rowPeriodeIdKey, this.periodeIdToLabel, 'Période inconnue');
-      if (agg.labels.length) {
-        panels.push({
-          title: 'Répartition par période d’activité',
-          kind: 'doughnut',
-          labels: agg.labels,
-          data: agg.data,
-        });
-      }
-    }
-
-    if (
-      panels.length < 3 &&
-      ctx.rowAnneeIdKey &&
-      Object.keys(this.anneeIdToLabel).length &&
-      this.columns.includes(ctx.rowAnneeIdKey)
-    ) {
-      const agg = this.aggregateByRowKey(fr, ctx.rowAnneeIdKey, this.anneeIdToLabel, 'Année inconnue');
-      if (agg.labels.length) {
-        panels.push({
-          title: 'Enregistrements par année scolaire',
-          kind: 'bar',
-          labels: agg.labels,
-          data: agg.data,
-        });
-      }
-    }
-
-    if (
-      panels.length < 3 &&
-      ctx.rowNiveauIdKey &&
-      Object.keys(this.niveauIdToLabel).length &&
-      this.columns.includes(ctx.rowNiveauIdKey)
-    ) {
-      const agg = this.aggregateByRowKey(fr, ctx.rowNiveauIdKey, this.niveauIdToLabel, 'Niveau inconnu');
-      if (agg.labels.length) {
-        panels.push({
-          title: 'Enregistrements par niveau',
-          kind: 'bar',
-          labels: agg.labels,
-          data: agg.data,
-        });
-      }
-    }
-
-    return panels.slice(0, 3);
   }
 
   get countEtatActif(): number {
@@ -681,30 +542,6 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
     return '—';
   }
 
-  /** Extrait un identifiant scalaire pour filtres / agrégations (ref `{ id }` ou nombre / chaîne). */
-  private scalarIdFromCell(value: unknown): string {
-    if (value == null || value === '') {
-      return '';
-    }
-    if (typeof value === 'number' && Number.isFinite(value)) {
-      return String(value);
-    }
-    if (typeof value === 'string') {
-      return value.trim();
-    }
-    if (typeof value === 'object' && !Array.isArray(value)) {
-      const o = value as Record<string, unknown>;
-      const id = o['id'];
-      if (typeof id === 'number' && Number.isFinite(id)) {
-        return String(id);
-      }
-      if (typeof id === 'string' && id.trim() !== '') {
-        return id.trim();
-      }
-    }
-    return '';
-  }
-
   getFieldOptions(field: ReferentielFormField): Array<{ value: string | number; label: string }> {
     if (field.options?.length) {
       return field.options;
@@ -717,18 +554,8 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
     this.resetListPage();
   }
 
-  clearStructuredFilters(): void {
-    this.filterCentreId = '';
-    this.filterSecondaryCentreId = '';
-    this.filterPeriodeId = '';
-    this.filterAnneeId = '';
-    this.filterNiveauId = '';
-    this.resetListPage();
-  }
-
   clearAllListFilters(): void {
     this.clearListFilter();
-    this.clearStructuredFilters();
   }
 
   formatSyncTime(): string {
@@ -1193,295 +1020,6 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
     return out;
   }
 
-  private rowPassesStructuredFilters(row: Record<string, unknown>): boolean {
-    const ctx = this.inputStatsContext;
-    if (!ctx) {
-      return true;
-    }
-    if (ctx.rowCentreIdKey && this.filterCentreId) {
-      if (this.scalarIdFromCell(row[ctx.rowCentreIdKey]) !== this.filterCentreId) {
-        return false;
-      }
-    }
-    if (ctx.secondaryRowCentreIdKey && this.filterSecondaryCentreId) {
-      if (this.scalarIdFromCell(row[ctx.secondaryRowCentreIdKey]) !== this.filterSecondaryCentreId) {
-        return false;
-      }
-    }
-    if (ctx.rowPeriodeIdKey && this.filterPeriodeId) {
-      if (this.scalarIdFromCell(row[ctx.rowPeriodeIdKey]) !== this.filterPeriodeId) {
-        return false;
-      }
-    }
-    if (ctx.rowAnneeIdKey && this.filterAnneeId) {
-      if (this.scalarIdFromCell(row[ctx.rowAnneeIdKey]) !== this.filterAnneeId) {
-        return false;
-      }
-    }
-    if (ctx.rowNiveauIdKey && this.filterNiveauId) {
-      if (this.scalarIdFromCell(row[ctx.rowNiveauIdKey]) !== this.filterNiveauId) {
-        return false;
-      }
-    }
-    return true;
-  }
-
-  private aggregateByRowKey(
-    rows: Record<string, unknown>[],
-    rowKey: string,
-    labelById: Record<string, string>,
-    unknownLabel: string,
-  ): { labels: string[]; data: number[] } {
-    const map = new Map<string, number>();
-    for (const row of rows) {
-      const cellVal: unknown = row[rowKey];
-      const sid = this.scalarIdFromCell(cellVal);
-      const label = sid ? (labelById[sid] ?? `Id ${sid}`) : unknownLabel;
-      map.set(label, (map.get(label) ?? 0) + 1);
-    }
-    const entries = [...map.entries()].sort((a, b) => b[1] - a[1]);
-    return {
-      labels: entries.map((e) => e[0]),
-      data: entries.map((e) => e[1]),
-    };
-  }
-
-  private buildOptionsFromMap(m: Record<string, string>): Array<{ value: string; label: string }> {
-    return Object.entries(m)
-      .map(([value, label]) => ({ value, label }))
-      .sort((a, b) => a.label.localeCompare(b.label, 'fr'));
-  }
-
-  private ingestRefList(
-    rows: unknown,
-    valueKey: string,
-    labelKeys: string[],
-    target: Record<string, string>,
-  ): void {
-    const list = unwrapListBody(rows);
-    for (const raw of list) {
-      const row = raw as Record<string, unknown>;
-      const idRaw = row[valueKey];
-      if (typeof idRaw !== 'number' && typeof idRaw !== 'string') {
-        continue;
-      }
-      const sid = String(idRaw);
-      const parts: string[] = [];
-      for (const k of labelKeys) {
-        const v = row[k];
-        if (v == null) {
-          continue;
-        }
-        const s = String(v).trim();
-        if (s) {
-          parts.push(s);
-        }
-      }
-      target[sid] = parts.length ? parts.join(' · ') : sid;
-    }
-  }
-
-  private ingestCentreList(rows: unknown, ctx: ListStatsContext): void {
-    const list = unwrapListBody(rows);
-    const vk = ctx.centreOptionValueKey ?? 'id';
-    const lks = ctx.centreOptionLabelKeys ?? ['libelle', 'nom', 'code'];
-    for (const raw of list) {
-      const row = raw as Record<string, unknown>;
-      const idRaw = row[vk];
-      if (typeof idRaw !== 'number' && typeof idRaw !== 'string') {
-        continue;
-      }
-      const sid = String(idRaw);
-      const parts: string[] = [];
-      for (const k of lks) {
-        const v = row[k];
-        if (v == null) {
-          continue;
-        }
-        const s = String(v).trim();
-        if (s) {
-          parts.push(s);
-        }
-      }
-      this.centreIdToLabel[sid] = parts.length ? parts.join(' · ') : sid;
-      const ct = row['codeType'];
-      this.centreIdToCodeType[sid] =
-        ct != null && String(ct).trim() !== '' ? String(ct).trim() : '—';
-    }
-    this.centreFilterOptions = this.buildOptionsFromMap(this.centreIdToLabel);
-  }
-
-  private ingestSecondaryCentreList(rows: unknown, ctx: ListStatsContext): void {
-    const list = unwrapListBody(rows);
-    const vk = ctx.centreOptionValueKey ?? 'id';
-    const lks = ctx.centreOptionLabelKeys ?? ['libelle', 'nom', 'code'];
-    for (const raw of list) {
-      const row = raw as Record<string, unknown>;
-      const idRaw = row[vk];
-      if (typeof idRaw !== 'number' && typeof idRaw !== 'string') {
-        continue;
-      }
-      const sid = String(idRaw);
-      const parts: string[] = [];
-      for (const k of lks) {
-        const v = row[k];
-        if (v == null) {
-          continue;
-        }
-        const s = String(v).trim();
-        if (s) {
-          parts.push(s);
-        }
-      }
-      this.secondaryCentreIdToLabel[sid] = parts.length ? parts.join(' · ') : sid;
-    }
-    this.secondaryCentreFilterOptions = this.buildOptionsFromMap(this.secondaryCentreIdToLabel);
-  }
-
-  private loadStatsReferenceData(): void {
-    this.statsLoadSub?.unsubscribe();
-    this.centreIdToLabel = {};
-    this.centreIdToCodeType = {};
-    this.secondaryCentreIdToLabel = {};
-    this.centreFilterOptions = [];
-    this.secondaryCentreFilterOptions = [];
-    this.periodeIdToLabel = {};
-    this.periodeFilterOptions = [];
-    this.anneeIdToLabel = {};
-    this.anneeFilterOptions = [];
-    this.niveauIdToLabel = {};
-    this.niveauFilterOptions = [];
-
-    const ctx = this.inputStatsContext;
-    if (!ctx) {
-      return;
-    }
-
-    const req: Record<string, ReturnType<HttpClient['get']>> = {};
-    if (ctx.centresApiPath) {
-      req['centres'] = this.http.get<unknown>(`${this.apiBaseUrl}${ctx.centresApiPath}`, {
-        params: CENTRE_OPTIONS_PAGE_PARAMS,
-      });
-    }
-    const secPath = ctx.secondaryCentresApiPath;
-    const secSeparate =
-      !!ctx.secondaryRowCentreIdKey &&
-      !!secPath &&
-      secPath !== ctx.centresApiPath;
-    if (secSeparate) {
-      req['centres2'] = this.http.get<unknown>(`${this.apiBaseUrl}${secPath}`, {
-        params: CENTRE_OPTIONS_PAGE_PARAMS,
-      });
-    }
-    if (ctx.periodesApiPath) {
-      req['periodes'] = this.http.get<unknown[]>(`${this.apiBaseUrl}${ctx.periodesApiPath}`);
-    }
-    if (ctx.anneesApiPath) {
-      req['annees'] = this.http.get<unknown[]>(`${this.apiBaseUrl}${ctx.anneesApiPath}`);
-    }
-    if (ctx.niveauxApiPath) {
-      req['niveaux'] = this.http.get<unknown[]>(`${this.apiBaseUrl}${ctx.niveauxApiPath}`);
-    }
-
-    if (!Object.keys(req).length) {
-      return;
-    }
-
-    this.statsLoadSub = forkJoin(req).subscribe({
-      next: (res: Record<string, unknown>) => {
-        if (res['centres']) {
-          this.ingestCentreList(res['centres'], ctx);
-        }
-        if (res['centres2']) {
-          this.ingestSecondaryCentreList(res['centres2'], ctx);
-        } else if (ctx.secondaryRowCentreIdKey) {
-          this.secondaryCentreIdToLabel = { ...this.centreIdToLabel };
-          this.secondaryCentreFilterOptions = [...this.centreFilterOptions];
-        }
-        if (res['periodes']) {
-          this.ingestRefList(
-            res['periodes'],
-            ctx.periodeOptionValueKey ?? 'id',
-            ctx.periodeOptionLabelKeys ?? ['libellePeriodeActivite', 'codePeriodeActivite', 'libelle'],
-            this.periodeIdToLabel,
-          );
-          this.periodeFilterOptions = this.buildOptionsFromMap(this.periodeIdToLabel);
-        }
-        if (res['annees']) {
-          this.ingestRefList(
-            res['annees'],
-            ctx.anneeOptionValueKey ?? 'id',
-            ctx.anneeOptionLabelKeys ?? ['debutAnneeScolaire', 'finAnneeScolaire'],
-            this.anneeIdToLabel,
-          );
-          this.anneeFilterOptions = this.buildOptionsFromMap(this.anneeIdToLabel);
-        }
-        if (res['niveaux']) {
-          this.ingestRefList(
-            res['niveaux'],
-            ctx.niveauOptionValueKey ?? 'id',
-            ctx.niveauOptionLabelKeys ?? ['libelleNiveauSie', 'libelleNiveauCp', 'libelle'],
-            this.niveauIdToLabel,
-          );
-          this.niveauFilterOptions = this.buildOptionsFromMap(this.niveauIdToLabel);
-        }
-        /** Évite un 2ᵉ GET (ex. `/api/alpha`) pour les mêmes options que les filtres / graphiques. */
-        this.hydrateSelectOptionsFromStatsData(ctx);
-      },
-      error: () => {
-        /* silencieux : les graphiques resteront vides */
-      },
-    });
-  }
-
-  /**
-   * Préremplit les listes déroulantes du formulaire à partir des réponses déjà chargées pour les
-   * filtres statistiques, pour ne pas doubler les requêtes (limite ~6 connexions HTTP/1.1 par origine).
-   */
-  private hydrateSelectOptionsFromStatsData(ctx: ListStatsContext): void {
-    for (const field of this.fieldsForForm) {
-      if (field.type !== 'select' || !field.optionsApiPath) {
-        continue;
-      }
-      const cacheKey = this.optionsCacheKey(field);
-      if (this.fieldOptionsApiLoaded.has(cacheKey)) {
-        continue;
-      }
-      const path = field.optionsApiPath;
-      let source: Array<{ value: string; label: string }> | null = null;
-      if (ctx.centresApiPath === path && this.centreFilterOptions.length) {
-        source = this.centreFilterOptions;
-      } else if (
-        ctx.secondaryCentresApiPath != null &&
-        ctx.secondaryCentresApiPath === path &&
-        this.secondaryCentreFilterOptions.length
-      ) {
-        source = this.secondaryCentreFilterOptions;
-      } else if (ctx.periodesApiPath === path && this.periodeFilterOptions.length) {
-        source = this.periodeFilterOptions;
-      } else if (ctx.anneesApiPath === path && this.anneeFilterOptions.length) {
-        source = this.anneeFilterOptions;
-      } else if (ctx.niveauxApiPath === path && this.niveauFilterOptions.length) {
-        source = this.niveauFilterOptions;
-      }
-      if (source) {
-        this.fieldOptions[cacheKey] = source.map((o) => ({
-          value: this.coerceSelectOptionId(o.value),
-          label: o.label,
-        }));
-        this.fieldOptionsApiLoaded.add(cacheKey);
-      }
-    }
-  }
-
-  private coerceSelectOptionId(raw: string): string | number {
-    const n = Number(raw);
-    if (Number.isFinite(n) && raw.trim() !== '' && String(n) === raw.trim()) {
-      return n;
-    }
-    return raw;
-  }
-
   private rowMatchesFilter(row: Record<string, unknown>, q: string): boolean {
     const id = this.resolveRowId(row);
     if (id != null && String(id).toLowerCase().includes(q)) {
@@ -1596,7 +1134,6 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
         this.detectEtatColumn();
         this.lastSyncedAt = new Date();
         this.loading = false;
-        this.loadStatsReferenceData();
         this.loadWorkflowStatuses();
       },
       error: (err: HttpErrorResponse) => {

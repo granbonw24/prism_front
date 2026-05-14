@@ -88,6 +88,7 @@ const ABANDON_TYPE_CONFIG: Record<AbandonCentreType, AbandonConfig> = {
       [inputCreateFields]="activeConfig.createFields"
       [inputEffectifDenseForm]="true"
       [inputListColumnKeys]="listColumnKeys"
+      [inputShowToolbarCentreTypeFilter]="true"
       [addFormContextLabel]="'Type de centre'"
       [addFormContextValue]="selectedType"
       [addFormContextOptions]="centreTypeOptions"

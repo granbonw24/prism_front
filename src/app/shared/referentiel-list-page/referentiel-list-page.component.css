@@ -12,8 +12,8 @@
   border-color: #ced4da;
 }
 
-.mena-toolbar .btn {
-  border-radius: 8px;
+.mena-toolbar-type-select {
+  max-width: 14rem;
 }
 
 .mena-btn-add {

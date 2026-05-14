@@ -7,7 +7,7 @@ export const FK_PERIODE_ACTIVITE: ReferentielFormField = {
   required: true,
   optionsApiPath: '/api/PeriodeActivites',
   optionValueKey: 'id',
-  optionLabelKeys: ['codePeriodeActivite', 'libellePeriodeActivite'],
+  optionLabelKeys: ['code', 'libelle'],
   payloadAsObjectId: true,
 };
 

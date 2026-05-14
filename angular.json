@@ -51,6 +51,27 @@
               ],
               "outputHashing": "all"
             },
+            "staging": {
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/environment.ts",
+                  "with": "src/environments/environment.staging.ts"
+                }
+              ],
+              "budgets": [
+                {
+                  "type": "initial",
+                  "maximumWarning": "500kb",
+                  "maximumError": "2mb"
+                },
+                {
+                  "type": "anyComponentStyle",
+                  "maximumWarning": "2kb",
+                  "maximumError": "4kb"
+                }
+              ],
+              "outputHashing": "all"
+            },
             "development": {
               "optimization": false,
               "extractLicenses": false,
@@ -64,6 +85,9 @@
           "configurations": {
             "production": {
               "buildTarget": "prism_front:build:production"
+            },
+            "staging": {
+              "buildTarget": "prism_front:build:staging"
             },
             "development": {
               "buildTarget": "prism_front:build:development"

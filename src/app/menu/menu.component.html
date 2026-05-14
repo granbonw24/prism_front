@@ -100,7 +100,7 @@
             <a class="collapse-item" routerLink="/apprenant/abandon" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Effectif abandon</a>
             <a class="collapse-item" routerLink="/apprenant/passage" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Effectif passage (Alpha)</a>
             <a class="collapse-item" routerLink="/apprenant/handicap" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Effectif handicap</a>
-            <a class="collapse-item" routerLink="/apprenant/competences" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Effectif competence aquise </a>
+            <!-- <a class="collapse-item" routerLink="/apprenant/competences" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Effectif competence aquise </a> -->
             <!-- <a class="collapse-item" routerLink="/apprenant/promus" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Effectif promu (SIE, CEC)</a> -->
             <a class="collapse-item" routerLink="/apprenant/reverse-formel-sie" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Effectif reversé formel (SIE)</a>
             <a class="collapse-item" routerLink="/apprenant/admis-cepe" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Effectif admis CEPE (CEC, CP)</a>
@@ -139,14 +139,14 @@
               [routerLinkActiveOptions]="{ exact: true }"
               >Dossier centre</a
             >
-            <a
+            <!-- <a
               *ngIf="canViewActivitesCentrePartenariat()"
               class="collapse-item"
               routerLink="/activites-centre/partenariat"
               routerLinkActive="active"
               [routerLinkActiveOptions]="{ exact: true }"
               >Partenariat</a
-            >
+            > -->
             <a
               *ngIf="canViewActivitesCentrePerformance()"
               class="collapse-item"
@@ -171,14 +171,14 @@
               [routerLinkActiveOptions]="{ exact: true }"
               >Évaluation périodique</a
             >
-            <a
+            <!-- <a
               *ngIf="canViewActivitesCentreInfos()"
               class="collapse-item"
               routerLink="/activites-centre/informations-centres"
               routerLinkActive="active"
               [routerLinkActiveOptions]="{ exact: true }"
               >Informations centres</a
-            >
+            > -->
             <a
               *ngIf="canViewActivitesCentreVisite()"
               class="collapse-item mena-submenu-toggle"

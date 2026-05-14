@@ -8,8 +8,6 @@ import {
   EFFECTIF_HANDICAP_CP_CREATE_FIELDS,
   EFFECTIF_HANDICAP_SIE_CREATE_FIELDS,
 } from './effectif-satellite-forms.data';
-import { effectifStatsByCentreType } from './effectif-list-stats-context';
-import type { ListStatsContext } from '@core/config/list-stats-context.types';
 
 type HandicapCentreType = 'alpha' | 'cp' | 'cec' | 'sie';
 
@@ -17,13 +15,6 @@ type HandicapConfig = {
   title: string;
   apiPath: string;
   createFields: ReferentielFormField[];
-};
-
-const HANDICAP_STATS: Record<HandicapCentreType, ListStatsContext> = {
-  alpha: effectifStatsByCentreType('alpha'),
-  cp: effectifStatsByCentreType('cp'),
-  cec: effectifStatsByCentreType('cec'),
-  sie: effectifStatsByCentreType('sie'),
 };
 
 const HANDICAP_TYPE_CONFIG: Record<HandicapCentreType, HandicapConfig> = {
@@ -61,7 +52,7 @@ const HANDICAP_TYPE_CONFIG: Record<HandicapCentreType, HandicapConfig> = {
       [inputWorkflowFeature]="'SAISIE_DONNEES'"
       [inputCreateFields]="activeConfig.createFields"
       [inputEffectifDenseForm]="true"
-      [inputStatsContext]="listStatsContext"
+      [inputShowToolbarCentreTypeFilter]="true"
       [addFormContextLabel]="'Type de centre'"
       [addFormContextValue]="selectedType"
       [addFormContextOptions]="centreTypeOptions"
@@ -86,9 +77,5 @@ export class EffectifHandicapUnifieComponent {
 
   get activeConfig(): HandicapConfig {
     return HANDICAP_TYPE_CONFIG[this.selectedType];
-  }
-
-  get listStatsContext(): ListStatsContext {
-    return HANDICAP_STATS[this.selectedType];
   }
 }

@@ -53,6 +53,7 @@ const EFFECTIF_LIST_SUMMARY_COLUMNS: Record<CentreType, string[]> = {
       [inputCreateFields]="activeConfig.createFields"
       [inputListColumnKeys]="listColumnKeys"
       [inputEffectifDenseForm]="true"
+      [inputShowToolbarCentreTypeFilter]="true"
       [addFormContextLabel]="'Type de centre'"
       [addFormContextValue]="selectedType"
       [addFormContextOptions]="centreTypeOptions"
@@ -85,7 +86,7 @@ export class EffectifCentreUnifieComponent {
 }
 
 const EFFECTIF_COMMON_ALPHA: ReferentielFormField[] = [
-  { key: 'idPeriodeActivite', label: 'Période activité', type: 'select', required: true, optionsApiPath: '/api/PeriodeActivites', optionValueKey: 'id', optionLabelKeys: ['codePeriodeActivite', 'libellePeriodeActivite'] },
+  { key: 'idPeriodeActivite', label: 'Période activité', type: 'select', required: true, optionsApiPath: '/api/PeriodeActivites', optionValueKey: 'id', optionLabelKeys: ['code', 'libelle'] },
   { key: 'idCentre', label: 'Centre', type: 'select', required: true, optionsApiPath: '/api/alpha', optionValueKey: 'idCentre', optionLabelKeys: ['codeType', 'libelle', 'codeCentre'] },
   { key: 'idNiveauAlpha', label: 'Niveau Alpha', type: 'select', required: true, optionsApiPath: '/api/niveaualpha', optionValueKey: 'id', optionLabelKeys: ['codeNiveauAlpha', 'libelleNiveauAlpha'] },
   { key: 'effectifAlphaNiveauH', label: 'Effectif niveau H', type: 'number' },
@@ -117,7 +118,7 @@ const EFFECTIF_COMMON_ALPHA: ReferentielFormField[] = [
 ];
 
 const EFFECTIF_COMMON_CEC: ReferentielFormField[] = [
-  { key: 'idPeriodeActivite', label: 'Période activité', type: 'select', required: true, optionsApiPath: '/api/PeriodeActivites', optionValueKey: 'id', optionLabelKeys: ['codePeriodeActivite', 'libellePeriodeActivite'], payloadAsObjectId: true },
+  { key: 'idPeriodeActivite', label: 'Période activité', type: 'select', required: true, optionsApiPath: '/api/PeriodeActivites', optionValueKey: 'id', optionLabelKeys: ['code', 'libelle'], payloadAsObjectId: true },
   { key: 'idNiveauSie', label: 'Niveau CEC/SIE', type: 'select', required: true, optionsApiPath: '/api/niveausiecec', optionValueKey: 'id', optionLabelKeys: ['libelleNiveauSie'], payloadAsObjectId: true },
   { key: 'idCentre', label: 'Centre', type: 'select', required: true, optionsApiPath: '/api/cec', optionValueKey: 'idCentre', optionLabelKeys: ['codeType', 'libelle', 'codeCentre'], payloadAsObjectId: true },
   { key: 'effectifCecMoins3F', label: 'Moins 3 F', type: 'number' },
