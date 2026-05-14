@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { BRAND_CONFIG } from '@core/config/brand.config';
+import type { ReferentielMenuGroup } from '@core/config/referentiel-menu.groups';
 import { groupReferentielsForMenu } from '@core/config/referentiel-menu.groups';
 import { REFERENTIEL_ROUTE_DATA } from '@core/config/referentiel-routes.data';
 import { AuthService } from '@services/auth.service';
@@ -18,6 +19,9 @@ import { AuthService } from '@services/auth.service';
   `,
 })
 export class MenuComponent {
+  /** Sections ouvertes manuellement (en plus de l’ouverture automatique par URL). */
+  private readonly menuExpanded = new Set<string>();
+
   private readonly activitesCentrePermissions = [
     'ACTIVITES_CENTRE_PARTENARIAT:LIRE',
     'ACTIVITES_CENTRE_PERFORMANCE:LIRE',
@@ -92,14 +96,50 @@ export class MenuComponent {
     return this.auth.hasPermission('ACTIVITES_CENTRE_INFOS:LIRE');
   }
 
+  /** Ouverture sidebar sans dépendre du JS Bootstrap (Angular + classes `.show`). */
+  isMenuSectionOpen(sectionId: string, routePrefixes: string[]): boolean {
+    const url = this.router.url.split('?')[0];
+    if (routePrefixes.some((p) => url === p || url.startsWith(p + '/'))) {
+      return true;
+    }
+    return this.menuExpanded.has(sectionId);
+  }
+
+  toggleMenuSection(sectionId: string, event: Event): void {
+    event.preventDefault();
+    if (this.menuExpanded.has(sectionId)) {
+      this.menuExpanded.delete(sectionId);
+    } else {
+      this.menuExpanded.add(sectionId);
+    }
+  }
+
+  isRefGroupOpen(group: ReferentielMenuGroup): boolean {
+    const id = this.groupCollapseId('ref', group.title);
+    const prefixes = group.items.map((r) => '/' + r.path);
+    return this.isMenuSectionOpen(id, prefixes);
+  }
+
+  private parametragePrefixes(): string[] {
+    return ['/anneescolaire', ...this.referentielRoutes.map((r) => '/' + r.path)];
+  }
+
+  isParametrageOpen(): boolean {
+    return this.isMenuSectionOpen('parametrage', this.parametragePrefixes());
+  }
+
+  toggleParametrage(event: Event): void {
+    this.toggleMenuSection('parametrage', event);
+  }
+
   /** Ouvre le bloc ACTIVITES CENTRE lorsque l’URL courante est une route d’activité centre. */
   activitesCentreSectionOpen(): boolean {
-    return this.router.url.startsWith('/activites-centre') || this.router.url.startsWith('/visites');
+    return this.isMenuSectionOpen('activites-centre', ['/activites-centre', '/visites']);
   }
 
   /** Ouvre le sous-menu Visite dans ACTIVITES CENTRE. */
   activitesCentreVisiteSectionOpen(): boolean {
-    return this.router.url.startsWith('/activites-centre/visite') || this.router.url.startsWith('/visites');
+    return this.isMenuSectionOpen('activites-visite', ['/activites-centre/visite', '/visites']);
   }
 
   /** Liens référentiels : alignés sur `app.routes` et les `apiPath` du backend. */

@@ -67,10 +67,35 @@
               <option *ngFor="let t of typePromoteurOptions" [ngValue]="t">{{ t }}</option>
             </select>
           </div>
-          <div class="form-group col-md-8" *ngIf="promoteurMode === 'new'">
-            <label class="small text-muted">Libellé promoteur</label>
-            <input class="form-control" [(ngModel)]="model.promoteur.libellePromoteur" [disabled]="saving" />
-            <div class="small text-muted mt-1">Le code promoteur est auto-généré.</div>
+        </div>
+        <div class="form-row" *ngIf="promoteurMode === 'new' && model.promoteur.typePromoteur === 'PHYSIQUE'">
+          <div class="form-group col-md-3">
+            <label class="small text-muted">Civilité</label>
+            <select class="form-control" [(ngModel)]="model.promoteur.personnePhysique!.civilite" [disabled]="saving">
+              <option [ngValue]="''">—</option>
+              <option value="M.">M.</option>
+              <option value="Mme">Mme</option>
+              <option value="Mlle">Mlle</option>
+              <option value="Dr">Dr</option>
+              <option value="Autre">Autre</option>
+            </select>
+          </div>
+          <div class="form-group col-md-3">
+            <label class="small text-muted">Sexe</label>
+            <select class="form-control" [(ngModel)]="model.promoteur.personnePhysique!.sexe" [disabled]="saving">
+              <option [ngValue]="''">—</option>
+              <option value="Homme">Homme</option>
+              <option value="Femme">Femme</option>
+              <option value="Autre">Autre</option>
+            </select>
+          </div>
+          <div class="form-group col-md-3">
+            <label class="small text-muted">Date de naissance</label>
+            <input type="date" class="form-control" [(ngModel)]="model.promoteur.personnePhysique!.dateNaissance" [disabled]="saving" />
+          </div>
+          <div class="form-group col-md-3">
+            <label class="small text-muted">Ancienneté</label>
+            <input class="form-control" [(ngModel)]="model.promoteur.personnePhysique!.anciennete" [disabled]="saving" />
           </div>
         </div>
         <div class="form-row" *ngIf="promoteurMode === 'new' && model.promoteur.typePromoteur === 'PHYSIQUE'">
@@ -88,11 +113,15 @@
           </div>
         </div>
         <div class="form-row" *ngIf="promoteurMode === 'new' && model.promoteur.typePromoteur === 'PHYSIQUE'">
-          <div class="form-group col-md-6">
-            <label class="small text-muted">Libellé personne physique</label>
-            <input class="form-control" [(ngModel)]="model.promoteur.personnePhysique!.libellePersonnePhysique" [disabled]="saving" />
+          <div class="form-group col-md-4">
+            <label class="small text-muted">Boîte postale</label>
+            <input class="form-control" [(ngModel)]="model.promoteur.personnePhysique!.boitePostale" [disabled]="saving" />
           </div>
-          <div class="form-group col-md-6">
+          <div class="form-group col-md-4">
+            <label class="small text-muted">Niveau d'études</label>
+            <input class="form-control" [(ngModel)]="model.promoteur.personnePhysique!.niveauEtudes" [disabled]="saving" />
+          </div>
+          <div class="form-group col-md-4">
             <label class="small text-muted">Fonction</label>
             <input class="form-control" [(ngModel)]="model.promoteur.personnePhysique!.fonction" [disabled]="saving" />
           </div>
@@ -139,28 +168,28 @@
         <div class="form-row">
           <div class="form-group col-md-3">
             <label class="small text-muted">Région administrative</label>
-            <select class="form-control" [(ngModel)]="createRegionId" (ngModelChange)="onCreateRegionChange()" [disabled]="saving">
+            <select class="form-control" [(ngModel)]="createRegionId" (ngModelChange)="onCreateRegionChange()" [disabled]="saving || lockSessionGeoRegion()">
               <option [ngValue]="null">--</option>
               <option *ngFor="let r of regions" [ngValue]="r.id">{{ refOptionLibelle(r) }}</option>
             </select>
           </div>
           <div class="form-group col-md-3">
             <label class="small text-muted">DRENA</label>
-            <select class="form-control" [(ngModel)]="createDrenaId" (ngModelChange)="onCreateDrenaChange()" [disabled]="saving">
+            <select class="form-control" [(ngModel)]="createDrenaId" (ngModelChange)="onCreateDrenaChange()" [disabled]="saving || lockSessionGeoDrena()">
               <option [ngValue]="null">--</option>
               <option *ngFor="let d of filteredCreateDrenas()" [ngValue]="d.id">{{ refOptionLibelle(d) }}</option>
             </select>
           </div>
           <div class="form-group col-md-3">
             <label class="small text-muted">Département</label>
-            <select class="form-control" [(ngModel)]="createDepartementId" (ngModelChange)="onCreateDepartementChange()" [disabled]="saving">
+            <select class="form-control" [(ngModel)]="createDepartementId" (ngModelChange)="onCreateDepartementChange()" [disabled]="saving || lockSessionGeoDepartement()">
               <option [ngValue]="null">--</option>
               <option *ngFor="let d of filteredCreateDepartements()" [ngValue]="d.id">{{ refOptionLibelle(d) }}</option>
             </select>
           </div>
           <div class="form-group col-md-3">
             <label class="small text-muted">Commune</label>
-            <select class="form-control" [(ngModel)]="createCommuneId" (ngModelChange)="onCreateCommuneChange()" [disabled]="saving">
+            <select class="form-control" [(ngModel)]="createCommuneId" (ngModelChange)="onCreateCommuneChange()" [disabled]="saving || lockSessionGeoCommune()">
               <option [ngValue]="null">--</option>
               <option *ngFor="let c of filteredCreateCommunes()" [ngValue]="c.id">{{ refOptionLibelle(c) }}</option>
             </select>
@@ -170,14 +199,14 @@
         <div class="form-row">
           <div class="form-group col-md-3">
             <label class="small text-muted">Localité</label>
-            <select class="form-control" [(ngModel)]="model.centre.localiteId" (ngModelChange)="onCreateLocaliteChange()" [disabled]="saving">
+            <select class="form-control" [(ngModel)]="model.centre.localiteId" (ngModelChange)="onCreateLocaliteChange()" [disabled]="saving || lockSessionGeoLocalite()">
               <option [ngValue]="null">--</option>
               <option *ngFor="let l of filteredCreateLocalites()" [ngValue]="l.id">{{ localiteOptionLabel(l) }}</option>
             </select>
           </div>
           <div class="form-group col-md-3">
             <label class="small text-muted">IEP</label>
-            <select class="form-control" [(ngModel)]="model.centre.iepId" (ngModelChange)="onCreateIepChange()" [disabled]="saving">
+            <select class="form-control" [(ngModel)]="model.centre.iepId" (ngModelChange)="onCreateIepChange()" [disabled]="saving || lockSessionGeoIep()">
               <option [ngValue]="null">--</option>
               <option *ngFor="let i of filteredCreateIeps()" [ngValue]="i.id">{{ iepOptionLabel(i) }}</option>
             </select>
@@ -234,15 +263,6 @@
               <option [ngValue]="false">Non</option>
             </select>
           </div>
-          <div class="form-group col-md-3">
-            <label class="small text-muted">Nombre visites</label>
-            <input
-              type="number"
-              class="form-control"
-              [(ngModel)]="model.centre.nombreVisite"
-              [disabled]="saving"
-            />
-          </div>
         </div>
 
         <div class="form-row">
@@ -271,17 +291,41 @@
         </div>
 
         <div class="form-row">
-          <div class="form-group col-md-4">
-            <label class="small text-muted">Total apprenants</label>
-            <input type="number" min="0" class="form-control" [(ngModel)]="model.centre.totalApprenants" [disabled]="saving" />
-          </div>
+          
           <div class="form-group col-md-4">
             <label class="small text-muted">Hommes / garçons</label>
-            <input type="number" min="0" class="form-control" [(ngModel)]="model.centre.totalHommes" [disabled]="saving" />
+            <input
+              type="number"
+              min="0"
+              class="form-control"
+              [(ngModel)]="model.centre.totalHommes"
+              (ngModelChange)="onWizardGenreCountsChange()"
+              [disabled]="saving"
+            />
           </div>
           <div class="form-group col-md-4">
             <label class="small text-muted">Femmes / filles</label>
-            <input type="number" min="0" class="form-control" [(ngModel)]="model.centre.totalFemmes" [disabled]="saving" />
+            <input
+              type="number"
+              min="0"
+              class="form-control"
+              [(ngModel)]="model.centre.totalFemmes"
+              (ngModelChange)="onWizardGenreCountsChange()"
+              [disabled]="saving"
+            />
+          </div>
+
+          <div class="form-group col-md-4">
+            <label class="small text-muted">Total apprenants</label>
+            <input
+              type="number"
+              min="0"
+              class="form-control bg-light text-muted"
+              [ngModel]="model.centre.totalApprenants"
+              [disabled]="true"
+              readonly
+            />
+            <!-- <div class="small text-muted mt-1">Calculé automatiquement (hommes + femmes).</div> -->
           </div>
         </div>
 
@@ -410,7 +454,12 @@
                       <ng-container *ngIf="p.details?.personnePhysique as pp">
                         <hr class="my-2" />
                         <div class="font-weight-bold small text-secondary mb-1">Personne physique</div>
-                        <div><strong>Libellé</strong>: {{ pp.libellePersonnePhysique?.trim() || '—' }}</div>
+                        <div *ngIf="pp.civilite"><span class="text-muted">Civilité</span> : {{ pp.civilite }}</div>
+                        <div *ngIf="pp.sexe"><span class="text-muted">Sexe</span> : {{ pp.sexe }}</div>
+                        <div *ngIf="pp.dateNaissance"><span class="text-muted">Date de naissance</span> : {{ pp.dateNaissance }}</div>
+                        <div *ngIf="pp.anciennete"><span class="text-muted">Ancienneté</span> : {{ pp.anciennete }}</div>
+                        <div *ngIf="pp.boitePostale"><span class="text-muted">Boîte postale</span> : {{ pp.boitePostale }}</div>
+                        <div *ngIf="pp.niveauEtudes"><span class="text-muted">Niveau d'études</span> : {{ pp.niveauEtudes }}</div>
                         <div><strong>Nom</strong>: {{ pp.nom?.trim() || '—' }}</div>
                         <div><strong>Prénom</strong>: {{ pp.prenom?.trim() || '—' }}</div>
                         <div><strong>Contact</strong>: {{ pp.contact?.trim() || '—' }}</div>
@@ -434,12 +483,26 @@
                   </ng-container>
                   <ng-container *ngIf="promoteurMode === 'new'">
                     <div><strong>Type promoteur</strong>: {{ model.promoteur.typePromoteur ?? '—' }}</div>
-                    <div><strong>Libellé promoteur</strong>: {{ model.promoteur.libellePromoteur?.trim() || '—' }}</div>
                     <div class="text-muted small"><strong>Code promoteur</strong>: auto-généré à l’enregistrement</div>
                     <ng-container *ngIf="model.promoteur.typePromoteur === 'PHYSIQUE'">
                       <hr class="my-2" />
                       <div class="font-weight-bold small text-secondary mb-1">Personne physique</div>
-                      <div><strong>Libellé</strong>: {{ model.promoteur.personnePhysique?.libellePersonnePhysique?.trim() || '—' }}</div>
+                      <div *ngIf="model.promoteur.personnePhysique?.civilite">
+                        <strong>Civilité</strong>: {{ model.promoteur.personnePhysique?.civilite }}
+                      </div>
+                      <div *ngIf="model.promoteur.personnePhysique?.sexe"><strong>Sexe</strong>: {{ model.promoteur.personnePhysique?.sexe }}</div>
+                      <div *ngIf="model.promoteur.personnePhysique?.dateNaissance">
+                        <strong>Date de naissance</strong>: {{ model.promoteur.personnePhysique?.dateNaissance }}
+                      </div>
+                      <div *ngIf="model.promoteur.personnePhysique?.anciennete">
+                        <strong>Ancienneté</strong>: {{ model.promoteur.personnePhysique?.anciennete }}
+                      </div>
+                      <div *ngIf="model.promoteur.personnePhysique?.boitePostale">
+                        <strong>Boîte postale</strong>: {{ model.promoteur.personnePhysique?.boitePostale }}
+                      </div>
+                      <div *ngIf="model.promoteur.personnePhysique?.niveauEtudes">
+                        <strong>Niveau d'études</strong>: {{ model.promoteur.personnePhysique?.niveauEtudes }}
+                      </div>
                       <div><strong>Nom</strong>: {{ model.promoteur.personnePhysique?.nom?.trim() || '—' }}</div>
                       <div><strong>Prénom</strong>: {{ model.promoteur.personnePhysique?.prenom?.trim() || '—' }}</div>
                       <div><strong>Contact</strong>: {{ model.promoteur.personnePhysique?.contact?.trim() || '—' }}</div>
@@ -480,7 +543,6 @@
                     <strong>Eau</strong>:
                     {{ model.centre.aDeLeau === true ? 'Oui' : model.centre.aDeLeau === false ? 'Non' : '—' }}
                   </div>
-                  <div><strong>Nombre de visites</strong>: {{ model.centre.nombreVisite ?? '—' }}</div>
                   <div><strong>Total apprenants</strong>: {{ model.centre.totalApprenants ?? '—' }}</div>
                   <div><strong>Hommes / garçons</strong>: {{ model.centre.totalHommes ?? '—' }}</div>
                   <div><strong>Femmes / filles</strong>: {{ model.centre.totalFemmes ?? '—' }}</div>
@@ -552,8 +614,7 @@
         <div class="mb-3">
           <div class="font-weight-bold text-secondary mb-1">Recherche rapide</div>
           <p class="text-muted mb-2" style="font-size: 0.85rem">
-            Recherche sur <strong>codes et libellés</strong> (et autres champs texte) via le paramètre <code>q</code>. Les listes
-            ci‑dessous permettent de filtrer par référentiels (code — libellé chargés depuis la base).
+            Recherche sur <strong>codes et libellés</strong> (et autres champs texte) via le paramètre <code>q</code>.
           </p>
           <div class="form-group col-md-12 px-0 mb-0">
             <label class="mb-0 text-muted">Texte libre (code, libellé, localisation…)</label>
@@ -565,150 +626,6 @@
           </div>
         </div>
 
-        <hr class="my-3" />
-
-        <div class="font-weight-bold text-secondary mb-1">Filtres détaillés</div>
-        <p class="text-muted mb-2" style="font-size: 0.85rem">
-          Listes issues des référentiels (valeur = identifiant en base). Champs texte : recherche partielle. Booléens : liste.
-        </p>
-        <div class="form-row">
-          <div class="form-group col-md-2 mb-1">
-            <label class="mb-0 text-muted">Campagne</label>
-            <select class="form-control form-control-sm" [(ngModel)]="alphaListFilter['idCompagne']">
-              <option value="">— Toutes —</option>
-              <option *ngFor="let o of campagnes" [value]="'' + o.id">{{ refOptionLabel(o) }}</option>
-            </select>
-          </div>
-          <div class="form-group col-md-2 mb-1">
-            <label class="mb-0 text-muted">Catégorie centre Alpha</label>
-            <select class="form-control form-control-sm" [(ngModel)]="alphaListFilter['idCategorieCentreAlpha']">
-              <option value="">— Toutes —</option>
-              <option *ngFor="let o of categories" [value]="'' + o.id">{{ refOptionLabel(o) }}</option>
-            </select>
-          </div>
-          <div class="form-group col-md-2 mb-1">
-            <label class="mb-0 text-muted">Type Alpha</label>
-            <select class="form-control form-control-sm" [(ngModel)]="alphaListFilter['idTypeAlpha']">
-              <option value="">— Tous —</option>
-              <option *ngFor="let o of typesAlpha" [value]="'' + o.id">{{ refOptionLibelle(o) }}</option>
-            </select>
-          </div>
-          <div class="form-group col-md-2 mb-1">
-            <label class="mb-0 text-muted">Régime Alpha</label>
-            <select class="form-control form-control-sm" [(ngModel)]="alphaListFilter['idRegimeAlpha']">
-              <option value="">— Tous —</option>
-              <option *ngFor="let o of regimes" [value]="'' + o.id">{{ refOptionLibelle(o) }}</option>
-            </select>
-          </div>
-          <div class="form-group col-md-2 mb-1">
-            <label class="mb-0 text-muted">Localité</label>
-            <select class="form-control form-control-sm" [(ngModel)]="alphaListFilter['idLocalite']">
-              <option value="">— Toutes —</option>
-              <option *ngFor="let l of localites" [value]="'' + l.id">{{ localiteOptionLabel(l) }}</option>
-            </select>
-          </div>
-        </div>
-        <div class="form-row">
-          <div class="form-group col-md-2 mb-1">
-            <label class="mb-0 text-muted">Code centre (contient)</label>
-            <input class="form-control form-control-sm" [(ngModel)]="alphaListFilter['codeCentre']" />
-          </div>
-          <div class="form-group col-md-2 mb-1">
-            <label class="mb-0 text-muted">Code Alpha (contient)</label>
-            <input class="form-control form-control-sm" [(ngModel)]="alphaListFilter['codeAlpha']" />
-          </div>
-          <div class="form-group col-md-2 mb-1">
-            <label class="mb-0 text-muted">Libellé Alpha (contient)</label>
-            <input class="form-control form-control-sm" [(ngModel)]="alphaListFilter['libelleAlpha']" />
-          </div>
-          <div class="form-group col-md-2 mb-1">
-            <label class="mb-0 text-muted">IEP</label>
-            <select class="form-control form-control-sm" [(ngModel)]="alphaListFilter['idIep']">
-              <option value="">— Tous —</option>
-              <option *ngFor="let i of ieps" [value]="'' + i.id">{{ iepOptionLabel(i) }}</option>
-            </select>
-          </div>
-          <div class="form-group col-md-2 mb-1">
-            <label class="mb-0 text-muted">Nature centre</label>
-            <select class="form-control form-control-sm" [(ngModel)]="alphaListFilter['idNaturecentre']">
-              <option value="">— Toutes —</option>
-              <option *ngFor="let n of natures" [value]="'' + n.id">{{ natureOptionLabel(n) }}</option>
-            </select>
-          </div>
-          <div class="form-group col-md-2 mb-1">
-            <label class="mb-0 text-muted">Nombre de visites</label>
-            <input class="form-control form-control-sm" [(ngModel)]="alphaListFilter['nombreVisite']" type="number" min="0" placeholder="-" />
-          </div>
-        </div>
-        <div class="form-row">
-          <div class="form-group col-md-2 mb-1">
-            <label class="mb-0 text-muted">Autorisation</label>
-            <select class="form-control form-control-sm" [(ngModel)]="alphaListFilter['autorisation']">
-              <option value="">—</option>
-              <option value="true">Oui</option>
-              <option value="false">Non</option>
-            </select>
-          </div>
-          <div class="form-group col-md-2 mb-1">
-            <label class="mb-0 text-muted">Eau</label>
-            <select class="form-control form-control-sm" [(ngModel)]="alphaListFilter['aDeLeau']">
-              <option value="">—</option>
-              <option value="true">Oui</option>
-              <option value="false">Non</option>
-            </select>
-          </div>
-          <div class="form-group col-md-2 mb-1">
-            <label class="mb-0 text-muted">Électrifié</label>
-            <select class="form-control form-control-sm" [(ngModel)]="alphaListFilter['estElectrifie']">
-              <option value="">—</option>
-              <option value="true">Oui</option>
-              <option value="false">Non</option>
-            </select>
-          </div>
-          <div class="form-group col-md-2 mb-1">
-            <label class="mb-0 text-muted">Périodicité</label>
-            <select class="form-control form-control-sm" [(ngModel)]="alphaListFilter['idPeriodicite']">
-              <option value="">— Toutes —</option>
-              <option *ngFor="let p of periodicites" [value]="'' + p.id">{{ periodiciteOptionLabel(p) }}</option>
-            </select>
-          </div>
-          <div class="form-group col-md-2 mb-1">
-            <label class="mb-0 text-muted">Autorité autorisation</label>
-            <select class="form-control form-control-sm" [(ngModel)]="alphaListFilter['idAutoriteAutorisation']">
-              <option value="">— Toutes —</option>
-              <option *ngFor="let a of autorites" [value]="'' + a.id">{{ autoriteOptionLabel(a) }}</option>
-            </select>
-          </div>
-          <div class="form-group col-md-2 mb-1">
-            <label class="mb-0 text-muted">Promoteur</label>
-            <select class="form-control form-control-sm" [(ngModel)]="alphaListFilter['idPromoteur']">
-              <option value="">— Tous —</option>
-              <option *ngFor="let o of promoteurs" [value]="'' + o.id">{{ refOptionLabel(o) }}</option>
-            </select>
-          </div>
-        </div>
-        <div class="form-row">
-          <div class="form-group col-md-2 mb-1">
-            <label class="mb-0 text-muted">Encadr. non MENA (contient)</label>
-            <input class="form-control form-control-sm" [(ngModel)]="alphaListFilter['encadreurNonMena']" />
-          </div>
-          <div class="form-group col-md-2 mb-1">
-            <label class="mb-0 text-muted">Localisation (contient)</label>
-            <input class="form-control form-control-sm" [(ngModel)]="alphaListFilter['localisationCentre']" />
-          </div>
-          <div class="form-group col-md-2 mb-1">
-            <label class="mb-0 text-muted">Milieu impl. (contient)</label>
-            <input class="form-control form-control-sm" [(ngModel)]="alphaListFilter['nomMilieuImplentation']" />
-          </div>
-          <div class="form-group col-md-2 mb-1">
-            <label class="mb-0 text-muted">Encadré par MENA</label>
-            <select class="form-control form-control-sm" [(ngModel)]="alphaListFilter['encadrerParMena']">
-              <option value="">—</option>
-              <option value="true">Oui</option>
-              <option value="false">Non</option>
-            </select>
-          </div>
-        </div>
         <div class="d-flex flex-wrap align-items-center mt-2">
           <button type="button" class="btn btn-sm btn-primary" (click)="applyListFilters()">Filtrer</button>
           <button type="button" class="btn btn-sm btn-outline-secondary ml-1" (click)="resetListFilters()">Réinitialiser</button>
@@ -895,7 +812,12 @@
                     <ng-container *ngIf="pr.typePromoteur === 'PHYSIQUE' && pr.personnePhysique as pp">
                       <div class="font-weight-bold small text-secondary mt-2 mb-1">Personne physique</div>
                       <div class="small">
-                        <div *ngIf="pp.libellePersonnePhysique"><span class="text-muted">Libellé</span> : {{ pp.libellePersonnePhysique }}</div>
+                        <div *ngIf="pp.civilite"><span class="text-muted">Civilité</span> : {{ pp.civilite }}</div>
+                        <div *ngIf="pp.sexe"><span class="text-muted">Sexe</span> : {{ pp.sexe }}</div>
+                        <div *ngIf="pp.dateNaissance"><span class="text-muted">Date de naissance</span> : {{ pp.dateNaissance }}</div>
+                        <div *ngIf="pp.anciennete"><span class="text-muted">Ancienneté</span> : {{ pp.anciennete }}</div>
+                        <div *ngIf="pp.boitePostale"><span class="text-muted">Boîte postale</span> : {{ pp.boitePostale }}</div>
+                        <div *ngIf="pp.niveauEtudes"><span class="text-muted">Niveau d'études</span> : {{ pp.niveauEtudes }}</div>
                         <div *ngIf="pp.nom || pp.prenom"><span class="text-muted">Nom</span> : {{ pp.nom ?? '—' }} · <span class="text-muted">Prénom</span> : {{ pp.prenom ?? '—' }}</div>
                         <div *ngIf="pp.contact"><span class="text-muted">Contact</span> : {{ pp.contact }}</div>
                         <div *ngIf="pp.fonction"><span class="text-muted">Fonction</span> : {{ pp.fonction }}</div>
@@ -1068,28 +990,28 @@
           <div class="form-row">
             <div class="form-group col-md-3">
               <label class="small text-muted">Région administrative</label>
-              <select class="form-control" [(ngModel)]="editRegionId" (ngModelChange)="onEditRegionChange()" [disabled]="saving">
+              <select class="form-control" [(ngModel)]="editRegionId" (ngModelChange)="onEditRegionChange()" [disabled]="saving || lockSessionGeoRegion()">
                 <option [ngValue]="null">--</option>
                 <option *ngFor="let r of regions" [ngValue]="r.id">{{ refOptionLibelle(r) }}</option>
               </select>
             </div>
             <div class="form-group col-md-3">
               <label class="small text-muted">DRENA</label>
-              <select class="form-control" [(ngModel)]="editDrenaId" (ngModelChange)="onEditDrenaChange()" [disabled]="saving">
+              <select class="form-control" [(ngModel)]="editDrenaId" (ngModelChange)="onEditDrenaChange()" [disabled]="saving || lockSessionGeoDrena()">
                 <option [ngValue]="null">--</option>
                 <option *ngFor="let d of filteredEditDrenas()" [ngValue]="d.id">{{ refOptionLibelle(d) }}</option>
               </select>
             </div>
             <div class="form-group col-md-3">
               <label class="small text-muted">IEP</label>
-              <select class="form-control" [(ngModel)]="editForm.idIep" (ngModelChange)="onEditIepChange()" [disabled]="saving">
+              <select class="form-control" [(ngModel)]="editForm.idIep" (ngModelChange)="onEditIepChange()" [disabled]="saving || lockSessionGeoIep()">
                 <option [ngValue]="null">--</option>
                 <option *ngFor="let i of filteredEditIeps()" [ngValue]="i.id">{{ iepOptionLabel(i) }}</option>
               </select>
             </div>
             <div class="form-group col-md-3">
               <label class="small text-muted">Département</label>
-              <select class="form-control" [(ngModel)]="editDepartementId" (ngModelChange)="onEditDepartementChange()" [disabled]="saving">
+              <select class="form-control" [(ngModel)]="editDepartementId" (ngModelChange)="onEditDepartementChange()" [disabled]="saving || lockSessionGeoDepartement()">
                 <option [ngValue]="null">--</option>
                 <option *ngFor="let d of filteredEditDepartements()" [ngValue]="d.id">{{ refOptionLibelle(d) }}</option>
               </select>
@@ -1099,14 +1021,14 @@
           <div class="form-row">
             <div class="form-group col-md-3">
               <label class="small text-muted">Commune</label>
-              <select class="form-control" [(ngModel)]="editCommuneId" (ngModelChange)="onEditCommuneChange()" [disabled]="saving">
+              <select class="form-control" [(ngModel)]="editCommuneId" (ngModelChange)="onEditCommuneChange()" [disabled]="saving || lockSessionGeoCommune()">
                 <option [ngValue]="null">--</option>
                 <option *ngFor="let c of filteredEditCommunes()" [ngValue]="c.id">{{ refOptionLibelle(c) }}</option>
               </select>
             </div>
             <div class="form-group col-md-3">
               <label class="small text-muted">Localité</label>
-              <select class="form-control" [(ngModel)]="editForm.idLocalite" (ngModelChange)="onEditLocaliteChange()" [disabled]="saving">
+              <select class="form-control" [(ngModel)]="editForm.idLocalite" (ngModelChange)="onEditLocaliteChange()" [disabled]="saving || lockSessionGeoLocalite()">
                 <option [ngValue]="null">--</option>
                 <option *ngFor="let l of filteredEditLocalites()" [ngValue]="l.id">{{ localiteOptionLabel(l) }}</option>
               </select>
@@ -1162,15 +1084,11 @@
           </div>
 
           <div class="form-row">
-            <div class="form-group col-md-3">
-              <label class="small text-muted">Nombre visites</label>
-              <input type="number" class="form-control" [(ngModel)]="editForm.nombreVisite" [disabled]="saving" />
-            </div>
-            <div class="form-group col-md-5">
+            <div class="form-group col-md-6">
               <label class="small text-muted">Encadreur non MENA</label>
               <input class="form-control" [(ngModel)]="editForm.encadreurNonMena" [disabled]="saving" />
             </div>
-            <div class="form-group col-md-4">
+            <div class="form-group col-md-6">
               <label class="small text-muted">Encadré par MENA</label>
               <select class="form-control" [(ngModel)]="editForm.encadrerParMena" [disabled]="saving">
                 <option [ngValue]="null">—</option>
@@ -1194,15 +1112,37 @@
           <div class="form-row">
             <div class="form-group col-md-4">
               <label class="small text-muted">Total apprenants</label>
-              <input type="number" min="0" class="form-control" [(ngModel)]="editForm.totalApprenants" [disabled]="saving" />
+              <input
+                type="number"
+                min="0"
+                class="form-control bg-light text-muted"
+                [ngModel]="editForm.totalApprenants"
+                [disabled]="true"
+                readonly
+              />
+              <div class="small text-muted mt-1">Calculé automatiquement.</div>
             </div>
             <div class="form-group col-md-4">
               <label class="small text-muted">Hommes / garçons</label>
-              <input type="number" min="0" class="form-control" [(ngModel)]="editForm.totalHommes" [disabled]="saving" />
+              <input
+                type="number"
+                min="0"
+                class="form-control"
+                [(ngModel)]="editForm.totalHommes"
+                (ngModelChange)="onEditGenreCountsChange()"
+                [disabled]="saving"
+              />
             </div>
             <div class="form-group col-md-4">
               <label class="small text-muted">Femmes / filles</label>
-              <input type="number" min="0" class="form-control" [(ngModel)]="editForm.totalFemmes" [disabled]="saving" />
+              <input
+                type="number"
+                min="0"
+                class="form-control"
+                [(ngModel)]="editForm.totalFemmes"
+                (ngModelChange)="onEditGenreCountsChange()"
+                [disabled]="saving"
+              />
             </div>
           </div>
 

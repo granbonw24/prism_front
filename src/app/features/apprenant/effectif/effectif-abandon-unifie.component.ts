@@ -86,6 +86,7 @@ const ABANDON_TYPE_CONFIG: Record<AbandonCentreType, AbandonConfig> = {
       [inputPermissionFeature]="'SAISIE_DONNEES'"
       [inputWorkflowFeature]="'SAISIE_DONNEES'"
       [inputCreateFields]="activeConfig.createFields"
+      [inputEffectifDenseForm]="true"
       [inputListColumnKeys]="listColumnKeys"
       [addFormContextLabel]="'Type de centre'"
       [addFormContextValue]="selectedType"

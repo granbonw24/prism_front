@@ -7,6 +7,13 @@ export type PromoteurPersonnePhysique = {
   prenom?: string | null;
   contact?: string | null;
   fonction?: string | null;
+  sexe?: string | null;
+  /** ISO yyyy-MM-dd */
+  dateNaissance?: string | null;
+  anciennete?: string | null;
+  boitePostale?: string | null;
+  niveauEtudes?: string | null;
+  civilite?: string | null;
 };
 
 export type PromoteurPersonneMorale = {
@@ -50,7 +57,19 @@ function normalizeTypePromoteur(raw: unknown): TypePromoteur | null {
 export function promoteurDetailsFromApi(value: unknown): PromoteurDetails | null {
   if (!value || typeof value !== 'object') return null;
   const p = value as Record<string, unknown>;
-  const personnePhysique = (p['personnePhysique'] as PromoteurPersonnePhysique | null | undefined) ?? null;
+  const personnePhysiqueRaw = p['personnePhysique'] as Record<string, unknown> | null | undefined;
+  const personnePhysique =
+    personnePhysiqueRaw != null && typeof personnePhysiqueRaw === 'object'
+      ? ({
+          ...personnePhysiqueRaw,
+          dateNaissance:
+            typeof personnePhysiqueRaw['dateNaissance'] === 'string'
+              ? (personnePhysiqueRaw['dateNaissance'] as string)
+              : personnePhysiqueRaw['dateNaissance'] != null
+                ? String(personnePhysiqueRaw['dateNaissance'])
+                : null,
+        } as PromoteurPersonnePhysique)
+      : null;
   const personneMorale = (p['personneMorale'] as PromoteurPersonneMorale | null | undefined) ?? null;
   let typePromoteur = normalizeTypePromoteur(p['typePromoteur']);
   if (typePromoteur == null && personneMorale != null && typeof personneMorale === 'object') {
@@ -142,6 +161,9 @@ export type CentreDetailRow = CentreRow & {
   typeAlpha?: CentreRefDetails | null;
   regimeAlpha?: CentreRefDetails | null;
   niveaux?: CentreNiveauDetails[] | null;
+  /** Champs propres au détail CEC (API). */
+  ecoleTutrice?: string | null;
+  anneeCreation?: number | null;
 };
 
 export type CentreRow = {
@@ -172,6 +194,9 @@ export type CentreRow = {
   encadreurNonMena?: string | null;
   encadrerParMena?: boolean | null;
   promoteur?: PromoteurDetails | null;
+  /** Présents sur le détail / liste CEC lorsque l’API les renvoie. */
+  ecoleTutrice?: string | null;
+  anneeCreation?: number | null;
 };
 
 /** Ligne liste Alpha (même forme que `CentreTypeListItem` côté API). */
@@ -277,6 +302,9 @@ export type AlphaFullCreatePayload = {
 
 export type SimpleCentreFullCreatePayload = {
   libelle: string;
+  /** Métadonnées CEC (ignorées côté API pour CP / SIE). */
+  ecoleTutrice?: string | null;
+  anneeCreation?: number | null;
   promoteur: PromoteurUpsertPayload;
   centre: {
     localiteId: number;
@@ -314,6 +342,12 @@ export type PromoteurUpsertPayload = {
     prenom?: string | null;
     contact?: string | null;
     fonction?: string | null;
+    sexe?: string | null;
+    dateNaissance?: string | null;
+    anciennete?: string | null;
+    boitePostale?: string | null;
+    niveauEtudes?: string | null;
+    civilite?: string | null;
   } | null;
   personneMorale?: {
     denomination?: string | null;

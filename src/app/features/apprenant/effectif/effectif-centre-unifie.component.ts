@@ -52,6 +52,7 @@ const EFFECTIF_LIST_SUMMARY_COLUMNS: Record<CentreType, string[]> = {
       [inputWorkflowFeature]="'SAISIE_DONNEES'"
       [inputCreateFields]="activeConfig.createFields"
       [inputListColumnKeys]="listColumnKeys"
+      [inputEffectifDenseForm]="true"
       [addFormContextLabel]="'Type de centre'"
       [addFormContextValue]="selectedType"
       [addFormContextOptions]="centreTypeOptions"

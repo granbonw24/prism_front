@@ -1,5 +1,5 @@
 import { AsyncPipe, NgIf } from '@angular/common';
-import { Component } from '@angular/core';
+import { Component, HostListener } from '@angular/core';
 import { RouterLink, RouterOutlet } from '@angular/router';
 import { AuthSession } from '@core/models/auth.models';
 import { BRAND_CONFIG } from '@core/config/brand.config';
@@ -17,6 +17,10 @@ export class MainComponent {
   readonly brandMarkSrc = BRAND_CONFIG.markSrc;
   readonly brandAlt = BRAND_CONFIG.alt;
 
+  /** Menu utilisateur (topbar) : contrôlé par Angular, sans `data-toggle` Bootstrap. */
+  userMenuOpen = false;
+  logoutModalOpen = false;
+
   constructor(
     readonly auth: AuthService,
     private readonly authPresentation: AuthPresentationService,
@@ -32,5 +36,35 @@ export class MainComponent {
 
   logout(): void {
     this.auth.logout();
+  }
+
+  toggleUserMenu(event: Event): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.userMenuOpen = !this.userMenuOpen;
+  }
+
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent): void {
+    const el = event.target as HTMLElement | null;
+    if (el?.closest('[data-mena-user-menu]')) {
+      return;
+    }
+    this.userMenuOpen = false;
+  }
+
+  openLogoutModal(event: Event): void {
+    event.preventDefault();
+    this.userMenuOpen = false;
+    this.logoutModalOpen = true;
+  }
+
+  closeLogoutModal(): void {
+    this.logoutModalOpen = false;
+  }
+
+  confirmLogout(): void {
+    this.logoutModalOpen = false;
+    this.logout();
   }
 }

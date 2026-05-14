@@ -6,7 +6,7 @@ import { REFERENTIEL_ROUTE_DATA } from '@core/config/referentiel-routes.data';
 import { AuthService } from '@services/auth.service';
 import { API_BASE_URL } from '@core/tokens/api-base-url.token';
 import { Inject } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Observable, shareReplay } from 'rxjs';
 
 type DashboardSummary = {
   centresTotal: number;
@@ -34,9 +34,10 @@ export class DashboardComponent {
   ) {}
 
   readonly session$ = this.auth.session;
-  readonly summary$: Observable<DashboardSummary> = this.http.get<DashboardSummary>(
-    `${this.apiBaseUrl}/api/admin/dashboard`,
-  );
+  /** Une seule requête HTTP : le template utilise `| async` plusieurs fois (observable froid sinon). */
+  readonly summary$: Observable<DashboardSummary> = this.http
+    .get<DashboardSummary>(`${this.apiBaseUrl}/api/admin/dashboard`)
+    .pipe(shareReplay({ bufferSize: 1, refCount: true }));
   readonly referentielRoutes = REFERENTIEL_ROUTE_DATA;
 
   readonly adminLinks = [

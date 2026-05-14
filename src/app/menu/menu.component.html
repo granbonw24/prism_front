@@ -23,7 +23,7 @@
       <hr class="sidebar-divider my-0">
 
       <!-- Nav Item - Dashboard -->
-      <li class="nav-item active">
+      <li class="nav-item" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
         <a class="nav-link" routerLink="/">
           <i class="fas fa-fw fa-tachometer-alt"></i>
           <span>Tableau de bord</span></a>
@@ -39,11 +39,23 @@
 
       <!-- Nav Item - Pages Collapse Menu -->
       <li class="nav-item">
-        <a class="nav-link collapsed" href="#" (click)="$event.preventDefault()" data-toggle="collapse" data-target="#collapseTwo" aria-expanded="true" aria-controls="collapseTwo">
+        <a
+          class="nav-link"
+          [class.collapsed]="!isMenuSectionOpen('centres', ['/centres'])"
+          href="#"
+          (click)="toggleMenuSection('centres', $event)"
+          [attr.aria-expanded]="isMenuSectionOpen('centres', ['/centres'])"
+          aria-controls="collapseTwo"
+        >
           <i class="fas fa-fw fa-cog"></i>
           <span>CENTRES</span>
         </a>
-        <div id="collapseTwo" class="collapse" aria-labelledby="headingTwo" data-parent="#accordionSidebar">
+        <div
+          id="collapseTwo"
+          class="collapse"
+          [class.show]="isMenuSectionOpen('centres', ['/centres'])"
+          aria-labelledby="headingTwo"
+        >
           <div class="bg-white py-2 collapse-inner rounded">
             <!-- <h6 class="collapse-header">alpha</h6> -->
             <a class="collapse-item" routerLink="/centres/alpha" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Alpha</a>
@@ -65,19 +77,31 @@
      
 
       <li class="nav-item">
-        <a class="nav-link collapsed" href="#" (click)="$event.preventDefault()" data-toggle="collapse" data-target="#collapseUtilities2" aria-expanded="true" aria-controls="collapseUtilities">
+        <a
+          class="nav-link"
+          [class.collapsed]="!isMenuSectionOpen('apprenant', ['/apprenant'])"
+          href="#"
+          (click)="toggleMenuSection('apprenant', $event)"
+          [attr.aria-expanded]="isMenuSectionOpen('apprenant', ['/apprenant'])"
+          aria-controls="collapseUtilities2"
+        >
           <i class="fas fa-fw fa-wrench"></i>
           <span>APPRENANT</span>
         </a>
-        <div id="collapseUtilities2" class="collapse" aria-labelledby="headingUtilities" data-parent="#accordionSidebar">
+        <div
+          id="collapseUtilities2"
+          class="collapse"
+          [class.show]="isMenuSectionOpen('apprenant', ['/apprenant'])"
+          aria-labelledby="headingUtilities"
+        >
           <div class="bg-white py-2 collapse-inner rounded">
             <!-- <h6 class="collapse-header">Custom Utilities:</h6> -->
             <a class="collapse-item" routerLink="/apprenant/effectif" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Effectif apprenant</a>
             <a class="collapse-item" routerLink="/apprenant/abandon" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Effectif abandon</a>
             <a class="collapse-item" routerLink="/apprenant/passage" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Effectif passage (Alpha)</a>
             <a class="collapse-item" routerLink="/apprenant/handicap" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Effectif handicap</a>
-            <!-- <a class="collapse-item" routerLink="/apprenant/competences" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Effectif competence aquise </a> -->
-            <a class="collapse-item" routerLink="/apprenant/promus" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Effectif promu (SIE, CEC)</a>
+            <a class="collapse-item" routerLink="/apprenant/competences" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Effectif competence aquise </a>
+            <!-- <a class="collapse-item" routerLink="/apprenant/promus" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Effectif promu (SIE, CEC)</a> -->
             <a class="collapse-item" routerLink="/apprenant/reverse-formel-sie" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Effectif reversé formel (SIE)</a>
             <a class="collapse-item" routerLink="/apprenant/admis-cepe" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Effectif admis CEPE (CEC, CP)</a>
             <a class="collapse-item" routerLink="/apprenant/integres-formel-cp" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Effectif intégré formel (CP)</a>
@@ -93,9 +117,7 @@
           class="nav-link"
           [class.collapsed]="!activitesCentreSectionOpen()"
           href="#"
-          (click)="$event.preventDefault()"
-          data-toggle="collapse"
-          data-target="#collapseActivitesCentre"
+          (click)="toggleMenuSection('activites-centre', $event)"
           [attr.aria-expanded]="activitesCentreSectionOpen()"
           aria-controls="collapseActivitesCentre"
         >
@@ -107,7 +129,6 @@
           class="collapse"
           [class.show]="activitesCentreSectionOpen()"
           aria-labelledby="headingActivitesCentre"
-          data-parent="#accordionSidebar"
         >
           <div class="bg-white py-2 collapse-inner rounded">
             <a
@@ -163,9 +184,7 @@
               class="collapse-item mena-submenu-toggle"
               [class.collapsed]="!activitesCentreVisiteSectionOpen()"
               href="#"
-              (click)="$event.preventDefault()"
-              data-toggle="collapse"
-              data-target="#activites-centre-visite"
+              (click)="toggleMenuSection('activites-visite', $event)"
               [attr.aria-expanded]="activitesCentreVisiteSectionOpen()"
               aria-controls="activites-centre-visite"
               >Visite</a
@@ -230,12 +249,11 @@
       <li class="nav-item">
         <a
           id="headingAdministration"
-          class="nav-link collapsed"
+          class="nav-link"
+          [class.collapsed]="!isMenuSectionOpen('administration', ['/administration'])"
           href="#"
-          (click)="$event.preventDefault()"
-          data-toggle="collapse"
-          data-target="#collapseAdministration"
-          aria-expanded="false"
+          (click)="toggleMenuSection('administration', $event)"
+          [attr.aria-expanded]="isMenuSectionOpen('administration', ['/administration'])"
           aria-controls="collapseAdministration"
         >
           <i class="fas fa-fw fa-user-shield"></i>
@@ -244,21 +262,24 @@
         <div
           id="collapseAdministration"
           class="collapse"
+          [class.show]="isMenuSectionOpen('administration', ['/administration'])"
           aria-labelledby="headingAdministration"
-          data-parent="#accordionSidebar"
         >
           <div class="bg-white py-2 collapse-inner rounded">
             <a
-              class="collapse-item mena-submenu-toggle collapsed"
+              class="collapse-item mena-submenu-toggle"
+              [class.collapsed]="!isMenuSectionOpen('admin-gestion', ['/administration/personnel', '/administration/utilisateurs'])"
               href="#"
-              (click)="$event.preventDefault()"
-              data-toggle="collapse"
-              data-target="#admin-gestion"
-              aria-expanded="false"
+              (click)="toggleMenuSection('admin-gestion', $event)"
+              [attr.aria-expanded]="isMenuSectionOpen('admin-gestion', ['/administration/personnel', '/administration/utilisateurs'])"
               aria-controls="admin-gestion"
               >Gestion</a
             >
-            <div id="admin-gestion" class="collapse">
+            <div
+              id="admin-gestion"
+              class="collapse"
+              [class.show]="isMenuSectionOpen('admin-gestion', ['/administration/personnel', '/administration/utilisateurs'])"
+            >
               <a class="collapse-item pl-4" routerLink="/administration/personnel" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }"
                 >Personnel</a
               >
@@ -270,16 +291,19 @@
             <div class="dropdown-divider"></div>
 
             <a
-              class="collapse-item mena-submenu-toggle collapsed"
+              class="collapse-item mena-submenu-toggle"
+              [class.collapsed]="!isMenuSectionOpen('admin-securite', ['/administration/acteurs', '/administration/role-permissions'])"
               href="#"
-              (click)="$event.preventDefault()"
-              data-toggle="collapse"
-              data-target="#admin-securite"
-              aria-expanded="false"
+              (click)="toggleMenuSection('admin-securite', $event)"
+              [attr.aria-expanded]="isMenuSectionOpen('admin-securite', ['/administration/acteurs', '/administration/role-permissions'])"
               aria-controls="admin-securite"
               >Sécurité</a
             >
-            <div id="admin-securite" class="collapse">
+            <div
+              id="admin-securite"
+              class="collapse"
+              [class.show]="isMenuSectionOpen('admin-securite', ['/administration/acteurs', '/administration/role-permissions'])"
+            >
               <a class="collapse-item pl-4" routerLink="/administration/acteurs" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }"
                 >Acteurs (rôles)</a
               >
@@ -296,24 +320,35 @@
       </li>
 
       <li class="nav-item">
-        <a class="nav-link collapsed" href="#" (click)="$event.preventDefault()" data-toggle="collapse" data-target="#collapseUtilities5" aria-expanded="true" aria-controls="collapseUtilities5">
+        <a
+          class="nav-link"
+          [class.collapsed]="!isParametrageOpen()"
+          href="#"
+          (click)="toggleParametrage($event)"
+          [attr.aria-expanded]="isParametrageOpen()"
+          aria-controls="collapseUtilities5"
+        >
           <i class="fas fa-fw fa-wrench"></i>
           <span>PARAMETRAGE</span>
         </a>
-        <div id="collapseUtilities5" class="collapse" aria-labelledby="headingUtilities" data-parent="#accordionSidebar">
+        <div
+          id="collapseUtilities5"
+          class="collapse"
+          [class.show]="isParametrageOpen()"
+          aria-labelledby="headingUtilities"
+        >
           <div class="bg-white py-2 collapse-inner rounded">
             <ng-container *ngFor="let g of referentielGroups">
               <a
-                class="collapse-item mena-submenu-toggle collapsed"
+                class="collapse-item mena-submenu-toggle"
+                [class.collapsed]="!isRefGroupOpen(g)"
                 href="#"
-                (click)="$event.preventDefault()"
-                data-toggle="collapse"
-                [attr.data-target]="'#' + groupCollapseId('ref', g.title)"
-                aria-expanded="false"
+                (click)="toggleMenuSection(groupCollapseId('ref', g.title), $event)"
+                [attr.aria-expanded]="isRefGroupOpen(g)"
                 [attr.aria-controls]="groupCollapseId('ref', g.title)"
                 >{{ g.title }}</a
               >
-              <div [id]="groupCollapseId('ref', g.title)" class="collapse">
+              <div [id]="groupCollapseId('ref', g.title)" class="collapse" [class.show]="isRefGroupOpen(g)">
                 <a
                   *ngFor="let r of g.items"
                   class="collapse-item pl-4"

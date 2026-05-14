@@ -1,4 +1,17 @@
+<div *ngIf="profileLoadError" class="alert alert-danger shadow-sm border-0 mb-4">
+  {{ profileLoadError }}
+</div>
+
+<ng-container *ngIf="!profileLoadError">
 <ng-container *ngIf="session$ | async as session; else loadingProfile">
+  <div *ngIf="accessDeniedMessage" class="alert alert-warning shadow-sm border-0 mb-4 d-flex justify-content-between align-items-start gap-2">
+    <div>
+      <strong>Accès refusé.</strong>
+      {{ accessDeniedMessage }}
+    </div>
+    <button type="button" class="btn btn-sm btn-outline-secondary flex-shrink-0" (click)="dismissAccessDenied()">Fermer</button>
+  </div>
+
   <div class="d-sm-flex align-items-center justify-content-between mb-4">
     <div>
       <h1 class="h3 mb-1 text-gray-800">Profil utilisateur</h1>
@@ -63,8 +76,9 @@
   </div>
 </ng-container>
 
-<ng-template #loadingProfile>
-  <div class="card shadow-sm border-0">
-    <div class="card-body text-muted">Chargement du profil...</div>
-  </div>
-</ng-template>
+  <ng-template #loadingProfile>
+    <div class="card shadow-sm border-0">
+      <div class="card-body text-muted">Chargement du profil...</div>
+    </div>
+  </ng-template>
+</ng-container>

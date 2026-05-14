@@ -33,6 +33,8 @@ import {
   TypePromoteur,
 } from '@models/centre';
 import { API_BASE_URL } from '@core/tokens/api-base-url.token';
+import { AuthSession } from '@core/models/auth.models';
+import { AuthService } from '@services/auth.service';
 
 type DrenaDepartementOption = RefOption & {
   drena?: CentreRefDetails | null;
@@ -46,6 +48,13 @@ type DrenaDepartementOption = RefOption & {
   templateUrl: './alpha-centres.component.html',
 })
 export class AlphaCentresComponent {
+  private static readonly NATIONAL_ROLES = new Set([
+    'ADMIN',
+    'SUPER_ADMIN',
+    'SUPER_ROOT',
+    'SUPERVISEUR_AENF',
+    'DIRECTEUR',
+  ]);
   readonly typePromoteurOptions: TypePromoteur[] = ['PHYSIQUE', 'MORALE'];
   pageTitle = 'Centres Alpha';
   pageSubtitle = '';
@@ -109,7 +118,7 @@ export class AlphaCentresComponent {
       encadrerParMena: true,
       estElectrifie: false,
       aDeLeau: false,
-      nombreVisite: 0,
+      nombreVisite: null,
       totalApprenants: null,
       totalHommes: null,
       totalFemmes: null,
@@ -233,6 +242,7 @@ export class AlphaCentresComponent {
     private readonly http: HttpClient,
     private readonly route: ActivatedRoute,
     @Inject(API_BASE_URL) private readonly apiBaseUrl: string,
+    private readonly auth: AuthService,
   ) {
     const data = this.route.snapshot.data;
     this.pageTitle = (data['title'] as string | undefined) ?? this.pageTitle;
@@ -407,6 +417,78 @@ export class AlphaCentresComponent {
         libelle: x.libelleNiveauAlpha ?? x.libelleNiveau ?? x.libelle ?? undefined,
       })),
     );
+    this.applySessionGeographyAnchors();
+  }
+
+  private isNationalScope(s: AuthSession | null): boolean {
+    if (!s?.roles?.length) return false;
+    return s.roles.some((r) => AlphaCentresComponent.NATIONAL_ROLES.has(r));
+  }
+
+  private applySessionGeographyAnchors(): void {
+    const s = this.auth.currentSession;
+    if (!s || this.isNationalScope(s)) return;
+    if (s.idIep != null) {
+      this.model.centre.iepId = s.idIep;
+      const iep = this.ieps.find((i) => i.id === s.idIep);
+      if (iep?.drena?.id != null) {
+        this.createDrenaId = iep.drena.id;
+      }
+    }
+    if (s.idDrena != null && s.idIep == null) {
+      this.createDrenaId = s.idDrena;
+    }
+    if (s.idLocalite != null) {
+      this.model.centre.localiteId = s.idLocalite;
+      const loc = this.localites.find((l) => l.id === s.idLocalite);
+      if (loc) {
+        this.createCommuneId = loc.commune?.id ?? null;
+        this.createDepartementId = this.localiteDepartementId(loc);
+        this.createRegionId =
+          this.createDepartementId != null ? this.departementRegionId(this.createDepartementId) : null;
+        if (this.createDrenaId == null && s.idDrena != null) {
+          this.createDrenaId = s.idDrena;
+        }
+      }
+    }
+    if (s.idRegion != null && s.idIep == null && s.idDrena == null && s.idLocalite == null) {
+      this.createRegionId = s.idRegion;
+    }
+  }
+
+  lockSessionGeoRegion(): boolean {
+    const s = this.auth.currentSession;
+    if (!s || this.isNationalScope(s)) return false;
+    if (s.idLocalite != null || s.idIep != null) return true;
+    return s.idRegion != null && s.idDrena == null && s.idIep == null;
+  }
+
+  lockSessionGeoDrena(): boolean {
+    const s = this.auth.currentSession;
+    if (!s || this.isNationalScope(s)) return false;
+    return s.idDrena != null || s.idIep != null || s.idLocalite != null;
+  }
+
+  lockSessionGeoDepartement(): boolean {
+    const s = this.auth.currentSession;
+    if (!s || this.isNationalScope(s)) return false;
+    return s.idLocalite != null;
+  }
+
+  lockSessionGeoCommune(): boolean {
+    return this.lockSessionGeoDepartement();
+  }
+
+  lockSessionGeoIep(): boolean {
+    const s = this.auth.currentSession;
+    if (!s || this.isNationalScope(s)) return false;
+    return s.idIep != null;
+  }
+
+  lockSessionGeoLocalite(): boolean {
+    const s = this.auth.currentSession;
+    if (!s || this.isNationalScope(s)) return false;
+    return s.idLocalite != null;
   }
 
   canGoNext(): boolean {
@@ -716,6 +798,8 @@ export class AlphaCentresComponent {
 
   submit(): void {
     if (!this.canSubmit()) return;
+    this.syncWizardTotalApprenants();
+    this.sanitizeWizardNonNegativeNumbers();
     this.saving = true;
     this.errorMessage = null;
     const payload: AlphaFullCreatePayload = {
@@ -801,6 +885,7 @@ export class AlphaCentresComponent {
           encadrerParMena: d.encadrerParMena ?? null,
           idPromoteur: d.promoteur?.idPromoteur ?? d.idPromoteur ?? null,
         };
+        this.syncEditTotalApprenants();
         this.editRegionId = d.region?.id ?? null;
         this.editDrenaId = d.drena?.id ?? this.ieps.find((iep) => iep.id === d.idIep)?.drena?.id ?? null;
         const selectedLocalite = this.localites.find((localite) => localite.id === d.idLocalite);
@@ -834,6 +919,8 @@ export class AlphaCentresComponent {
 
   saveEdit(): void {
     if (!this.canSaveEdit()) return;
+    this.syncEditTotalApprenants();
+    this.sanitizeEditNonNegativeNumbers();
     const id = this.editRowId!;
     this.saving = true;
     const payload = {
@@ -873,7 +960,7 @@ export class AlphaCentresComponent {
         encadrerParMena: true,
         estElectrifie: false,
         aDeLeau: false,
-        nombreVisite: 0,
+        nombreVisite: null,
         totalApprenants: null,
         totalHommes: null,
         totalFemmes: null,
@@ -893,6 +980,7 @@ export class AlphaCentresComponent {
     this.createDepartementId = null;
     this.createCommuneId = null;
     this.promoteurMode = 'existing';
+    this.applySessionGeographyAnchors();
   }
 
   onPromoteurModeChange(): void {
@@ -904,7 +992,18 @@ export class AlphaCentresComponent {
       id: null,
       typePromoteur: 'PHYSIQUE',
       libellePromoteur: '',
-      personnePhysique: { libellePersonnePhysique: '', nom: '', prenom: '', contact: '', fonction: '' },
+      personnePhysique: {
+        nom: '',
+        prenom: '',
+        contact: '',
+        fonction: '',
+        sexe: '',
+        dateNaissance: '',
+        anciennete: '',
+        boitePostale: '',
+        niveauEtudes: '',
+        civilite: '',
+      },
       personneMorale: null,
     };
   }
@@ -925,11 +1024,16 @@ export class AlphaCentresComponent {
       return;
     }
     this.model.promoteur.personnePhysique = this.model.promoteur.personnePhysique ?? {
-      libellePersonnePhysique: '',
       nom: '',
       prenom: '',
       contact: '',
       fonction: '',
+      sexe: '',
+      dateNaissance: '',
+      anciennete: '',
+      boitePostale: '',
+      niveauEtudes: '',
+      civilite: '',
     };
     this.model.promoteur.personneMorale = null;
   }
@@ -1298,11 +1402,12 @@ export class AlphaCentresComponent {
       const libelle = p.libellePromoteur?.trim();
       if (code && libelle) return `${code} — ${libelle}`;
       if (code || libelle) return (code || libelle) as string;
+      if (p.idPromoteur != null) return `#${p.idPromoteur}`;
     }
     const id = row.idPromoteur;
     if (id != null) {
       const opt = this.promoteurs.find((x) => x.id === id);
-      return opt ? this.refOptionLabel(opt) : '—';
+      return opt ? this.refOptionLabel(opt) : `#${id}`;
     }
     return '—';
   }
@@ -1394,12 +1499,86 @@ export class AlphaCentresComponent {
     if (this.promoteurMode === 'existing') {
       return { id: this.model.promoteur.id ?? null };
     }
+    const rawPp = this.model.promoteur.personnePhysique;
+    const personnePhysique =
+      this.model.promoteur.typePromoteur === 'PHYSIQUE' && rawPp
+        ? {
+            libellePersonnePhysique: null,
+            nom: this.trimToNull(rawPp.nom),
+            prenom: this.trimToNull(rawPp.prenom),
+            contact: this.trimToNull(rawPp.contact),
+            fonction: this.trimToNull(rawPp.fonction),
+            sexe: this.trimToNull(rawPp.sexe),
+            dateNaissance: this.trimToNull(rawPp.dateNaissance as string | null | undefined),
+            anciennete: this.trimToNull(rawPp.anciennete),
+            boitePostale: this.trimToNull(rawPp.boitePostale),
+            niveauEtudes: this.trimToNull(rawPp.niveauEtudes),
+            civilite: this.trimToNull(rawPp.civilite),
+          }
+        : null;
     return {
-      libellePromoteur: String(this.model.promoteur.libellePromoteur ?? '').trim() || null,
+      libellePromoteur: null,
       typePromoteur: this.model.promoteur.typePromoteur ?? null,
-      personnePhysique: this.model.promoteur.personnePhysique ?? null,
+      personnePhysique,
       personneMorale: this.model.promoteur.personneMorale ?? null,
     };
+  }
+
+  onWizardGenreCountsChange(): void {
+    this.syncWizardTotalApprenants();
+  }
+
+  onEditGenreCountsChange(): void {
+    this.syncEditTotalApprenants();
+  }
+
+  private syncWizardTotalApprenants(): void {
+    const c = this.model.centre;
+    c.totalHommes = this.nonNegativeIntOrNull(c.totalHommes as number | null);
+    c.totalFemmes = this.nonNegativeIntOrNull(c.totalFemmes as number | null);
+    const h = c.totalHommes;
+    const f = c.totalFemmes;
+    if (h == null && f == null) {
+      c.totalApprenants = null;
+    } else {
+      c.totalApprenants = (h ?? 0) + (f ?? 0);
+    }
+  }
+
+  private syncEditTotalApprenants(): void {
+    const h = this.nonNegativeIntOrNull(this.editForm.totalHommes);
+    const f = this.nonNegativeIntOrNull(this.editForm.totalFemmes);
+    this.editForm.totalHommes = h;
+    this.editForm.totalFemmes = f;
+    if (h == null && f == null) {
+      this.editForm.totalApprenants = null;
+    } else {
+      this.editForm.totalApprenants = (h ?? 0) + (f ?? 0);
+    }
+  }
+
+  private sanitizeWizardNonNegativeNumbers(): void {
+    this.syncWizardTotalApprenants();
+    const c = this.model.centre;
+    c.nombreVisite = this.nonNegativeIntOrNull(c.nombreVisite as number | null);
+  }
+
+  private sanitizeEditNonNegativeNumbers(): void {
+    this.syncEditTotalApprenants();
+    this.editForm.nombreVisite = this.nonNegativeIntOrNull(this.editForm.nombreVisite);
+  }
+
+  private nonNegativeIntOrNull(v: number | string | null | undefined): number | null {
+    if (v === '' || v == null) return null;
+    const n = typeof v === 'number' ? v : Number(v);
+    if (!Number.isFinite(n)) return null;
+    const i = Math.trunc(n);
+    return i < 0 ? null : i;
+  }
+
+  private trimToNull(v: string | null | undefined): string | null {
+    const s = String(v ?? '').trim();
+    return s === '' ? null : s;
   }
 
   applyListFilters(): void {

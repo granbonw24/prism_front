@@ -7,6 +7,7 @@ import {
 } from '@angular/forms';
 import { Router } from '@angular/router';
 import { BRAND_CONFIG } from '@core/config/brand.config';
+import { finalize } from 'rxjs';
 import { AuthService } from '@services/auth.service';
 
 @Component({
@@ -41,17 +42,25 @@ export class LoginComponent {
       this.form.markAllAsTouched();
       return;
     }
+    if (this.submitting) {
+      return;
+    }
     this.submitting = true;
     const { username, password } = this.form.getRawValue();
-    this.auth.login({ username, password }).subscribe({
-      next: () => {
-        this.submitting = false;
-        void this.router.navigateByUrl('/');
-      },
-      error: () => {
-        this.submitting = false;
-        this.errorMessage = 'Identifiants incorrects ou compte indisponible.';
-      },
-    });
+    this.auth
+      .login({ username, password })
+      .pipe(
+        finalize(() => {
+          this.submitting = false;
+        }),
+      )
+      .subscribe({
+        next: () => {
+          void this.router.navigateByUrl('/');
+        },
+        error: () => {
+          this.errorMessage = 'Identifiants incorrects ou compte indisponible.';
+        },
+      });
   }
 }

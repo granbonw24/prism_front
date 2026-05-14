@@ -19,6 +19,8 @@ export class AuthPresentationService {
       CONSEILLER: 'Conseiller',
       COORDONNATEUR: 'Coordonnateur',
       SUPERVISEUR: 'Superviseur',
+      SUPERVISEUR_AENF: 'Superviseur AENF',
+      DIRECTEUR: 'Directeur',
       IEPP: 'IEPP',
     };
 
@@ -57,7 +59,16 @@ export class AuthPresentationService {
 
   private mainRole(roles: string[]): string | null {
     const normalizedRoles = roles.map((role) => role.toUpperCase());
-    const priority = ['ADMIN', 'ADMINISTRATEUR', 'COORDONNATEUR', 'SUPERVISEUR', 'IEPP', 'CONSEILLER'];
+    const priority = [
+      'ADMIN',
+      'ADMINISTRATEUR',
+      'SUPERVISEUR_AENF',
+      'DIRECTEUR',
+      'COORDONNATEUR',
+      'SUPERVISEUR',
+      'IEPP',
+      'CONSEILLER',
+    ];
     return priority.find((role) => normalizedRoles.includes(role)) ?? normalizedRoles[0] ?? null;
   }
 

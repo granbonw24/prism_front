@@ -144,6 +144,7 @@ const INTEGRATION_CONFIG: Record<IntegrationKind, IntegrationConfig> = {
       [inputPermissionFeature]="'SAISIE_DONNEES'"
       [inputWorkflowFeature]="'SAISIE_DONNEES'"
       [inputCreateFields]="activeConfig.createFields"
+      [inputEffectifDenseForm]="true"
       [inputListColumnKeys]="activeConfig.listColumnKeys"
       [addFormContextLabel]="'Type d’effectif'"
       [addFormContextValue]="selectedKind"

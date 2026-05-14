@@ -35,13 +35,14 @@ export const unauthorizedInterceptor: HttpInterceptorFn = (req, next) => {
           3500,
         );
 
-        // Laisse un court instant pour afficher l'alerte avant déconnexion.
+        // Déconnexion immédiate : si le jeton reste 1,2 s après le 401, `guestGuard` peut encore
+        // renvoyer vers `/` pendant un POST `/login` en cours → annulation XHR (réseau rouge, réponse vide).
+        tokens.clear();
+        sessionStore.clear();
         setTimeout(() => {
-          tokens.clear();
-          sessionStore.clear();
           void router.navigateByUrl('/login', { replaceUrl: true });
           unauthorizedFlowInProgress = false;
-        }, 1200);
+        }, 300);
 
         return throwError(() => err);
       }

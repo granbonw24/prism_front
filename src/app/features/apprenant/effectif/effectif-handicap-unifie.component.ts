@@ -60,6 +60,7 @@ const HANDICAP_TYPE_CONFIG: Record<HandicapCentreType, HandicapConfig> = {
       [inputPermissionFeature]="'SAISIE_DONNEES'"
       [inputWorkflowFeature]="'SAISIE_DONNEES'"
       [inputCreateFields]="activeConfig.createFields"
+      [inputEffectifDenseForm]="true"
       [inputStatsContext]="listStatsContext"
       [addFormContextLabel]="'Type de centre'"
       [addFormContextValue]="selectedType"

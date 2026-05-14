@@ -67,6 +67,11 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
    * (échantillon des clés API, max 18). Les autres champs restent visibles dans le formulaire détail.
    */
   @Input() inputListColumnKeys?: string[];
+  /**
+   * Formulaire modal « effectif » : champs non numériques en 2 colonnes, effectifs en 3 colonnes
+   * avec zone interne défilante (voir menus Apprenant / effectif centre).
+   */
+  @Input() inputEffectifDenseForm = false;
 
   title = '';
   subtitle = '';
@@ -236,6 +241,16 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
   /** Champs formulaire hors clé technique `id` (réservée à la BD / URL). */
   get fieldsForForm(): ReferentielFormField[] {
     return this.createFields.filter((f) => f.key !== 'id');
+  }
+
+  /** Mise en page dense effectif : tout sauf les compteurs numériques. */
+  get formFieldsNonNumeric(): ReferentielFormField[] {
+    return this.fieldsForForm.filter((f) => f.type !== 'number');
+  }
+
+  /** Mise en page dense effectif : uniquement les champs numériques (grille 3 colonnes). */
+  get formFieldsNumeric(): ReferentielFormField[] {
+    return this.fieldsForForm.filter((f) => f.type === 'number');
   }
 
   /** Carte actifs / inactifs : uniquement si une colonne d’état booléenne est détectée. */

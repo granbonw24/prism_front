@@ -15,6 +15,7 @@ import { effectifStatsByCentreType } from './effectif-list-stats-context';
       [inputPermissionFeature]="'SAISIE_DONNEES'"
       [inputWorkflowFeature]="'SAISIE_DONNEES'"
       [inputCreateFields]="fields"
+      [inputEffectifDenseForm]="true"
     />
   `,
 })

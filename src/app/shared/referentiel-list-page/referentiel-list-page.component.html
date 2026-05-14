@@ -447,7 +447,11 @@
   [style.display]="formModalOpen ? 'block' : 'none'"
   *ngIf="formModalOpen"
 >
-  <div class="modal-dialog modal-dialog-centered modal-lg" (click)="$event.stopPropagation()">
+  <div
+    class="modal-dialog modal-dialog-centered"
+    [ngClass]="inputEffectifDenseForm ? 'modal-xl' : 'modal-lg'"
+    (click)="$event.stopPropagation()"
+  >
     <div class="modal-content mena-modal-content border-0 shadow">
       <div class="modal-header border-0 mena-modal-header">
         <h5 class="modal-title font-weight-bold">{{ formModalTitle }}</h5>
@@ -480,15 +484,15 @@
           <div *ngIf="formError" class="alert alert-danger small">
             {{ formError }}
           </div>
-          <form [formGroup]="fg" (ngSubmit)="submitRecord()">
-            <div class="form-row">
-              <div
-                *ngFor="let field of fieldsForForm"
-                class="form-group col-md-6"
-              >
-                <label [attr.for]="'cf-' + field.key" class="small font-weight-bold">{{
-                  field.label
-                }}</label>
+          <form [formGroup]="fg" (ngSubmit)="submitRecord()" class="mena-record-form">
+            <ng-template #refField let-field="field" let-colClass="colClass" let-numberCompact="numberCompact">
+              <div class="form-group mb-2" [ngClass]="colClass">
+                <label
+                  [attr.for]="'cf-' + field.key"
+                  class="small font-weight-bold text-secondary mena-field-label mb-1 d-block text-truncate"
+                  [title]="field.label"
+                  >{{ field.label }}</label
+                >
                 <input
                   *ngIf="field.type === 'text'"
                   type="text"
@@ -501,8 +505,10 @@
                   *ngIf="field.type === 'number'"
                   type="number"
                   class="form-control form-control-sm"
+                  [ngClass]="{ 'text-right mena-effectif-num-input': numberCompact }"
                   [id]="'cf-' + field.key"
                   [formControlName]="field.key"
+                  inputmode="numeric"
                 />
                 <input
                   *ngIf="field.type === 'date'"
@@ -534,21 +540,65 @@
                   </label>
                 </div>
                 <div
-                  *ngIf="
-                    fg.get(field.key)?.invalid && fg.get(field.key)?.touched
-                  "
+                  *ngIf="fg.get(field.key)?.invalid && fg.get(field.key)?.touched"
                   class="text-danger small"
                 >
                   Champ requis ou trop long.
                 </div>
               </div>
-            </div>
-            <div class="d-flex justify-content-end gap-2 mt-3">
-              <button
-                type="button"
-                class="btn btn-light btn-sm"
-                (click)="closeFormModal()"
+            </ng-template>
+
+            <ng-container *ngIf="inputEffectifDenseForm; else classicReferentielFields">
+              <div class="mena-effectif-meta card border-0 shadow-none bg-light rounded-lg mb-2">
+                <div class="card-body py-2 px-2">
+                  <div class="form-row">
+                    <ng-container *ngFor="let field of formFieldsNonNumeric">
+                      <ng-container
+                        *ngTemplateOutlet="
+                          refField;
+                          context: { field: field, colClass: 'col-md-6', numberCompact: false }
+                        "
+                      ></ng-container>
+                    </ng-container>
+                  </div>
+                </div>
+              </div>
+              <div
+                class="mena-effectif-numeric-scroll rounded-lg"
+                *ngIf="formFieldsNumeric.length"
+                role="region"
+                aria-label="Effectifs par tranche"
               >
+                <div class="mena-effectif-numeric-caption small text-muted mb-2 px-1">
+                  Effectifs (valeurs numériques) — faire défiler si besoin
+                </div>
+                <div class="form-row">
+                  <ng-container *ngFor="let field of formFieldsNumeric">
+                    <ng-container
+                      *ngTemplateOutlet="
+                        refField;
+                        context: { field: field, colClass: 'col-md-4', numberCompact: true }
+                      "
+                    ></ng-container>
+                  </ng-container>
+                </div>
+              </div>
+            </ng-container>
+            <ng-template #classicReferentielFields>
+              <div class="form-row">
+                <ng-container *ngFor="let field of fieldsForForm">
+                  <ng-container
+                    *ngTemplateOutlet="refField; context: { field: field, colClass: 'col-md-6', numberCompact: false }"
+                  ></ng-container>
+                </ng-container>
+              </div>
+            </ng-template>
+
+            <div
+              class="d-flex justify-content-end gap-2 pt-3 mt-2 mena-record-form-actions"
+              [class.border-top]="inputEffectifDenseForm"
+            >
+              <button type="button" class="btn btn-light btn-sm" (click)="closeFormModal()">
                 Annuler
               </button>
               <button

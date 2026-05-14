@@ -1,7 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Inject, Injectable } from '@angular/core';
 import { Router } from '@angular/router';
-import { Observable, tap } from 'rxjs';
+import { Observable, finalize, shareReplay, tap } from 'rxjs';
 import {
   AuthMeResponse,
   AuthSession,
@@ -14,6 +14,8 @@ import { TokenStorageService } from '@services/token-storage.service';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
+  private refreshMeInFlight: Observable<AuthMeResponse> | null = null;
+
   constructor(
     private readonly http: HttpClient,
     @Inject(API_BASE_URL) private readonly apiBaseUrl: string,
@@ -76,16 +78,22 @@ export class AuthService {
   }
 
   refreshMe(): Observable<AuthMeResponse> {
+    if (this.refreshMeInFlight) {
+      return this.refreshMeInFlight;
+    }
     const url = `${this.apiBaseUrl}/api/auth/me`;
-    return this.http.get<AuthMeResponse>(url).pipe(
+    this.refreshMeInFlight = this.http.get<AuthMeResponse>(url).pipe(
       tap((me) => {
         const prev = this.sessionStore.current;
+        const nextPermissions = Array.isArray(me.permissions)
+          ? me.permissions
+          : (prev?.permissions ?? []);
         this.sessionStore.setSession({
           userId: me.userId,
           username: me.username,
-          email: prev?.email,
+          email: me.email ?? prev?.email,
           roles: me.roles ?? prev?.roles ?? [],
-          permissions: me.permissions ?? [],
+          permissions: nextPermissions,
           idRegion: me.idRegion ?? prev?.idRegion ?? null,
           idDrena: me.idDrena ?? prev?.idDrena ?? null,
           idIep: me.idIep ?? prev?.idIep ?? null,
@@ -95,7 +103,12 @@ export class AuthService {
           idLocalite: me.idLocalite ?? prev?.idLocalite ?? null,
         });
       }),
+      finalize(() => {
+        this.refreshMeInFlight = null;
+      }),
+      shareReplay({ bufferSize: 1, refCount: true }),
     );
+    return this.refreshMeInFlight;
   }
 
   logout(): void {
@@ -108,8 +121,7 @@ export class AuthService {
     if (!this.tokens.getAccessToken()) {
       return;
     }
-    this.refreshMe().subscribe({
-      error: () => this.logout(),
-    });
+    // Session : chargée par `authGuard` via `refreshMe()` au premier accès à l'app shell (évite double
+    // appel concurrent au démarrage avec le garde et les effets de bord sur `sessionStore`).
   }
 }

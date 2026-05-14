@@ -6,3 +6,11 @@
   min-width: 0;
   width: 100%;
 }
+
+.mena-logout-modal {
+  z-index: 1055;
+}
+
+:host .modal-backdrop {
+  z-index: 1050;
+}
