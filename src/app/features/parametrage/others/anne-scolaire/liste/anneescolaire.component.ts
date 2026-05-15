@@ -5,11 +5,12 @@ import { RouterLink } from '@angular/router';
 import type { Anneescolaire } from '@models/anneescolaire';
 import { AnneescolaireService } from '@services/anneescolaire.service';
 import { ConfirmDeleteComponent } from '@shared/confirm-delete/confirm-delete.component';
+import { MenaRowActionButtonComponent } from '@shared/mena-row-action-button/mena-row-action-button.component';
 
 @Component({
   selector: 'app-anneescolaire',
   standalone: true,
-  imports: [CommonModule, RouterLink, ConfirmDeleteComponent],
+  imports: [CommonModule, RouterLink, ConfirmDeleteComponent, MenaRowActionButtonComponent],
   templateUrl: './anneescolaire.component.html',
   styleUrl: './anneescolaire.component.css',
 })

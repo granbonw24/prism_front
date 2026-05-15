@@ -1,0 +1,20 @@
+<a
+  *ngIf="useLink"
+  [routerLink]="routerLink!"
+  [class]="buttonClass"
+  [title]="title"
+  [attr.aria-label]="effectiveAriaLabel"
+>
+  <i [class]="icon" aria-hidden="true"></i>
+</a>
+<button
+  *ngIf="!useLink"
+  type="button"
+  [class]="buttonClass"
+  [title]="title"
+  [attr.aria-label]="effectiveAriaLabel"
+  [disabled]="disabled"
+  (click)="onClick($event)"
+>
+  <i [class]="icon" aria-hidden="true"></i>
+</button>

@@ -3,12 +3,13 @@ import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http'
 import { Component, Inject, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
+import { MenaRowActionButtonComponent } from '@shared/mena-row-action-button/mena-row-action-button.component';
 import { forkJoin } from 'rxjs';
 import { unwrapListBody } from '@core/http/unwrap-spring-page';
 import { formatHttpError } from '@core/utils/http-error.util';
 import { API_BASE_URL } from '@core/tokens/api-base-url.token';
 import type { SpringPage } from '@models/centre';
-import type { VisitePayload, VisiteRow, VisiteSuiviMode } from '@models/visite';
+import type { VisitePayload, VisiteRef, VisiteRow, VisiteSuiviMode } from '@models/visite';
 import { AuthService } from '@services/auth.service';
 
 type AlphaOption = {
@@ -20,7 +21,7 @@ type AlphaOption = {
   libelle?: string | null;
 };
 
-type VisitePayloadFieldKey = Exclude<keyof VisitePayload, 'mode'>;
+type VisitePayloadFieldKey = Exclude<keyof VisitePayload, 'mode' | 'idPeriodeActivite'>;
 
 type VisiteField = {
   key: VisitePayloadFieldKey;
@@ -125,7 +126,7 @@ type WorkflowDecisionAction = 'rejeter' | 'retourner';
 @Component({
   selector: 'app-activites-centre-visite',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [CommonModule, FormsModule, RouterLink, MenaRowActionButtonComponent],
   templateUrl: './activites-centre-visite.component.html',
   styleUrl: './activites-centre-visite.component.css',
 })
@@ -139,8 +140,10 @@ export class ActivitesCentreVisiteComponent implements OnInit {
 
   rows: CentralRow[] = [];
   alphas: AlphaOption[] = [];
+  periodes: VisiteRef[] = [];
   searchText = '';
   filterAlphaId: number | '' = '';
+  filterPeriodeId: number | '' = '';
 
   createOpen = false;
   editTarget: VisiteRow | null = null;
@@ -192,7 +195,7 @@ export class ActivitesCentreVisiteComponent implements OnInit {
   }
 
   get tableColspan(): number {
-    return 4 + this.suiviFields.length + (this.showMaitriseColumns ? this.pointVisiteFields.length : 0);
+    return 5 + this.suiviFields.length + (this.showMaitriseColumns ? this.pointVisiteFields.length : 0);
   }
 
   get maitriseOptions(): Array<{ value: MaitriseResponse; label: string; hint: string }> {
@@ -243,6 +246,10 @@ export class ActivitesCentreVisiteComponent implements OnInit {
       if (this.filterAlphaId !== '' && alphaId !== Number(this.filterAlphaId)) {
         return false;
       }
+      const periodeId = row.periodeActivite?.id ?? null;
+      if (this.filterPeriodeId !== '' && periodeId !== Number(this.filterPeriodeId)) {
+        return false;
+      }
       if (!q) {
         return true;
       }
@@ -251,6 +258,8 @@ export class ActivitesCentreVisiteComponent implements OnInit {
         row.centralSource,
         row.alpha?.code,
         row.alpha?.libelle,
+        row.periodeActivite?.code,
+        row.periodeActivite?.libelle,
         row.maitriseSeanceLecture,
         row.maitriseSeanceEcriture,
         row.maitriseSeanceCalcul,
@@ -273,10 +282,12 @@ export class ActivitesCentreVisiteComponent implements OnInit {
       alphas: this.http.get<SpringPage<AlphaOption> | AlphaOption[]>(`${this.apiBaseUrl}/api/alpha`, {
         params: new HttpParams().set('page', '0').set('size', '1000').set('sort', 'id,asc'),
       }),
+      periodes: this.http.get<VisiteRef[]>(`${this.apiBaseUrl}/api/PeriodeActivites`),
     }).subscribe({
-      next: ({ visites, alphas }) => {
+      next: ({ visites, alphas, periodes }) => {
         this.rows = (unwrapListBody(visites) as VisiteRow[]).sort((a, b) => Number(a.id ?? 0) - Number(b.id ?? 0));
         this.alphas = unwrapListBody(alphas) as AlphaOption[];
+        this.periodes = unwrapListBody(periodes) as VisiteRef[];
         this.loading = false;
         this.loadVisiteWorkflowStatuses();
       },
@@ -294,8 +305,9 @@ export class ActivitesCentreVisiteComponent implements OnInit {
       alphas: this.http.get<SpringPage<AlphaOption> | AlphaOption[]>(`${this.apiBaseUrl}/api/alpha`, {
         params: new HttpParams().set('page', '0').set('size', '1000').set('sort', 'id,asc'),
       }),
+      periodes: this.http.get<VisiteRef[]>(`${this.apiBaseUrl}/api/PeriodeActivites`),
     }).subscribe({
-      next: ({ visites, suivisIepp, suivisSuperviseur, alphas }) => {
+      next: ({ visites, suivisIepp, suivisSuperviseur, alphas, periodes }) => {
         const visitesValidees: CentralRow[] = (unwrapListBody(visites) as VisiteRow[])
           .filter((row) => Boolean(row.valideeCoordonnateur))
           .map((row) => ({ ...row, centralSource: 'Coordonnateur' }));
@@ -308,6 +320,7 @@ export class ActivitesCentreVisiteComponent implements OnInit {
         this.rows = [...visitesValidees, ...ieppValidees, ...superviseurValidees]
           .sort((a, b) => this.centralSortKey(a).localeCompare(this.centralSortKey(b)));
         this.alphas = unwrapListBody(alphas) as AlphaOption[];
+        this.periodes = unwrapListBody(periodes) as VisiteRef[];
         this.loading = false;
       },
       error: (err) => this.onError(err),
@@ -340,6 +353,9 @@ export class ActivitesCentreVisiteComponent implements OnInit {
       if (this.filterAlphaId !== '') {
         this.form.idAlpha = Number(this.filterAlphaId);
       }
+      if (this.filterPeriodeId !== '') {
+        this.form.idPeriodeActivite = Number(this.filterPeriodeId);
+      }
       this.createOpen = true;
       return;
     }
@@ -352,6 +368,9 @@ export class ActivitesCentreVisiteComponent implements OnInit {
     this.form = this.emptyForm();
     if (this.filterAlphaId !== '') {
       this.form.idAlpha = Number(this.filterAlphaId);
+    }
+    if (this.filterPeriodeId !== '') {
+      this.form.idPeriodeActivite = Number(this.filterPeriodeId);
     }
     this.createOpen = true;
   }
@@ -412,6 +431,10 @@ export class ActivitesCentreVisiteComponent implements OnInit {
     this.successMessage = null;
 
     const editId = this.editTarget?.id;
+    if (editId == null && payload.idPeriodeActivite == null) {
+      this.errorMessage = 'La période d’activité est obligatoire.';
+      return;
+    }
     if (this.formMode === 'points' && this.mode !== 'conseiller') {
       this.errorMessage = 'Les points des visites sont enregistrés uniquement dans le flux conseiller.';
       return;
@@ -527,6 +550,7 @@ export class ActivitesCentreVisiteComponent implements OnInit {
   clearFilters(): void {
     this.searchText = '';
     this.filterAlphaId = '';
+    this.filterPeriodeId = '';
   }
 
   alphaId(row: VisiteRow): number | null {
@@ -587,6 +611,18 @@ export class ActivitesCentreVisiteComponent implements OnInit {
       return '—';
     }
     return [ref.code, ref.libelle].filter(Boolean).join(' — ') || `Alpha #${ref.id ?? '—'}`;
+  }
+
+  periodeLabel(row: VisiteRow): string {
+    const ref = row.periodeActivite;
+    if (!ref) {
+      return '—';
+    }
+    return [ref.code, ref.libelle].filter(Boolean).join(' — ') || `Période #${ref.id ?? '—'}`;
+  }
+
+  periodeOptionLabel(p: VisiteRef): string {
+    return [p.code, p.libelle].filter(Boolean).join(' — ') || `Période #${p.id ?? '—'}`;
   }
 
   alphaOptionValue(alpha: AlphaOption): number | null {
@@ -935,6 +971,7 @@ export class ActivitesCentreVisiteComponent implements OnInit {
     return {
       mode: null,
       idAlpha: null,
+      idPeriodeActivite: null,
       maitriseSeanceLecture: null,
       maitriseSeanceEcriture: null,
       maitriseSeanceCalcul: null,
@@ -952,6 +989,7 @@ export class ActivitesCentreVisiteComponent implements OnInit {
     return {
       ...this.emptyForm(),
       idAlpha: this.alphaId(row),
+      idPeriodeActivite: row.periodeActivite?.id ?? null,
       maitriseSeanceLecture: row.maitriseSeanceLecture ?? null,
       maitriseSeanceEcriture: row.maitriseSeanceEcriture ?? null,
       maitriseSeanceCalcul: row.maitriseSeanceCalcul ?? null,
@@ -970,6 +1008,7 @@ export class ActivitesCentreVisiteComponent implements OnInit {
       ...payload,
       mode: payload.mode ?? null,
       idAlpha: this.toNumberOrNull(payload.idAlpha),
+      idPeriodeActivite: this.toNumberOrNull(payload.idPeriodeActivite),
       maitriseSeanceLecture: this.normalizeMaitriseResponse(payload.maitriseSeanceLecture),
       maitriseSeanceEcriture: this.normalizeMaitriseResponse(payload.maitriseSeanceEcriture),
       maitriseSeanceCalcul: this.normalizeMaitriseResponse(payload.maitriseSeanceCalcul),
@@ -987,6 +1026,7 @@ export class ActivitesCentreVisiteComponent implements OnInit {
     if (this.formMode === 'suivi' && this.mode === 'iepp') {
       return {
         idAlpha: payload.idAlpha,
+        idPeriodeActivite: payload.idPeriodeActivite,
         nombreVisiteEffectueParIepp: payload.nombreVisiteEffectueParIepp,
         nombreReunionPointActiviteAlpha: payload.nombreReunionPointActiviteAlpha,
       };
@@ -994,6 +1034,7 @@ export class ActivitesCentreVisiteComponent implements OnInit {
     if (this.formMode === 'suivi' && this.mode === 'superviseur') {
       return {
         idAlpha: payload.idAlpha,
+        idPeriodeActivite: payload.idPeriodeActivite,
         nombreVisiteConseillerSuperviseurEffectue: payload.nombreVisiteConseillerSuperviseurEffectue,
         nombreReunionBilanConseillerSuperviseur: payload.nombreReunionBilanConseillerSuperviseur,
       };

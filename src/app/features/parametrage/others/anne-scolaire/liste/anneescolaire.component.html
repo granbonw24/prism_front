@@ -10,12 +10,7 @@
 
   <div class="card shadow mb-4 border-0">
     <div class="card-header py-3 d-flex flex-wrap align-items-center justify-content-between gap-2 bg-white border-bottom-0">
-      <a routerLink="add" class="btn btn-success btn-icon-split">
-        <span class="icon text-white-50">
-          <i class="fas fa-plus"></i>
-        </span>
-        <span class="text">Ajouter année</span>
-      </a>
+      <app-mena-toolbar-btn variant="add" label="Ajouter année" [routerLink]="['add']" />
       <h6 class="m-0 font-weight-bold text-primary">Liste des années</h6>
     </div>
     <div class="card-body">
@@ -45,28 +40,28 @@
                 <span *ngIf="row.etatAnneeScolaire" class="badge badge-success">En cours</span>
                 <span *ngIf="!row.etatAnneeScolaire" class="badge badge-secondary">—</span>
               </td>
-              <td class="text-nowrap">
-                <a [routerLink]="['edit', row.id]" class="btn btn-info btn-sm btn-icon-split mr-1 mb-1">
-                  <span class="icon text-white-50"><i class="fas fa-pen"></i></span>
-                  <span class="text">Modifier</span>
-                </a>
-                <button
-                  type="button"
-                  class="btn btn-danger btn-sm btn-icon-split mr-1 mb-1"
-                  (click)="openDelete(row)"
-                >
-                  <span class="icon text-white-50"><i class="fas fa-trash"></i></span>
-                  <span class="text">Supprimer</span>
-                </button>
-                <button
-                  type="button"
-                  class="btn btn-secondary btn-sm btn-icon-split mb-1"
-                  [disabled]="row.etatAnneeScolaire || savingEtatId === row.id"
-                  (click)="setCourante(row)"
-                >
-                  <span class="icon text-white-50"><i class="fas fa-lock"></i></span>
-                  <span class="text">{{ savingEtatId === row.id ? '…' : 'Activer' }}</span>
-                </button>
+              <td class="text-nowrap mena-col-actions">
+                <div class="mena-row-actions flex-wrap justify-content-start">
+                  <app-mena-row-action
+                    variant="edit"
+                    [routerLink]="['edit', row.id]"
+                    title="Modifier"
+                    ariaLabel="Modifier"
+                  />
+                  <app-mena-row-action
+                    variant="delete"
+                    title="Supprimer"
+                    ariaLabel="Supprimer"
+                    (clicked)="openDelete(row)"
+                  />
+                  <app-mena-row-action
+                    variant="activate"
+                    [title]="savingEtatId === row.id ? 'En cours…' : 'Activer (année en cours)'"
+                    [ariaLabel]="savingEtatId === row.id ? 'En cours' : 'Activer'"
+                    [disabled]="row.etatAnneeScolaire || savingEtatId === row.id"
+                    (clicked)="setCourante(row)"
+                  />
+                </div>
               </td>
             </tr>
           </tbody>

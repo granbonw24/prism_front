@@ -35,7 +35,7 @@
   <div class="card border-0 shadow-sm mb-3">
     <div class="card-body py-3">
       <div class="form-row align-items-end">
-        <div class="form-group col-md-5 col-sm-12 mb-2 mb-md-0">
+        <div class="form-group col-md-4 col-sm-12 mb-2 mb-md-0">
           <label class="small text-muted mb-1">Recherche</label>
           <input
             class="form-control form-control-sm"
@@ -45,12 +45,21 @@
             autocomplete="off"
           />
         </div>
-        <div class="form-group col-md-5 col-sm-12 mb-2 mb-md-0">
+        <div class="form-group col-md-3 col-sm-12 mb-2 mb-md-0">
           <label class="small text-muted mb-1">Centre Alpha</label>
           <select class="form-control form-control-sm" [(ngModel)]="filterAlphaId">
             <option [ngValue]="''">Tous</option>
             <option *ngFor="let alpha of alphas" [ngValue]="alphaOptionValue(alpha)">
               {{ alphaOptionLabel(alpha) }}
+            </option>
+          </select>
+        </div>
+        <div class="form-group col-md-3 col-sm-12 mb-2 mb-md-0">
+          <label class="small text-muted mb-1">Période d’activité</label>
+          <select class="form-control form-control-sm" [(ngModel)]="filterPeriodeId">
+            <option [ngValue]="''">Toutes</option>
+            <option *ngFor="let p of periodes" [ngValue]="p.id ?? ''">
+              {{ periodeOptionLabel(p) }}
             </option>
           </select>
         </div>
@@ -76,6 +85,7 @@
               <th style="width: 4rem">ID</th>
               <th>Niveau de validation</th>
               <th>Centre Alpha</th>
+              <th>Période d’activité</th>
               <th *ngFor="let field of suiviFields">{{ field.label }}</th>
               <th *ngIf="showMaitriseColumns">Lecture</th>
               <th *ngIf="showMaitriseColumns">Écriture</th>
@@ -91,98 +101,79 @@
                 <span [class]="validationIndicatorClass(row)">{{ validationIndicator(row) }}</span>
               </td>
               <td>{{ alphaLabel(row) }}</td>
+              <td>{{ periodeLabel(row) }}</td>
               <td *ngFor="let field of suiviFields">{{ fieldValue(row, field.key) }}</td>
               <td *ngIf="showMaitriseColumns">{{ maitriseValue(row, 'maitriseSeanceLecture') }}</td>
               <td *ngIf="showMaitriseColumns">{{ maitriseValue(row, 'maitriseSeanceEcriture') }}</td>
               <td *ngIf="showMaitriseColumns">{{ maitriseValue(row, 'maitriseSeanceCalcul') }}</td>
               <td *ngIf="showMaitriseColumns">{{ maitriseValue(row, 'maitriseSeanceCvc') }}</td>
-              <td class="text-center text-nowrap">
-                <a
-                  *ngIf="mode !== 'centrale'"
-                  class="btn btn-sm btn-outline-secondary mr-1"
-                  [routerLink]="['/activites-centre/visite/detail', row.id]"
-                  title="Voir le détail"
-                  aria-label="Voir le détail"
-                >
-                  <i class="fas fa-eye" aria-hidden="true"></i>
-                </a>
-                <button
-                  *ngIf="mode === 'conseiller' && canUpdatePoints"
-                  class="btn btn-sm btn-outline-primary mr-1"
-                  type="button"
-                  [title]="isConseillerLocked(row) ? lockReason(row) : 'Modifier les points des visites'"
-                  aria-label="Modifier les points des visites"
-                  (click)="openEdit(row, 'points')"
-                  [disabled]="saving || isConseillerLocked(row)"
-                >
-                  <i class="fas fa-clipboard-check" aria-hidden="true"></i>
-                </button>
-                <button
-                  *ngIf="mode === 'conseiller' && canSubmitVisiteWorkflow(row)"
-                  class="btn btn-sm btn-outline-warning mr-1"
-                  type="button"
-                  title="Soumettre pour validation"
-                  aria-label="Soumettre pour validation"
-                  (click)="submitVisiteWorkflow(row)"
-                  [disabled]="saving || workflowSubmittingId === row.id"
-                >
-                  <i class="fas fa-paper-plane" aria-hidden="true"></i>
-                </button>
-                <button
-                  *ngIf="mode !== 'conseiller' && mode !== 'centrale' && canManageSuivi"
-                  class="btn btn-sm btn-outline-primary mr-1"
-                  type="button"
-                  [title]="lockReason(row) || 'Modifier le suivi'"
-                  aria-label="Modifier le suivi"
-                  (click)="openEdit(row, 'suivi')"
-                  [disabled]="saving || isSuiviLocked(row)"
-                >
-                  <i class="fas fa-pen" aria-hidden="true"></i>
-                </button>
-                <button
-                  *ngIf="canValidateCoordonnateur || canValidateSuivi"
-                  class="btn btn-sm btn-outline-success mr-1"
-                  type="button"
-                  [title]="isRowValidated(row) ? 'Déjà validé' : 'Valider'"
-                  aria-label="Valider"
-                  (click)="askValidation(row)"
-                  [disabled]="saving || workflowSubmittingId === row.id || !canValidateRow(row)"
-                >
-                  <i class="fas fa-check" aria-hidden="true"></i>
-                </button>
-                <button
-                  *ngIf="canRejectOrReturnVisiteWorkflow(row)"
-                  class="btn btn-sm btn-outline-danger mr-1"
-                  type="button"
-                  title="Rejeter avec motif"
-                  aria-label="Rejeter avec motif"
-                  (click)="openWorkflowDecisionVisite(row, 'rejeter')"
-                  [disabled]="saving || workflowSubmittingId === row.id"
-                >
-                  <i class="fas fa-times" aria-hidden="true"></i>
-                </button>
-                <button
-                  *ngIf="canRejectOrReturnVisiteWorkflow(row)"
-                  class="btn btn-sm btn-outline-secondary mr-1"
-                  type="button"
-                  title="Retourner pour correction"
-                  aria-label="Retourner pour correction"
-                  (click)="openWorkflowDecisionVisite(row, 'retourner')"
-                  [disabled]="saving || workflowSubmittingId === row.id"
-                >
-                  <i class="fas fa-reply" aria-hidden="true"></i>
-                </button>
-                <button
-                  *ngIf="mode !== 'centrale'"
-                  class="btn btn-sm btn-outline-danger"
-                  type="button"
-                  title="Supprimer"
-                  aria-label="Supprimer"
-                  (click)="askDelete(row)"
-                  [disabled]="saving || isDeleteLocked(row)"
-                >
-                  <i class="fas fa-trash" aria-hidden="true"></i>
-                </button>
+              <td class="text-center text-nowrap mena-col-actions">
+                <div class="mena-row-actions justify-content-center">
+                  <app-mena-row-action
+                    *ngIf="mode !== 'centrale'"
+                    variant="detail"
+                    [routerLink]="['/activites-centre/visite/detail', row.id]"
+                    title="Voir le détail"
+                    ariaLabel="Voir le détail"
+                  />
+                  <app-mena-row-action
+                    *ngIf="mode === 'conseiller' && canUpdatePoints"
+                    variant="edit"
+                    iconClass="fas fa-clipboard-check"
+                    [title]="isConseillerLocked(row) ? lockReason(row) : 'Modifier les points des visites'"
+                    ariaLabel="Modifier les points des visites"
+                    [disabled]="saving || isConseillerLocked(row)"
+                    (clicked)="openEdit(row, 'points')"
+                  />
+                  <app-mena-row-action
+                    *ngIf="mode === 'conseiller' && canSubmitVisiteWorkflow(row)"
+                    variant="submit"
+                    title="Soumettre pour validation"
+                    ariaLabel="Soumettre pour validation"
+                    [disabled]="saving || workflowSubmittingId === row.id"
+                    (clicked)="submitVisiteWorkflow(row)"
+                  />
+                  <app-mena-row-action
+                    *ngIf="mode !== 'conseiller' && mode !== 'centrale' && canManageSuivi"
+                    variant="edit"
+                    [title]="lockReason(row) || 'Modifier le suivi'"
+                    ariaLabel="Modifier le suivi"
+                    [disabled]="saving || isSuiviLocked(row)"
+                    (clicked)="openEdit(row, 'suivi')"
+                  />
+                  <app-mena-row-action
+                    *ngIf="canValidateCoordonnateur || canValidateSuivi"
+                    variant="validate"
+                    [title]="isRowValidated(row) ? 'Déjà validé' : 'Valider'"
+                    ariaLabel="Valider"
+                    [disabled]="saving || workflowSubmittingId === row.id || !canValidateRow(row)"
+                    (clicked)="askValidation(row)"
+                  />
+                  <app-mena-row-action
+                    *ngIf="canRejectOrReturnVisiteWorkflow(row)"
+                    variant="refuse"
+                    title="Rejeter avec motif"
+                    ariaLabel="Rejeter avec motif"
+                    [disabled]="saving || workflowSubmittingId === row.id"
+                    (clicked)="openWorkflowDecisionVisite(row, 'rejeter')"
+                  />
+                  <app-mena-row-action
+                    *ngIf="canRejectOrReturnVisiteWorkflow(row)"
+                    variant="return"
+                    title="Retourner pour correction"
+                    ariaLabel="Retourner pour correction"
+                    [disabled]="saving || workflowSubmittingId === row.id"
+                    (clicked)="openWorkflowDecisionVisite(row, 'retourner')"
+                  />
+                  <app-mena-row-action
+                    *ngIf="mode !== 'centrale'"
+                    variant="delete"
+                    title="Supprimer"
+                    ariaLabel="Supprimer"
+                    [disabled]="saving || isDeleteLocked(row)"
+                    (clicked)="askDelete(row)"
+                  />
+                </div>
               </td>
             </tr>
             <tr *ngIf="filteredRows.length === 0">
@@ -209,12 +200,21 @@
       </div>
       <div class="modal-body">
         <div class="form-row">
-          <div class="form-group col-md-12">
+          <div class="form-group col-md-6">
             <label class="small text-muted">Centre Alpha *</label>
             <select class="form-control form-control-sm" [(ngModel)]="form.idAlpha">
               <option [ngValue]="null">—</option>
               <option *ngFor="let alpha of alphas" [ngValue]="alphaOptionValue(alpha)">
                 {{ alphaOptionLabel(alpha) }}
+              </option>
+            </select>
+          </div>
+          <div class="form-group col-md-6">
+            <label class="small text-muted">Période d’activité *</label>
+            <select class="form-control form-control-sm" [(ngModel)]="form.idPeriodeActivite">
+              <option [ngValue]="null">—</option>
+              <option *ngFor="let p of periodes" [ngValue]="p.id ?? null">
+                {{ periodeOptionLabel(p) }}
               </option>
             </select>
           </div>

@@ -3,11 +3,13 @@ import { Component } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { AppRole } from '@models/administration';
 import { AdministrationService } from '@services/administration.service';
+import { MenaRowActionButtonComponent } from '@shared/mena-row-action-button/mena-row-action-button.component';
+import { MenaToolbarButtonComponent } from '@shared/mena-toolbar-button/mena-toolbar-button.component';
 
 @Component({
   selector: 'app-acteurs',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, MenaRowActionButtonComponent, MenaToolbarButtonComponent],
   templateUrl: './acteurs.component.html',
   styleUrl: './acteurs.component.css',
 })

@@ -35,6 +35,8 @@ import {
 import { API_BASE_URL } from '@core/tokens/api-base-url.token';
 import { AuthSession } from '@core/models/auth.models';
 import { AuthService } from '@services/auth.service';
+import { MenaRowActionButtonComponent } from '@shared/mena-row-action-button/mena-row-action-button.component';
+import { MenaToolbarButtonComponent } from '@shared/mena-toolbar-button/mena-toolbar-button.component';
 
 type DrenaDepartementOption = RefOption & {
   drena?: CentreRefDetails | null;
@@ -44,7 +46,7 @@ type DrenaDepartementOption = RefOption & {
 @Component({
   selector: 'app-alpha-centres',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, MenaRowActionButtonComponent, MenaToolbarButtonComponent],
   templateUrl: './alpha-centres.component.html',
 })
 export class AlphaCentresComponent {

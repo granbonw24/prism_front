@@ -1,0 +1,20 @@
+<a
+  *ngIf="useLink"
+  [routerLink]="routerLink!"
+  [class]="buttonClass"
+  [attr.aria-label]="effectiveLabel"
+>
+  <i [class]="icon" class="mena-toolbar-btn__icon" [class.fa-spin]="loading && variant === 'refresh'" aria-hidden="true"></i>
+  <span>{{ effectiveLabel }}</span>
+</a>
+<button
+  *ngIf="!useLink"
+  [type]="type"
+  [class]="buttonClass"
+  [attr.aria-label]="effectiveLabel"
+  [disabled]="disabled"
+  (click)="onClick($event)"
+>
+  <i [class]="icon" class="mena-toolbar-btn__icon" [class.fa-spin]="loading && variant === 'refresh'" aria-hidden="true"></i>
+  <span>{{ effectiveLabel }}</span>
+</button>

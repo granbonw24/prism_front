@@ -16,6 +16,7 @@ import { resolveColumnHeaderLabel } from '@core/config/referentiel-column-labels
 import { API_BASE_URL } from '@core/tokens/api-base-url.token';
 import { formatHttpError } from '@core/utils/http-error.util';
 import { ConfirmDeleteComponent } from '@shared/confirm-delete/confirm-delete.component';
+import { MenaRowActionButtonComponent } from '@shared/mena-row-action-button/mena-row-action-button.component';
 import { AuthService } from '@services/auth.service';
 
 /**
@@ -38,7 +39,7 @@ type WorkflowDecisionAction = 'rejeter' | 'retourner';
 @Component({
   selector: 'app-referentiel-list-page',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, FormsModule, ConfirmDeleteComponent],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule, ConfirmDeleteComponent, MenaRowActionButtonComponent],
   templateUrl: './referentiel-list-page.component.html',
   styleUrl: './referentiel-list-page.component.css',
 })

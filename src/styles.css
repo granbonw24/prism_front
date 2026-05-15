@@ -209,22 +209,191 @@ body {
   }
 }
 
-/* Modale détail (Alpha, etc.) : hauteur limitée + corps défilant */
-.mena-modal-detail-dialog {
-  max-height: calc(100vh - 1rem);
+/* En-tête modale (référentiel, centres, etc.) */
+.mena-modal-header {
+  background: linear-gradient(
+    90deg,
+    var(--mena-orange-100) 0%,
+    var(--mena-white) 50%,
+    var(--mena-mint-100) 100%
+  );
+  border-bottom: 1px solid var(--mena-card-border);
 }
 
+.mena-modal-header .modal-title {
+  color: var(--mena-orange-950);
+  font-weight: 700;
+}
+
+/* Modales centres (détail / édition) : hauteur limitée + corps défilant */
+.mena-centre-modal-dialog,
+.mena-modal-detail-dialog {
+  max-height: calc(100vh - 2rem);
+  margin: 1rem auto;
+}
+
+.mena-centre-modal-dialog .modal-content,
 .mena-modal-detail-dialog .modal-content {
   max-height: inherit;
   display: flex;
   flex-direction: column;
+  border-radius: 14px;
+  border: 1px solid var(--mena-card-border);
+  overflow: hidden;
+  box-shadow: 0 12px 40px rgba(107, 52, 16, 0.12);
 }
 
+.mena-centre-modal-dialog .modal-body.mena-modal-body-scroll,
 .mena-modal-detail-dialog .modal-body.mena-modal-body-scroll {
   flex: 1 1 auto;
   min-height: 0;
+  max-height: min(72vh, 720px);
   overflow-y: auto;
+  overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
+  padding: 1rem 1.25rem;
+  background: linear-gradient(180deg, var(--mena-white) 0%, var(--mena-orange-100) 120%);
+}
+
+.mena-centre-modal-dialog .modal-footer,
+.mena-modal-detail-dialog .modal-footer {
+  border-top: 1px solid var(--mena-card-border);
+  background: var(--mena-white);
+}
+
+.mena-centre-modal-subtitle {
+  color: var(--mena-muted);
+  font-size: 0.8rem;
+}
+
+/* Panneau détail (tableau structuré) */
+.mena-centre-detail-panel .table {
+  margin-bottom: 0;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.mena-centre-detail-panel .table th {
+  width: 34%;
+  background: var(--mena-orange-100);
+  color: var(--mena-orange-950);
+  font-weight: 600;
+  font-size: 0.8rem;
+  vertical-align: top;
+  border-color: var(--mena-card-border);
+}
+
+.mena-centre-detail-panel .table td {
+  background: var(--mena-white);
+  color: var(--mena-ink);
+  border-color: var(--mena-card-border);
+  vertical-align: top;
+}
+
+.mena-centre-detail-panel .table tbody tr:not(.mena-detail-section-divider):hover td {
+  background: var(--mena-mint-100);
+}
+
+.mena-detail-section-divider td {
+  background: linear-gradient(90deg, var(--mena-orange-200) 0%, var(--mena-mint-200) 100%) !important;
+  border: none !important;
+  padding: 0.55rem 1rem !important;
+}
+
+.mena-detail-section-divider__label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--mena-orange-950);
+}
+
+.mena-detail-section-divider__label i {
+  color: var(--mena-orange-700);
+}
+
+.mena-bool-pill {
+  display: inline-block;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.mena-bool-pill--yes {
+  background: var(--mena-mint-200);
+  color: #1e5c38;
+}
+
+.mena-bool-pill--no {
+  background: #fde8e8;
+  color: #8b2e2e;
+}
+
+.mena-bool-pill--na {
+  background: #f0eeec;
+  color: var(--mena-muted);
+}
+
+/* Formulaire édition centre par sections */
+.mena-form-section {
+  margin-bottom: 1.15rem;
+  border: 1px solid var(--mena-card-border);
+  border-radius: var(--mena-radius);
+  overflow: hidden;
+  background: var(--mena-white);
+  box-shadow: 0 2px 8px rgba(181, 78, 16, 0.04);
+}
+
+.mena-form-section__title {
+  margin: 0;
+  padding: 0.55rem 1rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--mena-orange-950);
+  background: linear-gradient(90deg, var(--mena-orange-100) 0%, var(--mena-mint-100) 100%);
+  border-bottom: 1px solid var(--mena-card-border);
+}
+
+.mena-form-section__title i {
+  color: var(--mena-orange-700);
+  margin-right: 0.35rem;
+}
+
+.mena-form-section__body {
+  padding: 1rem;
+}
+
+.mena-form-section__body .form-group > label,
+.mena-form-section__body label.small.text-muted {
+  color: var(--mena-orange-950) !important;
+  font-weight: 600 !important;
+  font-size: 0.72rem !important;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.mena-form-section--levels {
+  border-color: var(--mena-orange-400);
+  background: linear-gradient(180deg, var(--mena-white), var(--mena-orange-100));
+}
+
+.mena-centre-edit-form .form-group > label,
+.mena-centre-edit-form label.small.text-muted {
+  color: var(--mena-orange-950) !important;
+  font-weight: 600 !important;
+  font-size: 0.72rem !important;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.mena-centre-edit-form .border.rounded.p-3 {
+  border-color: var(--mena-orange-400) !important;
+  background: linear-gradient(180deg, var(--mena-white), var(--mena-orange-100));
+  border-radius: var(--mena-radius) !important;
 }
 
 /* Cartes : fond blanc, en-tête mélange orange pâle / vert pâle */
@@ -307,6 +476,24 @@ body {
 
 .mena-row-actions .btn {
   margin: 0 !important;
+}
+
+.mena-btn-action {
+  border-radius: 8px;
+  padding: 0.2rem 0.45rem;
+}
+
+.mena-row-actions a.mena-btn-action {
+  margin: 0 !important;
+}
+
+.mena-toolbar {
+  gap: 0.5rem;
+}
+
+.mena-toolbar-btn-host--block {
+  display: block;
+  width: 100%;
 }
 
 /* Sous-menus repliables dans la sidebar */

@@ -5,7 +5,7 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { API_BASE_URL } from '@core/tokens/api-base-url.token';
 import type { VisitePayload, VisiteRow } from '@models/visite';
 
-type DetailFieldKey = Exclude<keyof VisitePayload, 'mode'>;
+type DetailFieldKey = Exclude<keyof VisitePayload, 'mode' | 'idPeriodeActivite' | 'idAlpha'>;
 
 type DetailField = {
   key: DetailFieldKey;

@@ -85,6 +85,7 @@ export const activitesCentreFeatureRoutes: Routes = [
       workflowFeature: 'ACTIVITES_CENTRE_PERFORMANCE',
       listColumnKeys: [
         'alpha',
+        'periodeActivite',
         'tauxFrequentationParMois',
         'tauxProgressionApprentissageLecture',
         'tauxProgressionApprentissageEcriture',
@@ -93,6 +94,12 @@ export const activitesCentreFeatureRoutes: Routes = [
       ],
       createFields: [
         alphaField,
+        F('idPeriodeActivite', 'Période d’activité', 'select', {
+          required: true,
+          optionsApiPath: '/api/PeriodeActivites',
+          optionValueKey: 'id',
+          optionLabelKeys: ['codePeriodeActivite', 'libellePeriodeActivite'],
+        }),
         F('tauxFrequentationParMois', 'Taux fréquentation par mois', 'text'),
         F('tauxProgressionApprentissageLecture', 'Progression lecture', 'text'),
         F('tauxProgressionApprentissageEcriture', 'Progression écriture', 'text'),

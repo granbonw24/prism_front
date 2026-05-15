@@ -6,11 +6,15 @@
         Choisir le type d’évaluation puis saisir le taux de chaque thème compatible avec le niveau.
       </p>
     </div>
-    <div class="d-flex flex-wrap gap-1 mt-2 mt-sm-0">
-      <button *ngIf="canCreate" class="btn btn-sm btn-primary" type="button" (click)="openCreate()" [disabled]="loading || saving">
-        Ajouter une évaluation
-      </button>
-      <button class="btn btn-sm btn-outline-primary" type="button" (click)="reload()" [disabled]="loading">Rafraîchir</button>
+    <div class="d-flex flex-wrap gap-1 mt-2 mt-sm-0 mena-toolbar">
+      <app-mena-toolbar-btn
+        *ngIf="canCreate"
+        variant="add"
+        label="Ajouter une évaluation"
+        [disabled]="loading || saving"
+        (clicked)="openCreate()"
+      />
+      <app-mena-toolbar-btn variant="refresh" [loading]="loading" [disabled]="loading" (clicked)="reload()" />
     </div>
   </div>
 
@@ -55,20 +59,47 @@
               <td>{{ refLabel(row.niveauEvaluation) }}</td>
               <td>{{ typeLabel(row.typeEvaluation) }}</td>
               <td>{{ themesTauxLabel(row) }}</td>
-              <td class="text-center text-nowrap">
-                <button class="btn btn-sm btn-outline-secondary mr-1" type="button" (click)="openDetail(row)">Détail</button>
-                <button *ngIf="canEdit" class="btn btn-sm btn-outline-primary mr-1" type="button" (click)="openEdit(row)" [disabled]="isLocked(row)">Modifier</button>
-                <button
-                  *ngIf="canSubmitWorkflow(row)"
-                  class="btn btn-sm btn-outline-secondary mr-1"
-                  type="button"
-                  (click)="submitWorkflow(row)"
-                  [disabled]="workflowSubmittingId === row.id"
-                >
-                  Soumettre
-                </button>
-                <button *ngIf="canValidateRow(row)" class="btn btn-sm btn-outline-success mr-1" type="button" (click)="validateRow(row)" [disabled]="validatingId === row.id">Valider</button>
-                <button *ngIf="canEdit" class="btn btn-sm btn-outline-danger" type="button" (click)="deleteRow(row)" [disabled]="isLocked(row)">Supprimer</button>
+              <td class="text-center text-nowrap mena-col-actions">
+                <div class="mena-row-actions justify-content-center">
+                  <app-mena-row-action
+                    variant="detail"
+                    title="Détail"
+                    ariaLabel="Détail"
+                    (clicked)="openDetail(row)"
+                  />
+                  <app-mena-row-action
+                    *ngIf="canEdit"
+                    variant="edit"
+                    title="Modifier"
+                    ariaLabel="Modifier"
+                    [disabled]="isLocked(row)"
+                    (clicked)="openEdit(row)"
+                  />
+                  <app-mena-row-action
+                    *ngIf="canSubmitWorkflow(row)"
+                    variant="submit"
+                    title="Soumettre pour validation"
+                    ariaLabel="Soumettre pour validation"
+                    [disabled]="workflowSubmittingId === row.id"
+                    (clicked)="submitWorkflow(row)"
+                  />
+                  <app-mena-row-action
+                    *ngIf="canValidateRow(row)"
+                    variant="validate"
+                    title="Valider"
+                    ariaLabel="Valider"
+                    [disabled]="validatingId === row.id"
+                    (clicked)="validateRow(row)"
+                  />
+                  <app-mena-row-action
+                    *ngIf="canEdit"
+                    variant="delete"
+                    title="Supprimer"
+                    ariaLabel="Supprimer"
+                    [disabled]="isLocked(row)"
+                    (clicked)="deleteRow(row)"
+                  />
+                </div>
               </td>
             </tr>
             <tr *ngIf="filteredRows.length === 0">
@@ -146,11 +177,9 @@
           </div>
         </div>
       </div>
-      <div class="card-footer bg-white d-flex justify-content-end">
-        <button class="btn btn-light mr-2" type="button" (click)="closeForm()" [disabled]="saving">Annuler</button>
-        <button class="btn btn-primary" type="button" (click)="save()" [disabled]="saving">
-          {{ saving ? 'Enregistrement...' : 'Enregistrer' }}
-        </button>
+      <div class="card-footer bg-white d-flex justify-content-end mena-toolbar">
+        <app-mena-toolbar-btn variant="cancel" [disabled]="saving" (clicked)="closeForm()" />
+        <app-mena-toolbar-btn variant="save" [label]="saving ? 'Enregistrement…' : 'Enregistrer'" [disabled]="saving" (clicked)="save()" />
       </div>
     </div>
   </div>
@@ -200,8 +229,8 @@
           </table>
         </div>
       </div>
-      <div class="card-footer bg-white d-flex justify-content-end">
-        <button class="btn btn-light" type="button" (click)="closeDetail()">Fermer</button>
+      <div class="card-footer bg-white d-flex justify-content-end mena-toolbar">
+        <app-mena-toolbar-btn variant="cancel" label="Fermer" (clicked)="closeDetail()" />
       </div>
     </div>
   </div>

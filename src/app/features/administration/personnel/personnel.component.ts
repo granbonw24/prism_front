@@ -7,11 +7,13 @@ import { AdministrationService, PersonnelListQuery } from '@services/administrat
 import { HttpClient } from '@angular/common/http';
 import { Inject } from '@angular/core';
 import { API_BASE_URL } from '@core/tokens/api-base-url.token';
+import { MenaRowActionButtonComponent } from '@shared/mena-row-action-button/mena-row-action-button.component';
+import { MenaToolbarButtonComponent } from '@shared/mena-toolbar-button/mena-toolbar-button.component';
 
 @Component({
   selector: 'app-personnel-admin',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, MenaRowActionButtonComponent, MenaToolbarButtonComponent],
   templateUrl: './personnel.component.html',
   styleUrl: './personnel.component.css',
 })

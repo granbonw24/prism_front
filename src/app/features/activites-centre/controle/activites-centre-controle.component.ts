@@ -7,6 +7,7 @@ import { Component, Inject, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { forkJoin } from 'rxjs';
 import { AuthService } from '@services/auth.service';
+import { MenaRowActionButtonComponent } from '@shared/mena-row-action-button/mena-row-action-button.component';
 
 type Ref = {
   id?: number | null;
@@ -42,6 +43,7 @@ type KitRow = {
 type ControleRow = {
   id?: number | null;
   alpha?: Ref | null;
+  periodeActivite?: Ref | null;
   niveauAlpha?: Ref | null;
   dateDemarrageAppren?: string | null;
   conformiteProgramme?: boolean | null;
@@ -74,6 +76,7 @@ type KitForm = {
 
 type ControleForm = {
   idAlpha: number | null;
+  idPeriodeActivite: number | null;
   dateDemarrageAppren: string;
   idNiveauAlpha: number | null;
   conformiteProgramme: boolean | null;
@@ -92,13 +95,14 @@ const DAYS: Array<{ value: string; label: string }> = [
 @Component({
   selector: 'app-activites-centre-controle',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, MenaRowActionButtonComponent],
   templateUrl: './activites-centre-controle.component.html',
   styleUrl: './activites-centre-controle.component.css',
 })
 export class ActivitesCentreControleComponent implements OnInit {
   rows: ControleRow[] = [];
   alphas: AlphaOption[] = [];
+  periodes: Ref[] = [];
   niveaux: Ref[] = [];
   manuels: Ref[] = [];
 
@@ -110,6 +114,7 @@ export class ActivitesCentreControleComponent implements OnInit {
   successMessage: string | null = null;
   searchText = '';
   filterAlphaId: number | '' = '';
+  filterPeriodeId: number | '' = '';
 
   formOpen = false;
   formMode: 'create' | 'edit' = 'create';
@@ -145,6 +150,10 @@ export class ActivitesCentreControleComponent implements OnInit {
       if (this.filterAlphaId !== '' && alphaId !== this.filterAlphaId) {
         return false;
       }
+      const periodeId = row.periodeActivite?.id ?? null;
+      if (this.filterPeriodeId !== '' && periodeId !== this.filterPeriodeId) {
+        return false;
+      }
       if (!q) {
         return true;
       }
@@ -154,6 +163,7 @@ export class ActivitesCentreControleComponent implements OnInit {
         row.niveauAlpha?.code ?? row.niveauAlpha?.codeNiveauAlpha,
         row.niveauAlpha?.libelle ?? row.niveauAlpha?.libelleNiveauAlpha,
         row.dateDemarrageAppren,
+        this.refLabel(row.periodeActivite),
         this.conformiteLabel(row.conformiteProgramme),
         this.horairesLabel(row),
         this.kitsLabel(row),
@@ -173,12 +183,14 @@ export class ActivitesCentreControleComponent implements OnInit {
       alphas: this.http.get<unknown>(`${this.apiBaseUrl}/api/alpha`, {
         params: { page: '0', size: '2000' },
       }),
+      periodes: this.http.get<unknown>(`${this.apiBaseUrl}/api/PeriodeActivites`),
       niveaux: this.http.get<unknown>(`${this.apiBaseUrl}/api/niveaualpha`),
       manuels: this.http.get<unknown>(`${this.apiBaseUrl}/api/manuels`),
     }).subscribe({
-      next: ({ controles, alphas, niveaux, manuels }) => {
+      next: ({ controles, alphas, periodes, niveaux, manuels }) => {
         this.rows = unwrapListBody(controles) as ControleRow[];
         this.alphas = unwrapListBody(alphas) as AlphaOption[];
+        this.periodes = unwrapListBody(periodes) as Ref[];
         this.niveaux = unwrapListBody(niveaux) as Ref[];
         this.manuels = unwrapListBody(manuels) as Ref[];
         this.loading = false;
@@ -238,6 +250,10 @@ export class ActivitesCentreControleComponent implements OnInit {
     }
     if (!payload.idNiveauAlpha) {
       this.errorMessage = 'Le niveau est obligatoire.';
+      return;
+    }
+    if (!payload.idPeriodeActivite) {
+      this.errorMessage = 'La période d’activité est obligatoire.';
       return;
     }
     if (!payload.horairesFormation.length) {
@@ -318,6 +334,7 @@ export class ActivitesCentreControleComponent implements OnInit {
   clearFilters(): void {
     this.searchText = '';
     this.filterAlphaId = '';
+    this.filterPeriodeId = '';
   }
 
   alphaOptionValue(alpha: AlphaOption): number | '' {
@@ -441,6 +458,7 @@ export class ActivitesCentreControleComponent implements OnInit {
   private emptyForm(): ControleForm {
     return {
       idAlpha: null,
+      idPeriodeActivite: null,
       dateDemarrageAppren: '',
       idNiveauAlpha: null,
       conformiteProgramme: null,
@@ -458,6 +476,7 @@ export class ActivitesCentreControleComponent implements OnInit {
   private formFromRow(row: ControleRow): ControleForm {
     const form = this.emptyForm();
     form.idAlpha = row.alpha?.id ?? null;
+    form.idPeriodeActivite = row.periodeActivite?.id ?? null;
     form.dateDemarrageAppren = row.dateDemarrageAppren ?? '';
     form.idNiveauAlpha = row.niveauAlpha?.id ?? null;
     form.conformiteProgramme = row.conformiteProgramme ?? null;
@@ -483,6 +502,7 @@ export class ActivitesCentreControleComponent implements OnInit {
 
   private toPayload(): {
     idAlpha: number | null;
+    idPeriodeActivite: number | null;
     dateDemarrageAppren: string;
     idNiveauAlpha: number | null;
     conformiteProgramme: boolean | null;
@@ -491,6 +511,7 @@ export class ActivitesCentreControleComponent implements OnInit {
   } {
     return {
       idAlpha: this.form.idAlpha,
+      idPeriodeActivite: this.form.idPeriodeActivite,
       dateDemarrageAppren: this.form.dateDemarrageAppren,
       idNiveauAlpha: this.form.idNiveauAlpha,
       conformiteProgramme: this.form.conformiteProgramme,

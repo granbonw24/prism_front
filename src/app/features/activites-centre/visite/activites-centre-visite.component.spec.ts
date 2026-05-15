@@ -37,17 +37,20 @@ describe('ActivitesCentreVisiteComponent', () => {
     fixture.detectChanges();
 
     const requests = http.match(() => true);
-    expect(requests.length).toBe(2);
+    expect(requests.length).toBe(3);
     for (const req of requests) {
       if (req.request.url.endsWith('/api/suivi-iepp')) {
         req.flush([
           {
             id: 1,
             alpha: { id: 10, code: 'ALP-001', libelle: 'Centre Alpha' },
+            periodeActivite: { id: 1, code: 'P1', libelle: 'Période test' },
             nombreVisiteEffectueParIepp: 3,
             nombreReunionPointActiviteAlpha: 2,
           },
         ]);
+      } else if (req.request.url.endsWith('/api/PeriodeActivites')) {
+        req.flush([{ id: 1, code: 'P1', libelle: 'Période test' }]);
       } else if (req.request.url.endsWith('/api/alpha')) {
         expect(req.request.params.get('size')).toBe('1000');
         req.flush({ content: [{ idCentre: 10, codeAlpha: 'ALP-001', libelleAlpha: 'Centre Alpha' }] });
@@ -76,10 +79,13 @@ describe('ActivitesCentreVisiteComponent', () => {
           {
             id: 1,
             alpha: { id: 10, code: 'ALP-001', libelle: 'Centre Alpha' },
+            periodeActivite: { id: 1, code: 'P1', libelle: 'Période test' },
             nombreVisiteEffectueParIepp: 3,
             nombreReunionPointActiviteAlpha: 2,
           },
         ]);
+      } else if (req.request.url.endsWith('/api/PeriodeActivites')) {
+        req.flush([{ id: 1, code: 'P1', libelle: 'Période test' }]);
       } else if (req.request.url.endsWith('/api/alpha')) {
         req.flush({ content: [{ idCentre: 10, codeAlpha: 'ALP-001', libelleAlpha: 'Centre Alpha' }] });
       }
@@ -102,6 +108,8 @@ describe('ActivitesCentreVisiteComponent', () => {
     for (const req of http.match(() => true)) {
       if (req.request.url.endsWith('/api/suivi-iepp')) {
         req.flush([]);
+      } else if (req.request.url.endsWith('/api/PeriodeActivites')) {
+        req.flush([{ id: 1, code: 'P1', libelle: 'Période test' }]);
       } else if (req.request.url.endsWith('/api/alpha')) {
         req.flush({ content: [{ idCentre: 10, codeAlpha: 'ALP-001', libelleAlpha: 'Centre Alpha' }] });
       }
@@ -147,6 +155,8 @@ describe('ActivitesCentreVisiteComponent', () => {
             valideeSuperviseur: true,
           },
         ]);
+      } else if (req.request.url.endsWith('/api/PeriodeActivites')) {
+        req.flush([{ id: 1, code: 'P1', libelle: 'Période test' }]);
       } else if (req.request.url.endsWith('/api/alpha')) {
         req.flush({ content: [{ idCentre: 10, codeAlpha: 'ALP-001', libelleAlpha: 'Centre Alpha' }] });
       }
@@ -171,6 +181,8 @@ describe('ActivitesCentreVisiteComponent', () => {
     for (const req of http.match(() => true)) {
       if (req.request.url.endsWith('/api/suivi-iepp')) {
         req.flush([]);
+      } else if (req.request.url.endsWith('/api/PeriodeActivites')) {
+        req.flush([{ id: 1, code: 'P1', libelle: 'Période test' }]);
       } else if (req.request.url.endsWith('/api/alpha')) {
         req.flush({ content: [{ idCentre: 10, codeAlpha: 'ALP-001', libelleAlpha: 'Centre Alpha' }] });
       }
@@ -207,6 +219,8 @@ describe('ActivitesCentreVisiteComponent', () => {
             nombreVisiteEffectueParIepp: 3,
           },
         ]);
+      } else if (req.request.url.endsWith('/api/PeriodeActivites')) {
+        req.flush([{ id: 1, code: 'P1', libelle: 'Période test' }]);
       } else if (req.request.url.endsWith('/api/alpha')) {
         req.flush({ content: [{ idCentre: 10, codeAlpha: 'ALP-001', libelleAlpha: 'Centre Alpha' }] });
       }
@@ -234,6 +248,8 @@ describe('ActivitesCentreVisiteComponent', () => {
             valideeIepp: false,
           },
         ]);
+      } else if (req.request.url.endsWith('/api/PeriodeActivites')) {
+        req.flush([{ id: 1, code: 'P1', libelle: 'Période test' }]);
       } else if (req.request.url.endsWith('/api/alpha')) {
         req.flush({ content: [{ idCentre: 10, codeAlpha: 'ALP-001', libelleAlpha: 'Centre Alpha' }] });
       }
@@ -254,6 +270,8 @@ describe('ActivitesCentreVisiteComponent', () => {
     for (const req of http.match(() => true)) {
       if (req.request.url.endsWith('/api/suivi-iepp')) {
         req.flush([]);
+      } else if (req.request.url.endsWith('/api/PeriodeActivites')) {
+        req.flush([{ id: 1, code: 'P1', libelle: 'Période test' }]);
       } else if (req.request.url.endsWith('/api/alpha')) {
         req.flush({ content: [] });
       }
@@ -269,6 +287,8 @@ describe('ActivitesCentreVisiteComponent', () => {
     for (const req of http.match(() => true)) {
       if (req.request.url.endsWith('/api/suivi-iepp')) {
         req.flush([]);
+      } else if (req.request.url.endsWith('/api/PeriodeActivites')) {
+        req.flush([{ id: 1, code: 'P1', libelle: 'Période test' }]);
       } else if (req.request.url.endsWith('/api/alpha')) {
         req.flush({ content: [{ idCentre: 10, codeAlpha: 'ALP-001', libelleAlpha: 'Centre Alpha' }] });
       }
@@ -278,6 +298,7 @@ describe('ActivitesCentreVisiteComponent', () => {
     component.mode = 'conseiller';
     component.openCreate('points');
     component.form.idAlpha = 10;
+    component.form.idPeriodeActivite = 1;
     component.form.maitriseSeanceLecture = 'BONNE';
     component.form.maitriseSeanceEcriture = 'MOYENNE';
     component.form.maitriseSeanceCalcul = 'MAUVAISE';
@@ -288,11 +309,14 @@ describe('ActivitesCentreVisiteComponent', () => {
     expect(post.request.body.maitriseSeanceLecture).toBe('BONNE');
     expect(post.request.body.maitriseSeanceEcriture).toBe('MOYENNE');
     expect(post.request.body.maitriseSeanceCalcul).toBe('MAUVAISE');
+    expect(post.request.body.idPeriodeActivite).toBe(1);
     post.flush({ id: 2 });
 
     for (const req of http.match(() => true)) {
       if (req.request.url.endsWith('/api/visite')) {
         req.flush([]);
+      } else if (req.request.url.endsWith('/api/PeriodeActivites')) {
+        req.flush([{ id: 1, code: 'P1', libelle: 'Période test' }]);
       } else if (req.request.url.endsWith('/api/alpha')) {
         req.flush({ content: [] });
       }
@@ -307,6 +331,8 @@ describe('ActivitesCentreVisiteComponent', () => {
     for (const req of http.match(() => true)) {
       if (req.request.url.endsWith('/api/suivi-iepp')) {
         req.flush([]);
+      } else if (req.request.url.endsWith('/api/PeriodeActivites')) {
+        req.flush([{ id: 1, code: 'P1', libelle: 'Période test' }]);
       } else if (req.request.url.endsWith('/api/alpha')) {
         req.flush({ content: [{ idCentre: 13, codeAlpha: 'ALP-013', libelleAlpha: 'Centre Alpha 13' }] });
       }
@@ -315,6 +341,7 @@ describe('ActivitesCentreVisiteComponent', () => {
     const component = fixture.componentInstance;
     component.openCreate('suivi');
     component.form.idAlpha = 13;
+    component.form.idPeriodeActivite = 1;
     component.form.nombreVisiteEffectueParIepp = 3;
     component.form.nombreReunionPointActiviteAlpha = 3;
     component.form.maitriseSeanceLecture = 'BONNE';
@@ -324,6 +351,7 @@ describe('ActivitesCentreVisiteComponent', () => {
     expect(post.request.method).toBe('POST');
     expect(post.request.body).toEqual({
       idAlpha: 13,
+      idPeriodeActivite: 1,
       nombreVisiteEffectueParIepp: 3,
       nombreReunionPointActiviteAlpha: 3,
     });
@@ -332,6 +360,8 @@ describe('ActivitesCentreVisiteComponent', () => {
     for (const req of http.match(() => true)) {
       if (req.request.url.endsWith('/api/suivi-iepp')) {
         req.flush([]);
+      } else if (req.request.url.endsWith('/api/PeriodeActivites')) {
+        req.flush([{ id: 1, code: 'P1', libelle: 'Période test' }]);
       } else if (req.request.url.endsWith('/api/alpha')) {
         req.flush({ content: [] });
       }

@@ -206,66 +206,54 @@
               </td>
               <td *ngIf="canUseRowActions" class="text-right text-nowrap mena-col-actions">
                 <div class="mena-row-actions">
-                  <button
-                    type="button"
-                    class="btn btn-outline-primary btn-sm mena-btn-action"
+                  <app-mena-row-action
                     *ngIf="hasCreateForm && canUpdateRecord && resolveRowId(row) != null"
-                    (click)="openEditModal(row)"
+                    variant="edit"
                     title="Modifier"
+                    ariaLabel="Modifier"
                     [disabled]="!isWorkflowEditable(row)"
-                  >
-                    <i class="fas fa-pen"></i>
-                  </button>
-                  <button
-                    type="button"
-                    class="btn btn-outline-warning btn-sm mena-btn-action"
+                    (clicked)="openEditModal(row)"
+                  />
+                  <app-mena-row-action
                     *ngIf="hasWorkflow && canSubmitWorkflow(row)"
-                    (click)="submitWorkflowRow(row)"
+                    variant="submit"
                     title="Soumettre pour validation"
+                    ariaLabel="Soumettre pour validation"
                     [disabled]="workflowSubmittingId === resolveRowId(row)"
-                  >
-                    <i class="fas fa-paper-plane"></i>
-                  </button>
-                  <button
-                    type="button"
-                    class="btn btn-outline-success btn-sm mena-btn-action"
+                    (clicked)="submitWorkflowRow(row)"
+                  />
+                  <app-mena-row-action
                     *ngIf="hasWorkflow && canValidateWorkflow(row)"
-                    (click)="validateWorkflowRow(row)"
+                    variant="validate"
                     title="Valider le niveau courant"
+                    ariaLabel="Valider le niveau courant"
                     [disabled]="workflowSubmittingId === resolveRowId(row)"
-                  >
-                    <i class="fas fa-check"></i>
-                  </button>
-                  <button
-                    type="button"
-                    class="btn btn-outline-danger btn-sm mena-btn-action"
+                    (clicked)="validateWorkflowRow(row)"
+                  />
+                  <app-mena-row-action
                     *ngIf="hasWorkflow && canRejectOrReturnWorkflow(row)"
-                    (click)="openWorkflowDecision(row, 'rejeter')"
+                    variant="refuse"
                     title="Rejeter avec motif"
+                    ariaLabel="Rejeter avec motif"
                     [disabled]="workflowSubmittingId === resolveRowId(row)"
-                  >
-                    <i class="fas fa-times"></i>
-                  </button>
-                  <button
-                    type="button"
-                    class="btn btn-outline-secondary btn-sm mena-btn-action"
+                    (clicked)="openWorkflowDecision(row, 'rejeter')"
+                  />
+                  <app-mena-row-action
                     *ngIf="hasWorkflow && canRejectOrReturnWorkflow(row)"
-                    (click)="openWorkflowDecision(row, 'retourner')"
+                    variant="return"
                     title="Retourner pour correction"
+                    ariaLabel="Retourner pour correction"
                     [disabled]="workflowSubmittingId === resolveRowId(row)"
-                  >
-                    <i class="fas fa-reply"></i>
-                  </button>
-                  <button
-                    type="button"
-                    class="btn btn-outline-danger btn-sm mena-btn-action"
+                    (clicked)="openWorkflowDecision(row, 'retourner')"
+                  />
+                  <app-mena-row-action
                     *ngIf="canDeleteRecord && resolveRowId(row) != null"
-                    (click)="openDeleteModal(row)"
+                    variant="delete"
                     title="Supprimer"
+                    ariaLabel="Supprimer"
                     [disabled]="!isWorkflowEditable(row)"
-                  >
-                    <i class="fas fa-trash-alt"></i>
-                  </button>
+                    (clicked)="openDeleteModal(row)"
+                  />
                 </div>
               </td>
             </tr>

@@ -20,16 +20,25 @@
   <div class="card border-0 shadow-sm mb-3">
     <div class="card-body py-3">
       <div class="form-row align-items-end">
-        <div class="form-group col-md-5 col-sm-12 mb-2 mb-md-0">
+        <div class="form-group col-md-4 col-sm-12 mb-2 mb-md-0">
           <label class="small text-muted mb-1">Recherche</label>
           <input class="form-control form-control-sm" type="search" [(ngModel)]="searchText" placeholder="Centre, niveau, manuel..." />
         </div>
-        <div class="form-group col-md-5 col-sm-12 mb-2 mb-md-0">
+        <div class="form-group col-md-3 col-sm-12 mb-2 mb-md-0">
           <label class="small text-muted mb-1">Centre Alpha</label>
           <select class="form-control form-control-sm" [(ngModel)]="filterAlphaId">
             <option [ngValue]="''">Tous</option>
             <option *ngFor="let alpha of alphas" [ngValue]="alphaOptionValue(alpha)">
               {{ alphaOptionLabel(alpha) }}
+            </option>
+          </select>
+        </div>
+        <div class="form-group col-md-3 col-sm-12 mb-2 mb-md-0">
+          <label class="small text-muted mb-1">Période d’activité</label>
+          <select class="form-control form-control-sm" [(ngModel)]="filterPeriodeId">
+            <option [ngValue]="''">Toutes</option>
+            <option *ngFor="let p of periodes" [ngValue]="p.id ?? ''">
+              {{ refLabel(p) }}
             </option>
           </select>
         </div>
@@ -55,6 +64,7 @@
               <th style="width: 4rem">ID</th>
               <th>Validation</th>
               <th>Centre Alpha</th>
+              <th>Période d’activité</th>
               <th>Date démarrage</th>
               <th>Jours et heures de formation</th>
               <th>Kits par manuel</th>
@@ -70,6 +80,7 @@
                 <span class="badge" [ngClass]="validationClass(row)">{{ validationLabel(row) }}</span>
               </td>
               <td>{{ alphaLabel(row) }}</td>
+              <td>{{ refLabel(row.periodeActivite) }}</td>
               <td>{{ row.dateDemarrageAppren || '-' }}</td>
               <td>{{ horairesLabel(row) }}</td>
               <td>{{ kitsLabel(row) }}</td>
@@ -79,29 +90,45 @@
                   {{ conformiteLabel(row.conformiteProgramme) }}
                 </span>
               </td>
-              <td class="text-center text-nowrap">
-                <button *ngIf="canEdit" type="button" class="btn btn-sm btn-outline-primary mr-1" (click)="openEdit(row)" [disabled]="isLocked(row)">
-                  Modifier
-                </button>
-                <button
-                  *ngIf="canSubmitWorkflow(row)"
-                  type="button"
-                  class="btn btn-sm btn-outline-secondary mr-1"
-                  (click)="submitWorkflow(row)"
-                  [disabled]="workflowSubmittingId === row.id"
-                >
-                  Soumettre
-                </button>
-                <button *ngIf="canValidateRow(row)" type="button" class="btn btn-sm btn-outline-success mr-1" (click)="validateRow(row)" [disabled]="validatingId === row.id">
-                  Valider
-                </button>
-                <button *ngIf="canEdit" type="button" class="btn btn-sm btn-outline-danger" (click)="deleteRow(row)" [disabled]="isLocked(row)">
-                  Supprimer
-                </button>
+              <td class="text-center text-nowrap mena-col-actions">
+                <div class="mena-row-actions justify-content-center">
+                  <app-mena-row-action
+                    *ngIf="canEdit"
+                    variant="edit"
+                    title="Modifier"
+                    ariaLabel="Modifier"
+                    [disabled]="isLocked(row)"
+                    (clicked)="openEdit(row)"
+                  />
+                  <app-mena-row-action
+                    *ngIf="canSubmitWorkflow(row)"
+                    variant="submit"
+                    title="Soumettre pour validation"
+                    ariaLabel="Soumettre pour validation"
+                    [disabled]="workflowSubmittingId === row.id"
+                    (clicked)="submitWorkflow(row)"
+                  />
+                  <app-mena-row-action
+                    *ngIf="canValidateRow(row)"
+                    variant="validate"
+                    title="Valider"
+                    ariaLabel="Valider"
+                    [disabled]="validatingId === row.id"
+                    (clicked)="validateRow(row)"
+                  />
+                  <app-mena-row-action
+                    *ngIf="canEdit"
+                    variant="delete"
+                    title="Supprimer"
+                    ariaLabel="Supprimer"
+                    [disabled]="isLocked(row)"
+                    (clicked)="deleteRow(row)"
+                  />
+                </div>
               </td>
             </tr>
             <tr *ngIf="filteredRows.length === 0">
-              <td colspan="9" class="text-center text-muted py-4">Aucun contrôle trouvé.</td>
+              <td colspan="10" class="text-center text-muted py-4">Aucun contrôle trouvé.</td>
             </tr>
           </tbody>
         </table>
@@ -119,7 +146,7 @@
       </div>
       <div class="card-body">
         <div class="form-row">
-          <div class="form-group col-md-6">
+          <div class="form-group col-md-4">
             <label>Centre Alpha</label>
             <select class="form-control" [(ngModel)]="form.idAlpha" (ngModelChange)="form.idNiveauAlpha = null">
               <option [ngValue]="null">Sélectionner</option>
@@ -128,11 +155,20 @@
               </option>
             </select>
           </div>
-          <div class="form-group col-md-3">
+          <div class="form-group col-md-4">
+            <label>Période d’activité</label>
+            <select class="form-control" [(ngModel)]="form.idPeriodeActivite">
+              <option [ngValue]="null">Sélectionner</option>
+              <option *ngFor="let p of periodes" [ngValue]="p.id ?? null">
+                {{ refLabel(p) }}
+              </option>
+            </select>
+          </div>
+          <div class="form-group col-md-2">
             <label>Date de démarrage</label>
             <input class="form-control" type="date" [(ngModel)]="form.dateDemarrageAppren" />
           </div>
-          <div class="form-group col-md-3">
+          <div class="form-group col-md-2">
             <label>Niveau</label>
             <select class="form-control" [(ngModel)]="form.idNiveauAlpha">
               <option [ngValue]="null">Sélectionner</option>

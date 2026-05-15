@@ -1,10 +1,13 @@
 <div class="container-fluid">
   <div class="d-sm-flex align-items-center justify-content-between mb-3">
     <h1 class="h4 mb-0 text-gray-800">Acteurs (gestion des rôles)</h1>
-    <button class="btn btn-sm btn-outline-primary" (click)="reload()" [disabled]="loading || saving">
-      <span *ngIf="loading">Chargement…</span>
-      <span *ngIf="!loading">Rafraîchir</span>
-    </button>
+    <app-mena-toolbar-btn
+      variant="refresh"
+      [label]="loading ? 'Chargement…' : 'Rafraîchir'"
+      [loading]="loading"
+      [disabled]="loading || saving"
+      (clicked)="reload()"
+    />
   </div>
 
   <div *ngIf="errorMessage" class="alert alert-danger py-2">
@@ -86,26 +89,22 @@
               </td>
               <td class="text-center">
                 <ng-container *ngIf="editingRoleId !== r.id; else editingActions">
-                  <button
-                    class="btn btn-sm btn-outline-secondary mr-1"
-                    type="button"
-                    (click)="startEdit(r)"
-                    [disabled]="saving"
-                    title="Modifier"
-                    aria-label="Modifier"
-                  >
-                    <i class="fas fa-pen" aria-hidden="true"></i>
-                  </button>
-                  <button
-                    class="btn btn-sm btn-outline-danger"
-                    type="button"
-                    (click)="deleteRole(r)"
-                    [disabled]="saving"
-                    title="Supprimer"
-                    aria-label="Supprimer"
-                  >
-                    <i class="fas fa-trash" aria-hidden="true"></i>
-                  </button>
+                  <div class="mena-row-actions justify-content-center">
+                    <app-mena-row-action
+                      variant="edit"
+                      title="Modifier"
+                      ariaLabel="Modifier"
+                      [disabled]="saving"
+                      (clicked)="startEdit(r)"
+                    />
+                    <app-mena-row-action
+                      variant="delete"
+                      title="Supprimer"
+                      ariaLabel="Supprimer"
+                      [disabled]="saving"
+                      (clicked)="deleteRole(r)"
+                    />
+                  </div>
                 </ng-container>
                 <ng-template #editingActions>
                   <button

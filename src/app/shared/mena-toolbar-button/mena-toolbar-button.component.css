@@ -1,0 +1,25 @@
+:host {
+  display: inline-flex;
+}
+
+:host(.mena-toolbar-btn-host--block) {
+  display: block;
+  width: 100%;
+}
+
+.mena-toolbar-btn {
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  white-space: nowrap;
+}
+
+.mena-toolbar-btn--add {
+  border-radius: 8px;
+}
+
+.mena-toolbar-btn__icon {
+  font-size: 0.85em;
+}

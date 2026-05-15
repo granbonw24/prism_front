@@ -7,6 +7,8 @@ import { Component, Inject, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { forkJoin } from 'rxjs';
 import { AuthService } from '@services/auth.service';
+import { MenaRowActionButtonComponent } from '@shared/mena-row-action-button/mena-row-action-button.component';
+import { MenaToolbarButtonComponent } from '@shared/mena-toolbar-button/mena-toolbar-button.component';
 
 type Ref = {
   id?: number | null;
@@ -67,7 +69,7 @@ type EvaluationForm = {
 @Component({
   selector: 'app-activites-centre-evaluation',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, MenaRowActionButtonComponent, MenaToolbarButtonComponent],
   templateUrl: './activites-centre-evaluation.component.html',
   styleUrl: './activites-centre-evaluation.component.css',
 })

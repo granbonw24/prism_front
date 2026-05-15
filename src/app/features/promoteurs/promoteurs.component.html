@@ -1,9 +1,7 @@
 <div class="container-fluid">
   <div class="d-sm-flex align-items-center justify-content-between mb-3">
     <h1 class="h4 mb-0 text-gray-800">Promoteurs</h1>
-    <button class="btn btn-sm btn-outline-primary" (click)="reload()" [disabled]="loading">
-      Rafraîchir
-    </button>
+    <app-mena-toolbar-btn variant="refresh" [loading]="loading" [disabled]="loading" (clicked)="reload()" />
   </div>
 
   <div *ngIf="errorMessage" class="alert alert-danger py-2">

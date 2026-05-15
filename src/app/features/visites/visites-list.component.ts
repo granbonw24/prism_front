@@ -7,6 +7,8 @@ import { forkJoin } from 'rxjs';
 import { unwrapListBody } from '@core/http/unwrap-spring-page';
 import { API_BASE_URL } from '@core/tokens/api-base-url.token';
 import { SpringPage, VisiteDocumentRow } from '@models/centre';
+import { MenaRowActionButtonComponent } from '@shared/mena-row-action-button/mena-row-action-button.component';
+import { MenaToolbarButtonComponent } from '@shared/mena-toolbar-button/mena-toolbar-button.component';
 
 /**
  * Référentiels nature / type : l’API renvoie le format B (`{ id, libelle }`, `{ id, code, libelle }`),
@@ -34,7 +36,7 @@ type DocumentUpsertPayload = {
 @Component({
   selector: 'app-visites-list',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, MenaRowActionButtonComponent, MenaToolbarButtonComponent],
   templateUrl: './visites-list.component.html',
   styleUrl: './visites-list.component.css',
 })
