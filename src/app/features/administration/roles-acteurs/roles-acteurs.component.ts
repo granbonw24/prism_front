@@ -9,16 +9,16 @@ import {
   Permission,
   RoleFonctionnalitePermission,
 } from '@models/administration';
-import {
-  AdministrationService,
-} from '@services/administration.service';
+import { AdministrationService } from '@services/administration.service';
+import { MenaSearchableSelectComponent } from '@shared/mena-searchable-select/mena-searchable-select.component';
+import { sortByLabel, toMenaSelectOptions } from '@shared/mena-searchable-select/mena-select-options.util';
 
 type RoleId = number | null;
 
 @Component({
   selector: 'app-roles-acteurs',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, MenaSearchableSelectComponent],
   templateUrl: './roles-acteurs.component.html',
   styleUrl: './roles-acteurs.component.css',
 })
@@ -54,7 +54,7 @@ export class RolesActeursComponent {
           firstValueFrom(this.admin.getRoleFonctionnalitePermissions()),
         ]);
 
-      this.roles = roles;
+      this.roles = sortByLabel(roles, (role) => this.roleOptionLabel(role));
       this.fonctionnalites = fonctionnalites;
       this.permissions = permissions;
       this.allMappings = mappings;
@@ -155,6 +155,10 @@ export class RolesActeursComponent {
     const code = (r.codeRole ?? '').trim();
     if (lib && code) return `${lib} (${code})`;
     return lib || code || String(r.id);
+  }
+
+  menaRoleOptions() {
+    return toMenaSelectOptions(this.roles, (role) => role.id, (role) => this.roleOptionLabel(role));
   }
 
   permissionColumnLabel(p: Permission): string {

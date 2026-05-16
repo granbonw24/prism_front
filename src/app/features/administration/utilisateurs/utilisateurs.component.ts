@@ -11,6 +11,8 @@ import {
   AppUserAdminUpsertRequest,
 } from '@models/administration';
 import { AdministrationService, type AppUsersListQuery } from '@services/administration.service';
+import { MenaSearchableSelectComponent } from '@shared/mena-searchable-select/mena-searchable-select.component';
+import { sortByLabel, toMenaSelectOptions } from '@shared/mena-searchable-select/mena-select-options.util';
 
 type ScopeKey =
   | 'idRegion'
@@ -34,7 +36,7 @@ const SCOPE_DESCENDANTS: Record<ScopeKey, ScopeKey[]> = {
 @Component({
   selector: 'app-utilisateurs',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, MenaSearchableSelectComponent],
   templateUrl: './utilisateurs.component.html',
   styleUrl: './utilisateurs.component.css',
 })
@@ -142,7 +144,8 @@ export class UtilisateursComponent implements OnInit, OnDestroy {
   }
 
   private async loadRoles(): Promise<void> {
-    this.roles = await firstValueFrom(this.admin.getRoles());
+    const roles = await firstValueFrom(this.admin.getRoles());
+    this.roles = sortByLabel(roles, (role) => role.libelleRole ?? role.codeRole ?? String(role.id));
   }
 
   private async loadScopeOptions(): Promise<void> {
@@ -157,14 +160,14 @@ export class UtilisateursComponent implements OnInit, OnDestroy {
         firstValueFrom(this.admin.getScopeOptions('/api/commune')),
         firstValueFrom(this.admin.getScopeOptions('/api/localite-d-implantation')),
       ]);
-    this.regions = regions;
-    this.drenas = drenas;
-    this.ieps = ieps;
-    this.departements = departements;
+    this.regions = sortByLabel(regions, (option) => this.optionLabel(option));
+    this.drenas = sortByLabel(drenas, (option) => this.optionLabel(option));
+    this.ieps = sortByLabel(ieps, (option) => this.optionLabel(option));
+    this.departements = sortByLabel(departements, (option) => this.optionLabel(option));
     this.drenaDepartements = drenaDepartements;
-    this.sousPrefectures = sousPrefectures;
-    this.communes = communes;
-    this.localites = localites;
+    this.sousPrefectures = sortByLabel(sousPrefectures, (option) => this.optionLabel(option));
+    this.communes = sortByLabel(communes, (option) => this.optionLabel(option));
+    this.localites = sortByLabel(localites, (option) => this.optionLabel(option));
   }
 
   private listUsersQuery(): AppUsersListQuery {
@@ -500,7 +503,23 @@ export class UtilisateursComponent implements OnInit, OnDestroy {
       idCommune: () => this.filteredCommunes(form),
       idLocalite: () => this.filteredLocalites(form),
     };
-    return optionsByScope[key]();
+    return sortByLabel(optionsByScope[key](), (option) => this.optionLabel(option));
+  }
+
+  menaRoleOptions(roleFilter: string) {
+    return toMenaSelectOptions(
+      this.filteredRoles(roleFilter),
+      (role) => role.id,
+      (role) => role.libelleRole ?? role.codeRole ?? String(role.id),
+    );
+  }
+
+  menaScopeOptions(key: ScopeKey, form: AppUserAdminUpsertRequest) {
+    return toMenaSelectOptions(
+      this.filteredScopeOptions(key, form),
+      (option) => option.id,
+      (option) => this.optionLabel(option),
+    );
   }
 
   onScopeChanged(

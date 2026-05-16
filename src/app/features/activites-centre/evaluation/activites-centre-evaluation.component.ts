@@ -7,7 +7,17 @@ import { Component, Inject, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { forkJoin } from 'rxjs';
 import { AuthService } from '@services/auth.service';
+import {
+  menaActivitesRefOptions,
+  sortActivitesRefs,
+} from '@features/activites-centre/activites-centre-select.util';
 import { MenaRowActionButtonComponent } from '@shared/mena-row-action-button/mena-row-action-button.component';
+import { MenaSearchableSelectComponent } from '@shared/mena-searchable-select/mena-searchable-select.component';
+import {
+  sortByLabel,
+  toMenaSelectOptions,
+  toMenaSelectOptionsFromPairs,
+} from '@shared/mena-searchable-select/mena-select-options.util';
 import { MenaToolbarButtonComponent } from '@shared/mena-toolbar-button/mena-toolbar-button.component';
 
 type Ref = {
@@ -69,7 +79,13 @@ type EvaluationForm = {
 @Component({
   selector: 'app-activites-centre-evaluation',
   standalone: true,
-  imports: [CommonModule, FormsModule, MenaRowActionButtonComponent, MenaToolbarButtonComponent],
+  imports: [
+    CommonModule,
+    FormsModule,
+    MenaRowActionButtonComponent,
+    MenaSearchableSelectComponent,
+    MenaToolbarButtonComponent,
+  ],
   templateUrl: './activites-centre-evaluation.component.html',
   styleUrl: './activites-centre-evaluation.component.css',
 })
@@ -162,10 +178,10 @@ export class ActivitesCentreEvaluationComponent implements OnInit {
     }).subscribe({
       next: ({ evaluations, alphas, periodes, niveaux, themes }) => {
         this.rows = unwrapListBody(evaluations) as EvaluationRow[];
-        this.alphas = unwrapListBody(alphas) as AlphaOption[];
-        this.periodes = unwrapListBody(periodes) as Ref[];
-        this.niveaux = unwrapListBody(niveaux) as Ref[];
-        this.themes = unwrapListBody(themes) as Ref[];
+        this.alphas = sortByLabel(unwrapListBody(alphas) as AlphaOption[], (a) => this.alphaOptionLabel(a));
+        this.periodes = sortActivitesRefs(unwrapListBody(periodes) as Ref[]);
+        this.niveaux = sortActivitesRefs(unwrapListBody(niveaux) as Ref[]);
+        this.themes = sortActivitesRefs(unwrapListBody(themes) as Ref[]);
         this.loading = false;
         this.loadWorkflowStatuses();
       },
@@ -334,6 +350,24 @@ export class ActivitesCentreEvaluationComponent implements OnInit {
   refLabel(ref: Ref | null | undefined): string {
     if (!ref) return '-';
     return ref.libelle?.trim() || ref.code?.trim() || `#${ref.id ?? ''}`;
+  }
+
+  menaAlphaFormOptions() {
+    return toMenaSelectOptions(this.alphas, (a) => this.alphaOptionId(a), (a) => this.alphaOptionLabel(a));
+  }
+
+  menaPeriodeFormOptions() {
+    return menaActivitesRefOptions(this.periodes, (p) => p.id ?? null);
+  }
+
+  menaNiveauFormOptions() {
+    return menaActivitesRefOptions(this.niveaux, (n) => n.id ?? null);
+  }
+
+  menaTypeFormOptions() {
+    return toMenaSelectOptionsFromPairs(
+      this.availableTypeOptions.map((type) => ({ value: type, label: this.typeLabel(type) })),
+    );
   }
 
   typeLabel(type: TypeEvaluation | string | null | undefined): string {

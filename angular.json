@@ -52,6 +52,7 @@
               "outputHashing": "all"
             },
             "staging": {
+              "baseHref": "/dcspa/",
               "fileReplacements": [
                 {
                   "replace": "src/environments/environment.ts",

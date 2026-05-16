@@ -8,12 +8,24 @@ import { HttpClient } from '@angular/common/http';
 import { Inject } from '@angular/core';
 import { API_BASE_URL } from '@core/tokens/api-base-url.token';
 import { MenaRowActionButtonComponent } from '@shared/mena-row-action-button/mena-row-action-button.component';
+import { MenaSearchableSelectComponent } from '@shared/mena-searchable-select/mena-searchable-select.component';
+import {
+  refEntityLabel,
+  sortByLabel,
+  toMenaSelectOptions,
+} from '@shared/mena-searchable-select/mena-select-options.util';
 import { MenaToolbarButtonComponent } from '@shared/mena-toolbar-button/mena-toolbar-button.component';
 
 @Component({
   selector: 'app-personnel-admin',
   standalone: true,
-  imports: [CommonModule, FormsModule, MenaRowActionButtonComponent, MenaToolbarButtonComponent],
+  imports: [
+    CommonModule,
+    FormsModule,
+    MenaRowActionButtonComponent,
+    MenaSearchableSelectComponent,
+    MenaToolbarButtonComponent,
+  ],
   templateUrl: './personnel.component.html',
   styleUrl: './personnel.component.css',
 })
@@ -96,11 +108,11 @@ export class PersonnelComponent {
       statuts: this.http.get<any[]>(`${this.apiBaseUrl}/api/StatutPersonnels`),
     }).subscribe({
       next: (res) => {
-        this.centres = res.centres ?? [];
-        this.fonctions = res.fonctions ?? [];
-        this.civilites = res.civilites ?? [];
-        this.niveaux = res.niveaux ?? [];
-        this.statuts = res.statuts ?? [];
+        this.centres = sortByLabel(res.centres ?? [], (c) => this.centreLabel(c));
+        this.fonctions = sortByLabel(res.fonctions ?? [], (f) => this.fonctionLabel(f));
+        this.civilites = sortByLabel(res.civilites ?? [], (c) => this.civiliteLabel(c));
+        this.niveaux = sortByLabel(res.niveaux ?? [], (n) => this.niveauLabel(n));
+        this.statuts = sortByLabel(res.statuts ?? [], (s) => this.statutLabel(s));
         this.loading = false;
       },
       error: (e) => {
@@ -315,6 +327,46 @@ export class PersonnelComponent {
         this.saving = false;
       },
     });
+  }
+
+  centreLabel(c: { id?: number; codeCentre?: string | null }): string {
+    return c.codeCentre?.trim() || `Centre #${c.id ?? '?'}`;
+  }
+
+  fonctionLabel(f: Record<string, unknown>): string {
+    return refEntityLabel(f, ['libelleFonction'], ['codeFonction']);
+  }
+
+  civiliteLabel(c: Record<string, unknown>): string {
+    return refEntityLabel(c, ['libelleCivilite'], ['codeCivilite']);
+  }
+
+  niveauLabel(n: Record<string, unknown>): string {
+    return refEntityLabel(n, ['libelleNiveauPersonnel'], ['codeNiveauPersonnel']);
+  }
+
+  statutLabel(s: Record<string, unknown>): string {
+    return refEntityLabel(s, ['libelleStatutPersonnel'], ['codeStatutPersonnel']);
+  }
+
+  menaCentreOptions() {
+    return toMenaSelectOptions(this.centres, (c) => c.id, (c) => this.centreLabel(c));
+  }
+
+  menaFonctionOptions() {
+    return toMenaSelectOptions(this.fonctions, (f) => f.id, (f) => this.fonctionLabel(f));
+  }
+
+  menaCiviliteOptions() {
+    return toMenaSelectOptions(this.civilites, (c) => c.id, (c) => this.civiliteLabel(c));
+  }
+
+  menaNiveauOptions() {
+    return toMenaSelectOptions(this.niveaux, (n) => n.id, (n) => this.niveauLabel(n));
+  }
+
+  menaStatutOptions() {
+    return toMenaSelectOptions(this.statuts, (s) => s.id, (s) => this.statutLabel(s));
   }
 
   private formatError(e: unknown): string {

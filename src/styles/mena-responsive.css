@@ -1,0 +1,345 @@
+/**
+ * PRISM — responsive tablette / téléphone
+ * - défilement vertical de l’application
+ * - modales : en-tête/pied fixes, corps du formulaire défilant
+ * - grilles de formulaires empilées sous md
+ * - tableaux et barres d’outils adaptés au tactile
+ */
+
+/* ── Viewport & shell ───────────────────────────────────────────── */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+.mena-content-wrapper {
+  min-height: 100vh;
+  min-height: 100dvh;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+#content.mena-main-inner {
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
+}
+
+.mena-page-content {
+  width: 100%;
+  max-width: 100%;
+  padding-bottom: 1.25rem;
+}
+
+/* ── Modales MENA : corps défilant (toutes pages) ───────────────── */
+.modal-content.mena-modal,
+.modal-content.mena-modal-content {
+  max-height: calc(100dvh - 1rem);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.modal-content.mena-modal .modal-header,
+.modal-content.mena-modal .modal-footer,
+.modal-content.mena-modal-content .modal-header,
+.modal-content.mena-modal-content .modal-footer {
+  flex-shrink: 0;
+}
+
+.modal-content.mena-modal .modal-body,
+.modal-content.mena-modal-content .modal-body,
+.modal-content.mena-modal .modal-body.mena-modal-body-scroll,
+.modal-content.mena-modal-content .modal-body.mena-modal-body-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Dialogues centres (détail / édition) — hérite + limite hauteur */
+.mena-centre-modal-dialog,
+.mena-modal-detail-dialog,
+.mena-user-form-modal-dialog {
+  max-height: calc(100dvh - 1rem);
+  margin: 0.5rem auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.mena-centre-modal-dialog .modal-body.mena-modal-body-scroll,
+.mena-modal-detail-dialog .modal-body.mena-modal-body-scroll {
+  max-height: none;
+}
+
+/* Overlay référentiel (modal fixe plein écran) */
+.mena-modal.show,
+.mena-modal[style*='block'] {
+  display: flex !important;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 0.5rem;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.mena-modal .modal-dialog {
+  margin: 0.5rem auto;
+  width: calc(100% - 1rem);
+  max-width: 100%;
+}
+
+.mena-modal .modal-dialog.modal-xl,
+.mena-modal .modal-dialog.modal-lg {
+  max-width: min(1140px, calc(100% - 1rem));
+}
+
+/* Tables dans modales */
+.modal-body .table-responsive,
+.modal-body > .table {
+  display: block;
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ── Formulaires pleine page (wizard création centre, etc.) ─────── */
+.mena-long-form-card .card-body {
+  overflow-x: hidden;
+}
+
+.mena-wizard-form-panel {
+  overflow-x: hidden;
+}
+
+/* Colonnes Bootstrap : empiler sous tablette portrait / téléphone */
+@media (max-width: 991.98px) {
+  .row > .form-group[class*='col-md'],
+  .row > .form-group[class*='col-lg'],
+  .row > .form-group[class*='col-xl'],
+  .form-row > .form-group[class*='col-md'],
+  .form-row > .form-group[class*='col-lg'],
+  .form-row > [class*='col-md']:not(.col-12),
+  .form-row > [class*='col-lg']:not(.col-12) {
+    flex: 0 0 100%;
+    max-width: 100%;
+  }
+}
+
+/* ── Téléphone (≤ 768px) ───────────────────────────────────────── */
+@media (max-width: 767.98px) {
+  .container-fluid.mena-page-content {
+    padding-left: 0.65rem;
+    padding-right: 0.65rem;
+  }
+
+  /* En-têtes de page : titre au-dessus, actions en dessous */
+  .d-sm-flex.align-items-center.justify-content-between {
+    flex-direction: column;
+    align-items: stretch !important;
+  }
+
+  .d-sm-flex.align-items-center.justify-content-between > .mena-toolbar,
+  .d-sm-flex.align-items-center.justify-content-between > .d-flex.mena-toolbar {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .mena-toolbar {
+    gap: 0.35rem;
+  }
+
+  .mena-toolbar app-mena-toolbar-btn,
+  .mena-toolbar .btn,
+  .mena-toolbar a.btn {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  /* Wizard : étapes défilables horizontalement */
+  .mena-wizard-steps {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    padding-bottom: 0.25rem;
+    margin-left: -0.15rem;
+    margin-right: -0.15rem;
+  }
+
+  .mena-wizard-step {
+    flex: 0 0 auto;
+    white-space: nowrap;
+    font-size: 0.78rem;
+    padding: 0.3rem 0.55rem;
+  }
+
+  .mena-wizard-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .mena-wizard-actions__group {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .mena-wizard-actions__group .btn,
+  .mena-wizard-actions__group app-mena-toolbar-btn {
+    flex: 1 1 auto;
+  }
+
+  /* Tableaux listes */
+  .table-responsive {
+    margin-left: -0.35rem;
+    margin-right: -0.35rem;
+    padding-left: 0.35rem;
+    padding-right: 0.35rem;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .mena-table .mena-table-cell {
+    max-width: 8rem;
+    font-size: 0.85rem;
+  }
+
+  .mena-col-actions {
+    min-width: 5.5rem;
+  }
+
+  .mena-row-actions {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+  }
+
+  /* Modales pleine largeur */
+  .modal-dialog,
+  .mena-centre-modal-dialog,
+  .mena-modal-detail-dialog,
+  .mena-user-form-modal-dialog {
+    margin: 0.35rem auto;
+    max-width: calc(100% - 0.5rem);
+    width: calc(100% - 0.5rem);
+  }
+
+  .modal-content.mena-modal,
+  .modal-content.mena-modal-content {
+    max-height: calc(100dvh - 0.75rem);
+    border-radius: 12px;
+  }
+
+  /* Topbar */
+  .mena-topbar {
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+  }
+
+  .mena-topbar .navbar-nav {
+    flex-wrap: nowrap;
+  }
+
+  .mena-topbar .form-inline.navbar-search {
+    max-width: 100%;
+  }
+
+  /* Champs tactiles */
+  .form-control,
+  .form-control-sm,
+  .custom-select,
+  .custom-select-sm,
+  select.form-control {
+    font-size: 16px;
+  }
+
+  .mena-btn-action {
+    padding: 0.35rem 0.5rem;
+  }
+
+  /* Panneau détail centre : libellés au-dessus des valeurs */
+  .mena-centre-detail-panel .table th {
+    width: 38%;
+    font-size: 0.75rem;
+  }
+
+  .mena-centre-detail-panel .table td {
+    font-size: 0.85rem;
+    word-break: break-word;
+  }
+
+  /* Filtres listes référentiel */
+  .mena-list-filter-wrap {
+    min-width: 0;
+    max-width: 100%;
+    width: 100%;
+  }
+
+  .mena-toolbar-type-select {
+    max-width: 100%;
+  }
+
+  .mena-list-card-header .d-flex {
+    flex-direction: column;
+    align-items: stretch !important;
+  }
+}
+
+/* ── Tablette (768px – 991px) ─────────────────────────────────── */
+@media (min-width: 768px) and (max-width: 991.98px) {
+  .modal-dialog.modal-lg,
+  .modal-dialog.modal-xl,
+  .mena-centre-modal-dialog {
+    max-width: min(720px, calc(100% - 1.5rem));
+  }
+
+  .mena-wizard-steps {
+    gap: 0.35rem;
+  }
+}
+
+/* ── Page connexion ───────────────────────────────────────────── */
+.mena-login-page {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  padding: 1rem 0.5rem;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 767.98px) {
+  .mena-login-page .card-body > .row > [class*='col-lg-6']:last-child .p-5 {
+    padding: 1.5rem !important;
+  }
+
+  .mena-login-tagline {
+    font-size: 0.82rem;
+  }
+
+  .mena-login-brand-logo {
+    max-height: 64px;
+  }
+}
+
+/* ── Select recherchable : liste au-dessus du clavier mobile ──── */
+@media (max-width: 991.98px) {
+  .mena-searchable-select__list {
+    max-height: min(50vh, 16rem);
+  }
+}
+
+/* Safe areas (encoches) */
+@supports (padding: max(0px)) {
+  .mena-content-wrapper {
+    padding-left: max(0px, env(safe-area-inset-left));
+    padding-right: max(0px, env(safe-area-inset-right));
+  }
+
+  .mena-modal {
+    padding-top: max(0.5rem, env(safe-area-inset-top));
+    padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+  }
+}

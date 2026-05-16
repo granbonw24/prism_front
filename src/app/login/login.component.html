@@ -1,68 +1,70 @@
-<div class="row justify-content-center px-2 px-sm-3">
-  <div class="col-12 col-xl-10 col-lg-12 col-md-9">
-    <div class="card o-hidden border-0 shadow-lg my-5">
-      <div class="card-body p-0">
-        <div class="row">
-          <div class="col-lg-6 d-none d-lg-block p-0">
-            <div class="mena-login-panel">
-              <img
-                [src]="brandPanelSrc"
-                width="670"
-                [alt]="brandAlt"
-                decoding="async"
-              />
-            </div>
-          </div>
-          <div class="col-lg-6">
-            <div class="p-5">
-              <div class="text-center mena-login-form-header">
+<div class="mena-login-page">
+  <div class="row justify-content-center px-2 px-sm-3 w-100 mx-0">
+    <div class="col-12 col-xl-10 col-lg-12 col-md-9">
+      <div class="card o-hidden border-0 shadow-lg my-4 my-md-5">
+        <div class="card-body p-0">
+          <div class="row">
+            <div class="col-lg-6 d-none d-lg-block p-0">
+              <div class="mena-login-panel">
                 <img
-                  class="mena-login-brand-logo"
-                  [src]="brandMarkSrc"
+                  [src]="brandPanelSrc"
+                  width="670"
                   [alt]="brandAlt"
                   decoding="async"
                 />
-                <h1 class="h4 text-gray-900 mb-2">Connexion</h1>
-                <p class="mena-login-tagline mb-4">PRISM — suivi des activités éducation / alphabétisation (MENA CI)</p>
               </div>
-              <form
-                class="user"
-                [formGroup]="form"
-                (ngSubmit)="submit()"
-              >
-                <div
-                  *ngIf="errorMessage"
-                  class="alert alert-danger small"
-                  role="alert"
-                >
-                  {{ errorMessage }}
-                </div>
-                <div class="form-group">
-                  <input
-                    type="text"
-                    class="form-control form-control-user"
-                    formControlName="username"
-                    placeholder="Nom d'utilisateur"
-                    autocomplete="username"
+            </div>
+            <div class="col-lg-6">
+              <div class="p-5">
+                <div class="text-center mena-login-form-header">
+                  <img
+                    class="mena-login-brand-logo"
+                    [src]="brandMarkSrc"
+                    [alt]="brandAlt"
+                    decoding="async"
                   />
+                  <h1 class="h4 text-gray-900 mb-2">Connexion</h1>
+                  <p class="mena-login-tagline mb-4">PRISM — suivi des activités éducation / alphabétisation (MENA CI)</p>
                 </div>
-                <div class="form-group">
-                  <input
-                    type="password"
-                    class="form-control form-control-user"
-                    formControlName="password"
-                    placeholder="Mot de passe"
-                    autocomplete="current-password"
-                  />
-                </div>
-                <button
-                  type="submit"
-                  class="btn btn-success btn-user btn-block mena-btn-login"
-                  [disabled]="submitting"
+                <form
+                  class="user"
+                  [formGroup]="form"
+                  (ngSubmit)="submit()"
                 >
-                  {{ submitting ? 'Connexion…' : 'Connexion' }}
-                </button>
-              </form>
+                  <div
+                    *ngIf="errorMessage"
+                    class="alert alert-danger small"
+                    role="alert"
+                  >
+                    {{ errorMessage }}
+                  </div>
+                  <div class="form-group">
+                    <input
+                      type="text"
+                      class="form-control form-control-user"
+                      formControlName="username"
+                      placeholder="Nom d'utilisateur"
+                      autocomplete="username"
+                    />
+                  </div>
+                  <div class="form-group">
+                    <input
+                      type="password"
+                      class="form-control form-control-user"
+                      formControlName="password"
+                      placeholder="Mot de passe"
+                      autocomplete="current-password"
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    class="btn btn-success btn-user btn-block mena-btn-login"
+                    [disabled]="submitting"
+                  >
+                    {{ submitting ? 'Connexion…' : 'Connexion' }}
+                  </button>
+                </form>
+              </div>
             </div>
           </div>
         </div>

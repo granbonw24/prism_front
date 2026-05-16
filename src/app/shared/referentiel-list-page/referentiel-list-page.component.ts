@@ -17,6 +17,11 @@ import { API_BASE_URL } from '@core/tokens/api-base-url.token';
 import { formatHttpError } from '@core/utils/http-error.util';
 import { ConfirmDeleteComponent } from '@shared/confirm-delete/confirm-delete.component';
 import { MenaRowActionButtonComponent } from '@shared/mena-row-action-button/mena-row-action-button.component';
+import { MenaSearchableSelectComponent } from '@shared/mena-searchable-select/mena-searchable-select.component';
+import {
+  sortByLabel,
+  toMenaSelectOptionsFromPairs,
+} from '@shared/mena-searchable-select/mena-select-options.util';
 import { AuthService } from '@services/auth.service';
 
 /**
@@ -39,7 +44,14 @@ type WorkflowDecisionAction = 'rejeter' | 'retourner';
 @Component({
   selector: 'app-referentiel-list-page',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, FormsModule, ConfirmDeleteComponent, MenaRowActionButtonComponent],
+  imports: [
+    CommonModule,
+    ReactiveFormsModule,
+    FormsModule,
+    ConfirmDeleteComponent,
+    MenaRowActionButtonComponent,
+    MenaSearchableSelectComponent,
+  ],
   templateUrl: './referentiel-list-page.component.html',
   styleUrl: './referentiel-list-page.component.css',
 })
@@ -201,6 +213,20 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
     const v = String(target?.value ?? '').trim();
     if (!v) return;
     this.addFormContextValueChange.emit(v);
+  }
+
+  onAddFormContextValueChange(value: string | number | boolean | null): void {
+    const v = String(value ?? '').trim();
+    if (!v) return;
+    this.addFormContextValueChange.emit(v);
+  }
+
+  menaContextOptions() {
+    return toMenaSelectOptionsFromPairs(this.addFormContextOptions ?? []);
+  }
+
+  menaFieldOptions(field: ReferentielFormField) {
+    return toMenaSelectOptionsFromPairs(this.getFieldOptions(field));
   }
 
   ngOnDestroy(): void {
@@ -544,10 +570,10 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
   }
 
   getFieldOptions(field: ReferentielFormField): Array<{ value: string | number; label: string }> {
-    if (field.options?.length) {
-      return field.options;
-    }
-    return this.fieldOptions[this.optionsCacheKey(field)] ?? [];
+    const options = field.options?.length
+      ? field.options
+      : (this.fieldOptions[this.optionsCacheKey(field)] ?? []);
+    return sortByLabel(options, (opt) => opt.label);
   }
 
   clearListFilter(): void {

@@ -32,24 +32,36 @@
         </div>
         <div class="form-group col-md-3 col-sm-6 mb-2 mb-md-0">
           <label class="small text-muted mb-1">Centre Alpha</label>
-          <select class="form-control form-control-sm" [(ngModel)]="filterIdCentre">
-            <option [ngValue]="''">Tous</option>
-            <option *ngFor="let a of alphas" [ngValue]="a.idCentre">{{ alphaOptionLabel(a) }}</option>
-          </select>
+          <app-mena-searchable-select
+            class="form-control form-control-sm"
+            [(ngModel)]="filterIdCentre"
+            [options]="menaAlphaFilterOptions()"
+            [allowNull]="false"
+            inputClass="form-control form-control-sm"
+            [disabled]="loading"
+          />
         </div>
         <div class="form-group col-md-2 col-sm-6 mb-2 mb-md-0">
           <label class="small text-muted mb-1">Nature document</label>
-          <select class="form-control form-control-sm" [(ngModel)]="filterIdNatureDocument">
-            <option [ngValue]="''">Toutes</option>
-            <option *ngFor="let n of natures" [ngValue]="n.id">{{ natureOptionLabel(n) }}</option>
-          </select>
+          <app-mena-searchable-select
+            class="form-control form-control-sm"
+            [(ngModel)]="filterIdNatureDocument"
+            [options]="menaNatureFilterOptions()"
+            [allowNull]="false"
+            inputClass="form-control form-control-sm"
+            [disabled]="loading"
+          />
         </div>
         <div class="form-group col-md-2 col-sm-6 mb-2 mb-md-0">
           <label class="small text-muted mb-1">Type document</label>
-          <select class="form-control form-control-sm" [(ngModel)]="filterIdTypeDocument">
-            <option [ngValue]="''">Tous</option>
-            <option *ngFor="let t of types" [ngValue]="t.id">{{ typeOptionLabel(t) }}</option>
-          </select>
+          <app-mena-searchable-select
+            class="form-control form-control-sm"
+            [(ngModel)]="filterIdTypeDocument"
+            [options]="menaTypeFilterOptions()"
+            [allowNull]="false"
+            inputClass="form-control form-control-sm"
+            [disabled]="loading"
+          />
         </div>
         <div class="form-group col-md-2 col-sm-12 mb-0 d-flex flex-wrap gap-1">
           <div class="flex-grow-1 mena-toolbar">
@@ -179,24 +191,33 @@
         <div class="form-row">
           <div class="form-group col-md-6">
             <label class="small text-muted">Centre Alpha *</label>
-            <select class="form-control form-control-sm" [(ngModel)]="createForm.idCentre">
-              <option [ngValue]="null">—</option>
-              <option *ngFor="let a of alphas" [ngValue]="a.idCentre">{{ alphaOptionLabel(a) }}</option>
-            </select>
+            <app-mena-searchable-select
+              class="form-control form-control-sm"
+              [(ngModel)]="createForm.idCentre"
+              [options]="menaAlphaFormOptions()"
+              inputClass="form-control form-control-sm"
+              [disabled]="saving"
+            />
           </div>
           <div class="form-group col-md-3">
             <label class="small text-muted">Nature *</label>
-            <select class="form-control form-control-sm" [(ngModel)]="createForm.idNatureDocument">
-              <option [ngValue]="null">—</option>
-              <option *ngFor="let n of natures" [ngValue]="n.id">{{ natureOptionLabel(n) }}</option>
-            </select>
+            <app-mena-searchable-select
+              class="form-control form-control-sm"
+              [(ngModel)]="createForm.idNatureDocument"
+              [options]="menaNatureFormOptions()"
+              inputClass="form-control form-control-sm"
+              [disabled]="saving"
+            />
           </div>
           <div class="form-group col-md-3">
             <label class="small text-muted">Type *</label>
-            <select class="form-control form-control-sm" [(ngModel)]="createForm.idTypeDocument">
-              <option [ngValue]="null">—</option>
-              <option *ngFor="let t of types" [ngValue]="t.id">{{ typeOptionLabel(t) }}</option>
-            </select>
+            <app-mena-searchable-select
+              class="form-control form-control-sm"
+              [(ngModel)]="createForm.idTypeDocument"
+              [options]="menaTypeFormOptions()"
+              inputClass="form-control form-control-sm"
+              [disabled]="saving"
+            />
           </div>
         </div>
 
@@ -272,24 +293,33 @@
         <div class="form-row">
           <div class="form-group col-md-6">
             <label class="small text-muted">Centre Alpha *</label>
-            <select class="form-control form-control-sm" [(ngModel)]="editForm.idCentre">
-              <option [ngValue]="null">—</option>
-              <option *ngFor="let a of alphas" [ngValue]="a.idCentre">{{ alphaOptionLabel(a) }}</option>
-            </select>
+            <app-mena-searchable-select
+              class="form-control form-control-sm"
+              [(ngModel)]="editForm.idCentre"
+              [options]="menaAlphaFormOptions()"
+              inputClass="form-control form-control-sm"
+              [disabled]="saving"
+            />
           </div>
           <div class="form-group col-md-3">
             <label class="small text-muted">Nature *</label>
-            <select class="form-control form-control-sm" [(ngModel)]="editForm.idNatureDocument">
-              <option [ngValue]="null">—</option>
-              <option *ngFor="let n of natures" [ngValue]="n.id">{{ natureOptionLabel(n) }}</option>
-            </select>
+            <app-mena-searchable-select
+              class="form-control form-control-sm"
+              [(ngModel)]="editForm.idNatureDocument"
+              [options]="menaNatureFormOptions()"
+              inputClass="form-control form-control-sm"
+              [disabled]="saving"
+            />
           </div>
           <div class="form-group col-md-3">
             <label class="small text-muted">Type *</label>
-            <select class="form-control form-control-sm" [(ngModel)]="editForm.idTypeDocument">
-              <option [ngValue]="null">—</option>
-              <option *ngFor="let t of types" [ngValue]="t.id">{{ typeOptionLabel(t) }}</option>
-            </select>
+            <app-mena-searchable-select
+              class="form-control form-control-sm"
+              [(ngModel)]="editForm.idTypeDocument"
+              [options]="menaTypeFormOptions()"
+              inputClass="form-control form-control-sm"
+              [disabled]="saving"
+            />
           </div>
         </div>
 

@@ -1,0 +1,61 @@
+<div
+  class="mena-searchable-select"
+  [class.mena-searchable-select--open]="open"
+  [class.mena-searchable-select--disabled]="disabled"
+>
+  <div class="mena-searchable-select__control">
+    <input
+      type="text"
+      [class]="inputClass"
+      [value]="query"
+      [placeholder]="displayPlaceholder"
+      [disabled]="disabled"
+      [readonly]="!searchable"
+      autocomplete="off"
+      (focus)="onInputFocus()"
+      (input)="onInputInput($any($event.target).value)"
+      (blur)="onInputBlur()"
+    />
+    <button
+      type="button"
+      class="mena-searchable-select__toggle"
+      tabindex="-1"
+      [disabled]="disabled"
+      (mousedown)="togglePanel($event)"
+      aria-label="Ouvrir la liste"
+    >
+      <i class="fas fa-chevron-down" aria-hidden="true"></i>
+    </button>
+    <button
+      *ngIf="allowNull && value != null && !disabled"
+      type="button"
+      class="mena-searchable-select__clear"
+      tabindex="-1"
+      (mousedown)="clearSelection($event)"
+      aria-label="Effacer la sélection"
+    >
+      <i class="fas fa-times" aria-hidden="true"></i>
+    </button>
+  </div>
+  <ul *ngIf="open && !disabled" class="mena-searchable-select__list" role="listbox">
+    <li
+      *ngIf="allowNull"
+      class="mena-searchable-select__item mena-searchable-select__item--null"
+      [class.is-selected]="value == null"
+      (mousedown)="selectOption({ value: null, label: nullLabel }, $event)"
+    >
+      {{ nullLabel }}
+    </li>
+    <li
+      *ngFor="let option of filteredOptions"
+      class="mena-searchable-select__item"
+      [class.is-selected]="isSelected(option)"
+      (mousedown)="selectOption(option, $event)"
+    >
+      {{ option.label }}
+    </li>
+    <li *ngIf="filteredOptions.length === 0 && (!allowNull || query.trim())" class="mena-searchable-select__empty">
+      Aucun résultat
+    </li>
+  </ul>
+</div>

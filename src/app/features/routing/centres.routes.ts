@@ -9,8 +9,10 @@ export const centresFeatureRoutes: Routes = [
     data: {
       mode: 'create',
       title: 'Nouveau centre Alpha',
-      subtitle: 'Assistant d’enregistrement en 5 étapes',
+      createTitle: 'Nouveau centre Alpha',
+      subtitle: 'Assistant d’enregistrement en 4 étapes',
       listPath: '/centres/alpha',
+      createPath: '/centres/alpha/nouveau',
       createInitiallyOpen: true,
     },
   },
@@ -21,7 +23,7 @@ export const centresFeatureRoutes: Routes = [
       mode: 'list',
       title: 'Centres Alpha',
       createPath: '/centres/alpha/nouveau',
-      createInitiallyOpen: false,
+      listPath: '/centres/alpha',
     },
   },
   {
@@ -31,9 +33,10 @@ export const centresFeatureRoutes: Routes = [
       mode: 'create',
       title: 'Centres CEC',
       createTitle: 'Nouveau centre CEC',
-      subtitle: 'Assistant d’enregistrement en 5 étapes',
+      subtitle: 'Assistant d’enregistrement en 4 étapes',
       apiPath: '/api/cec',
       listPath: '/centres/cec',
+      createInitiallyOpen: true,
     },
   },
   {
@@ -44,6 +47,7 @@ export const centresFeatureRoutes: Routes = [
       title: 'Centres CEC',
       apiPath: '/api/cec',
       createPath: '/centres/cec/nouveau',
+      listPath: '/centres/cec',
     },
   },
   {
@@ -53,9 +57,10 @@ export const centresFeatureRoutes: Routes = [
       mode: 'create',
       title: 'Centres CP',
       createTitle: 'Nouveau centre CP',
-      subtitle: 'Assistant d’enregistrement en 5 étapes',
+      subtitle: 'Assistant d’enregistrement en 4 étapes',
       apiPath: '/api/cp',
       listPath: '/centres/cp',
+      createInitiallyOpen: true,
     },
   },
   {
@@ -66,6 +71,7 @@ export const centresFeatureRoutes: Routes = [
       title: 'Centres CP',
       apiPath: '/api/cp',
       createPath: '/centres/cp/nouveau',
+      listPath: '/centres/cp',
     },
   },
   {
@@ -75,9 +81,10 @@ export const centresFeatureRoutes: Routes = [
       mode: 'create',
       title: 'Centres SIE',
       createTitle: 'Nouveau centre SIE',
-      subtitle: 'Assistant d’enregistrement en 5 étapes',
+      subtitle: 'Assistant d’enregistrement en 4 étapes',
       apiPath: '/api/sie',
       listPath: '/centres/sie',
+      createInitiallyOpen: true,
     },
   },
   {
@@ -88,6 +95,7 @@ export const centresFeatureRoutes: Routes = [
       title: 'Centres SIE',
       apiPath: '/api/sie',
       createPath: '/centres/sie/nouveau',
+      listPath: '/centres/sie',
     },
   },
 ];

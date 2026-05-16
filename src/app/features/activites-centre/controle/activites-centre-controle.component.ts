@@ -7,7 +7,14 @@ import { Component, Inject, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { forkJoin } from 'rxjs';
 import { AuthService } from '@services/auth.service';
+import {
+  menaActivitesRefOptions,
+  menaActivitesRefOptionsWithAll,
+  sortActivitesRefs,
+} from '@features/activites-centre/activites-centre-select.util';
 import { MenaRowActionButtonComponent } from '@shared/mena-row-action-button/mena-row-action-button.component';
+import { MenaSearchableSelectComponent } from '@shared/mena-searchable-select/mena-searchable-select.component';
+import { sortByLabel, toMenaSelectOptions } from '@shared/mena-searchable-select/mena-select-options.util';
 
 type Ref = {
   id?: number | null;
@@ -95,7 +102,7 @@ const DAYS: Array<{ value: string; label: string }> = [
 @Component({
   selector: 'app-activites-centre-controle',
   standalone: true,
-  imports: [CommonModule, FormsModule, MenaRowActionButtonComponent],
+  imports: [CommonModule, FormsModule, MenaRowActionButtonComponent, MenaSearchableSelectComponent],
   templateUrl: './activites-centre-controle.component.html',
   styleUrl: './activites-centre-controle.component.css',
 })
@@ -189,10 +196,10 @@ export class ActivitesCentreControleComponent implements OnInit {
     }).subscribe({
       next: ({ controles, alphas, periodes, niveaux, manuels }) => {
         this.rows = unwrapListBody(controles) as ControleRow[];
-        this.alphas = unwrapListBody(alphas) as AlphaOption[];
-        this.periodes = unwrapListBody(periodes) as Ref[];
-        this.niveaux = unwrapListBody(niveaux) as Ref[];
-        this.manuels = unwrapListBody(manuels) as Ref[];
+        this.alphas = sortByLabel(unwrapListBody(alphas) as AlphaOption[], (a) => this.alphaOptionLabel(a));
+        this.periodes = sortActivitesRefs(unwrapListBody(periodes) as Ref[]);
+        this.niveaux = sortActivitesRefs(unwrapListBody(niveaux) as Ref[]);
+        this.manuels = sortActivitesRefs(unwrapListBody(manuels) as Ref[]);
         this.loading = false;
         this.loadWorkflowStatuses();
       },
@@ -358,6 +365,35 @@ export class ActivitesCentreControleComponent implements OnInit {
 
   niveauxForSelectedAlpha(): Ref[] {
     return this.niveaux;
+  }
+
+  menaAlphaFilterOptions() {
+    return menaActivitesRefOptionsWithAll(
+      this.alphas,
+      (a) => this.alphaOptionValue(a as AlphaOption),
+      'Tous',
+      '',
+    );
+  }
+
+  menaPeriodeFilterOptions() {
+    return menaActivitesRefOptionsWithAll(this.periodes, (p) => p.id ?? '', 'Toutes', '');
+  }
+
+  menaAlphaFormOptions() {
+    return toMenaSelectOptions(this.alphas, (a) => this.alphaOptionId(a), (a) => this.alphaOptionLabel(a));
+  }
+
+  menaPeriodeFormOptions() {
+    return menaActivitesRefOptions(this.periodes, (p) => p.id ?? null);
+  }
+
+  menaNiveauFormOptions() {
+    return menaActivitesRefOptions(this.niveauxForSelectedAlpha(), (n) => n.id ?? null);
+  }
+
+  menaManuelOptions() {
+    return menaActivitesRefOptions(this.manuels, (m) => m.id ?? null);
   }
 
   alphaLabel(row: ControleRow): string {

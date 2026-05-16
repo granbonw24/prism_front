@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Component, Inject, Input, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import {
   AutoriteOption,
@@ -36,7 +36,28 @@ import { API_BASE_URL } from '@core/tokens/api-base-url.token';
 import { AuthSession } from '@core/models/auth.models';
 import { AuthService } from '@services/auth.service';
 import { MenaRowActionButtonComponent } from '@shared/mena-row-action-button/mena-row-action-button.component';
+import { MenaSearchableSelectComponent } from '@shared/mena-searchable-select/mena-searchable-select.component';
 import { MenaToolbarButtonComponent } from '@shared/mena-toolbar-button/mena-toolbar-button.component';
+import {
+  CentrePageMode,
+  centrePageModeFromRoute,
+  fetchPromoteurOptionDetails,
+  printCentreIdentificationFiche,
+  wizardSavedFicheFromCreateResponse,
+  WizardSavedFiche,
+} from '@features/centres/centre-create-wizard.util';
+import {
+  menaAutoriteSelectOptions,
+  menaIepSelectOptions,
+  menaLocaliteSelectOptions,
+  menaNatureSelectOptions,
+  menaPeriodiciteSelectOptions,
+  menaPromoteurSelectOptions,
+  menaRefSelectOptions,
+  sortPromoteurOptions,
+  sortRefOptions,
+} from '@features/centres/centre-select-options.util';
+import { sortByLabel } from '@shared/mena-searchable-select/mena-select-options.util';
 
 type DrenaDepartementOption = RefOption & {
   drena?: CentreRefDetails | null;
@@ -46,7 +67,14 @@ type DrenaDepartementOption = RefOption & {
 @Component({
   selector: 'app-simple-centre-type-page',
   standalone: true,
-  imports: [CommonModule, FormsModule, MenaRowActionButtonComponent, MenaToolbarButtonComponent],
+  imports: [
+    CommonModule,
+    FormsModule,
+    RouterLink,
+    MenaRowActionButtonComponent,
+    MenaSearchableSelectComponent,
+    MenaToolbarButtonComponent,
+  ],
   templateUrl: './simple-centre-type-page.component.html',
 })
 export class SimpleCentreTypePageComponent implements OnInit {
@@ -60,6 +88,18 @@ export class SimpleCentreTypePageComponent implements OnInit {
   readonly typePromoteurOptions: TypePromoteur[] = ['PHYSIQUE', 'MORALE'];
   @Input({ required: true }) title!: string;
   @Input({ required: true }) apiPath!: string;
+
+  pageMode: CentrePageMode = 'list';
+  pageSubtitle = '';
+  createTitle = '';
+  listPath = '';
+  createPath = '';
+
+  wizardSavedSuccess = false;
+  wizardSavedMessage: string | null = null;
+  savedFiche: WizardSavedFiche | null = null;
+  wizardPromoteurDetails: PromoteurOption | null = null;
+  wizardPromoteurLoading = false;
 
   loading = false;
   saving = false;
@@ -228,11 +268,32 @@ export class SimpleCentreTypePageComponent implements OnInit {
     private readonly auth: AuthService,
   ) {}
 
+  get isCreatePage(): boolean {
+    return this.pageMode === 'create';
+  }
+
+  get isListPage(): boolean {
+    return this.pageMode === 'list';
+  }
+
+  get wizardLockedAfterSave(): boolean {
+    return this.wizardSavedSuccess;
+  }
+
   ngOnInit(): void {
-    const data = this.route.snapshot.data as any;
-    this.title = this.title ?? data?.title;
-    this.apiPath = this.apiPath ?? data?.apiPath;
-    this.loadAll();
+    const data = this.route.snapshot.data as Record<string, unknown>;
+    this.title = this.title ?? (data['title'] as string | undefined);
+    this.apiPath = this.apiPath ?? (data['apiPath'] as string | undefined);
+    this.pageMode = centrePageModeFromRoute(data);
+    this.pageSubtitle = (data['subtitle'] as string | undefined) ?? '';
+    this.createTitle = (data['createTitle'] as string | undefined) ?? `Nouveau centre`;
+    this.listPath = (data['listPath'] as string | undefined) ?? '';
+    this.createPath = (data['createPath'] as string | undefined) ?? '';
+    if (this.isCreatePage) {
+      this.loadWizardRefs();
+    } else {
+      this.loadAll();
+    }
   }
 
   loadAll(): void {
@@ -242,6 +303,33 @@ export class SimpleCentreTypePageComponent implements OnInit {
       rows: this.http.get<SpringPage<Record<string, unknown>>>(`${this.apiBaseUrl}${this.apiPath}`, {
         params: this.buildSimpleListParams(),
       }),
+      ...this.wizardRefRequests(),
+    }).subscribe({
+      next: (res) => this.applyWizardRefsAndRows(res),
+      error: (e) => {
+        this.errorMessage = this.formatError(e);
+        this.loading = false;
+      },
+    });
+  }
+
+  loadWizardRefs(): void {
+    this.loading = true;
+    this.errorMessage = null;
+    forkJoin(this.wizardRefRequests()).subscribe({
+      next: (res) => {
+        this.applyWizardRefs(res);
+        this.loading = false;
+      },
+      error: (e) => {
+        this.errorMessage = this.formatError(e);
+        this.loading = false;
+      },
+    });
+  }
+
+  private wizardRefRequests(): Record<string, ReturnType<HttpClient['get']>> {
+    return {
       localites: this.http.get<LocaliteOption[]>(`${this.apiBaseUrl}/api/localite-d-implantation`),
       ieps: this.http.get<IepOption[]>(`${this.apiBaseUrl}/api/iep`),
       regions: this.http.get<any[]>(`${this.apiBaseUrl}/api/region`),
@@ -257,71 +345,128 @@ export class SimpleCentreTypePageComponent implements OnInit {
       typePersonneMorales: this.http.get<any[]>(`${this.apiBaseUrl}/api/type-personne-morale`),
       anneesScolaires: this.http.get<any[]>(`${this.apiBaseUrl}/api/anneescolaire`),
       niveaux: this.http.get<any[]>(`${this.apiBaseUrl}${this.niveauApiPath()}`),
-    }).subscribe({
-      next: (res) => {
-        const page = res.rows;
-        const list = page.content ?? [];
-        this.totalElements = page.totalElements ?? 0;
-        this.totalPages = page.totalPages ?? 0;
-        this.rows = list.map((x) => this.mapRow(x));
-        this.localites = res.localites ?? [];
-        this.ieps = res.ieps ?? [];
-        this.regions = (res.regions ?? []).map((x: any) => this.refOptionFromApi(x));
-        this.drenas = (res.drenas ?? []).map((x: any) => this.refOptionFromApi(x));
-        this.departements = (res.departements ?? []).map((x: any) => ({
-          ...this.refOptionFromApi(x),
-          region: this.asCentreRef(x.region),
-        }));
-        this.drenaDepartements = (res.drenaDepartements ?? []).map((x: any) => ({
-          ...this.refOptionFromApi(x),
-          drena: this.asCentreRef(x.drena),
-          departement: this.asCentreRef(x.departement),
-        }));
-        this.communes = (res.communes ?? []).map((x: any) => this.refOptionFromApi(x));
-        this.sousPrefectures = (res.sousPrefectures ?? []).map((x: any) => ({
-          ...this.refOptionFromApi(x),
-          departement: this.asCentreRef(x.departement),
-        }));
-        this.natures = res.natures ?? [];
-        this.periodicites = res.periodicites ?? [];
-        this.autorites = res.autorites ?? [];
-        this.promoteurs = (res.promoteurs ?? []).map((x: any) => ({
-          id: x.id,
-          code: x.codePromoteur ?? undefined,
-          libelle: x.libellePromoteur ?? undefined,
-          details: promoteurDetailsFromApi(x),
-        }));
-        this.typePersonneMoraleOptions = (res.typePersonneMorales ?? []).map((x: any) => ({
-          id: x.id,
-          code: undefined,
-          libelle: x.libelle ?? undefined,
-        }));
-        this.anneesScolaires = (res.anneesScolaires ?? []).map((x: any) => ({
-          id: x.id,
-          code: x.codeAnneeScolaire ?? x.code ?? undefined,
-          libelle:
-            x.debutAnneeScolaire != null && x.finAnneeScolaire != null
-              ? `${x.debutAnneeScolaire} - ${x.finAnneeScolaire}`
-              : x.libelle ?? x.libelleAnneeScolaire ?? undefined,
-        }));
-        this.niveaux = (res.niveaux ?? []).map((x: any) => ({
-          id: x.id,
-          code: x.codeNiveauCp ?? x.codeNiveauSie ?? x.code ?? undefined,
-          libelle:
-            x.libelleNiveauCp ??
-            x.libelleNiveauSie ??
-            x.libelleNiveau ??
-            x.libelle ??
-            undefined,
-        }));
-        this.applySessionGeographyAnchors();
-        this.loading = false;
-      },
-      error: (e) => {
-        this.errorMessage = this.formatError(e);
-        this.loading = false;
-      },
-    });
+    };
+  }
+
+  private applyWizardRefs(res: Record<string, unknown>): void {
+    this.localites = (res['localites'] as LocaliteOption[]) ?? [];
+    this.ieps = (res['ieps'] as IepOption[]) ?? [];
+    this.regions = ((res['regions'] as any[]) ?? []).map((x: any) => this.refOptionFromApi(x));
+    this.drenas = ((res['drenas'] as any[]) ?? []).map((x: any) => this.refOptionFromApi(x));
+    this.departements = ((res['departements'] as any[]) ?? []).map((x: any) => ({
+      ...this.refOptionFromApi(x),
+      region: this.asCentreRef(x.region),
+    }));
+    this.drenaDepartements = ((res['drenaDepartements'] as any[]) ?? []).map((x: any) => ({
+      ...this.refOptionFromApi(x),
+      drena: this.asCentreRef(x.drena),
+      departement: this.asCentreRef(x.departement),
+    }));
+    this.communes = ((res['communes'] as any[]) ?? []).map((x: any) => this.refOptionFromApi(x));
+    this.sousPrefectures = ((res['sousPrefectures'] as any[]) ?? []).map((x: any) => ({
+      ...this.refOptionFromApi(x),
+      departement: this.asCentreRef(x.departement),
+    }));
+    this.natures = (res['natures'] as NatureOption[]) ?? [];
+    this.periodicites = (res['periodicites'] as PeriodiciteOption[]) ?? [];
+    this.autorites = (res['autorites'] as AutoriteOption[]) ?? [];
+    this.promoteurs = ((res['promoteurs'] as any[]) ?? []).map((x: any) => ({
+      id: x.id,
+      code: x.codePromoteur ?? undefined,
+      libelle: x.libellePromoteur ?? undefined,
+      details: promoteurDetailsFromApi(x),
+    }));
+    this.typePersonneMoraleOptions = ((res['typePersonneMorales'] as any[]) ?? []).map((x: any) => ({
+      id: x.id,
+      code: undefined,
+      libelle: x.libelle ?? undefined,
+    }));
+    this.anneesScolaires = ((res['anneesScolaires'] as any[]) ?? []).map((x: any) => ({
+      id: x.id,
+      code: x.codeAnneeScolaire ?? x.code ?? undefined,
+      libelle:
+        x.debutAnneeScolaire != null && x.finAnneeScolaire != null
+          ? `${x.debutAnneeScolaire} - ${x.finAnneeScolaire}`
+          : x.libelle ?? x.libelleAnneeScolaire ?? undefined,
+    }));
+    this.niveaux = ((res['niveaux'] as any[]) ?? []).map((x: any) => ({
+      id: x.id,
+      code: x.codeNiveauCp ?? x.codeNiveauSie ?? x.code ?? undefined,
+      libelle:
+        x.libelleNiveauCp ??
+        x.libelleNiveauSie ??
+        x.libelleNiveau ??
+        x.libelle ??
+        undefined,
+    }));
+    this.sortWizardReferenceLists();
+    this.applySessionGeographyAnchors();
+  }
+
+  private sortWizardReferenceLists(): void {
+    this.regions = sortRefOptions(this.regions);
+    this.drenas = sortRefOptions(this.drenas);
+    this.departements = sortByLabel(this.departements, (d) => this.refOptionLibelle(d));
+    this.communes = sortRefOptions(this.communes);
+    this.localites = sortByLabel(this.localites, localiteOptionLabel);
+    this.ieps = sortByLabel(this.ieps, iepOptionLabel);
+    this.natures = sortByLabel(this.natures, natureOptionLabel);
+    this.periodicites = sortByLabel(this.periodicites, periodiciteOptionLabel);
+    this.autorites = sortByLabel(this.autorites, autoriteOptionLabel);
+    this.promoteurs = sortPromoteurOptions(this.promoteurs);
+    this.typePersonneMoraleOptions = sortRefOptions(this.typePersonneMoraleOptions);
+    this.anneesScolaires = sortRefOptions(this.anneesScolaires);
+    this.niveaux = sortRefOptions(this.niveaux);
+  }
+
+  menaRefOptions(items: RefOption[]) {
+    return menaRefSelectOptions(items);
+  }
+
+  menaPromoteurOptions() {
+    return menaPromoteurSelectOptions(this.promoteurs);
+  }
+
+  menaLocaliteOptions(items: LocaliteOption[]) {
+    return menaLocaliteSelectOptions(items);
+  }
+
+  menaIepOptions(items: IepOption[]) {
+    return menaIepSelectOptions(items);
+  }
+
+  menaNatureOptions() {
+    return menaNatureSelectOptions(this.natures);
+  }
+
+  menaAutoriteOptions() {
+    return menaAutoriteSelectOptions(this.autorites);
+  }
+
+  menaPeriodiciteOptions() {
+    return menaPeriodiciteSelectOptions(this.periodicites);
+  }
+
+  menaAnneeScolaireOptions() {
+    return menaRefSelectOptions(this.anneesScolaires);
+  }
+
+  menaNiveauOptions() {
+    return menaRefSelectOptions(this.niveaux);
+  }
+
+  menaTypePersonneMoraleOptions() {
+    return menaRefSelectOptions(this.typePersonneMoraleOptions);
+  }
+
+  private applyWizardRefsAndRows(res: Record<string, unknown>): void {
+    const page = res['rows'] as SpringPage<Record<string, unknown>>;
+    const list = page?.content ?? [];
+    this.totalElements = page?.totalElements ?? 0;
+    this.totalPages = page?.totalPages ?? 0;
+    this.rows = list.map((x) => this.mapRow(x));
+    this.applyWizardRefs(res);
+    this.loading = false;
   }
 
   canGoNext(): boolean {
@@ -347,7 +492,7 @@ export class SimpleCentreTypePageComponent implements OnInit {
   }
 
   canSubmit(): boolean {
-    return !this.saving && this.stepIndex === 3;
+    return !this.saving && this.stepIndex === 3 && !this.wizardSavedSuccess;
   }
 
   next(): void {
@@ -361,7 +506,7 @@ export class SimpleCentreTypePageComponent implements OnInit {
   }
 
   goTo(i: number): void {
-    if (this.saving) return;
+    if (this.saving || this.wizardLockedAfterSave) return;
     if (i <= this.stepIndex) {
       this.stepIndex = i;
       return;
@@ -372,6 +517,7 @@ export class SimpleCentreTypePageComponent implements OnInit {
   }
 
   resetWizard(): void {
+    this.clearWizardSaveState();
     this.stepIndex = 0;
     this.model = {
       libelle: '',
@@ -404,6 +550,7 @@ export class SimpleCentreTypePageComponent implements OnInit {
       niveaux: [],
     };
     this.promoteurMode = 'existing';
+    this.wizardPromoteurDetails = null;
     this.createRegionId = null;
     this.createDrenaId = null;
     this.createDepartementId = null;
@@ -411,7 +558,42 @@ export class SimpleCentreTypePageComponent implements OnInit {
     this.applySessionGeographyAnchors();
   }
 
+  clearWizardSaveState(): void {
+    this.wizardSavedSuccess = false;
+    this.wizardSavedMessage = null;
+    this.savedFiche = null;
+    document.body.classList.remove('mena-print-centre-fiche');
+  }
+
+  printWizardFiche(): void {
+    if (!this.wizardSavedSuccess) return;
+    document.body.classList.add('mena-print-centre-fiche');
+    printCentreIdentificationFiche('centre-wizard-fiche-print');
+    window.setTimeout(() => document.body.classList.remove('mena-print-centre-fiche'), 500);
+  }
+
+  onWizardPromoteurIdChange(id: number | null): void {
+    this.model.promoteur.id = id;
+    if (this.promoteurMode !== 'existing') return;
+    if (id == null) {
+      this.wizardPromoteurDetails = null;
+      return;
+    }
+    this.wizardPromoteurLoading = true;
+    fetchPromoteurOptionDetails(this.http, this.apiBaseUrl, this.promoteurs, id).subscribe({
+      next: (option) => {
+        this.wizardPromoteurDetails = option;
+        this.wizardPromoteurLoading = false;
+      },
+      error: () => {
+        this.wizardPromoteurDetails = this.promoteurs.find((p) => p.id === id) ?? null;
+        this.wizardPromoteurLoading = false;
+      },
+    });
+  }
+
   onPromoteurModeChange(): void {
+    this.wizardPromoteurDetails = null;
     if (this.promoteurMode === 'existing') {
       this.model.promoteur = { id: null, typePromoteur: null, libellePromoteur: '', personnePhysique: null, personneMorale: null };
       return;
@@ -873,11 +1055,14 @@ export class SimpleCentreTypePageComponent implements OnInit {
       },
       niveaux: this.buildNiveauxPayload(),
     };
-    this.http.post(`${this.apiBaseUrl}${this.apiPath}`, payload).subscribe({
-      next: () => {
+    this.http.post<Record<string, unknown>>(`${this.apiBaseUrl}${this.apiPath}`, payload).subscribe({
+      next: (body) => {
         this.saving = false;
-        this.resetWizard();
-        this.loadAll();
+        this.savedFiche = wizardSavedFicheFromCreateResponse(body);
+        this.wizardSavedSuccess = true;
+        const code = this.savedFiche.codeCentre ?? '—';
+        this.wizardSavedMessage = `Centre enregistré avec succès. Code centre : ${code}.`;
+        this.stepIndex = 3;
       },
       error: (e) => {
         this.errorMessage = this.formatError(e);
@@ -1316,9 +1501,23 @@ export class SimpleCentreTypePageComponent implements OnInit {
   }
 
   recapWizardExistingPromoteurDetails(): PromoteurOption | null {
+    if (this.wizardPromoteurDetails) {
+      return this.wizardPromoteurDetails;
+    }
     const id = this.model.promoteur?.id;
     if (id == null) return null;
     return this.promoteurs.find((x) => x.id === id) ?? null;
+  }
+
+  wizardRecapCodeCentre(): string {
+    if (this.savedFiche?.codeCentre) {
+      return this.savedFiche.codeCentre;
+    }
+    return 'Attribué à l’enregistrement';
+  }
+
+  wizardRecapLibelle(): string {
+    return this.savedFiche?.libelle?.trim() || String(this.model.libelle ?? '').trim() || '—';
   }
 
   recapWizardTypePersonneMoraleLabel(): string {

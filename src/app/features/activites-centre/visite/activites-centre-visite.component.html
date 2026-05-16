@@ -47,21 +47,25 @@
         </div>
         <div class="form-group col-md-3 col-sm-12 mb-2 mb-md-0">
           <label class="small text-muted mb-1">Centre Alpha</label>
-          <select class="form-control form-control-sm" [(ngModel)]="filterAlphaId">
-            <option [ngValue]="''">Tous</option>
-            <option *ngFor="let alpha of alphas" [ngValue]="alphaOptionValue(alpha)">
-              {{ alphaOptionLabel(alpha) }}
-            </option>
-          </select>
+          <app-mena-searchable-select
+            class="form-control form-control-sm"
+            [(ngModel)]="filterAlphaId"
+            [options]="menaAlphaFilterOptions()"
+            [allowNull]="false"
+            inputClass="form-control form-control-sm"
+            [disabled]="loading"
+          />
         </div>
         <div class="form-group col-md-3 col-sm-12 mb-2 mb-md-0">
           <label class="small text-muted mb-1">Période d’activité</label>
-          <select class="form-control form-control-sm" [(ngModel)]="filterPeriodeId">
-            <option [ngValue]="''">Toutes</option>
-            <option *ngFor="let p of periodes" [ngValue]="p.id ?? ''">
-              {{ periodeOptionLabel(p) }}
-            </option>
-          </select>
+          <app-mena-searchable-select
+            class="form-control form-control-sm"
+            [(ngModel)]="filterPeriodeId"
+            [options]="menaPeriodeFilterOptions()"
+            [allowNull]="false"
+            inputClass="form-control form-control-sm"
+            [disabled]="loading"
+          />
         </div>
         <div class="form-group col-md-2 col-sm-12 mb-0">
           <button type="button" class="btn btn-sm btn-outline-secondary btn-block" (click)="clearFilters()" [disabled]="loading">
@@ -202,21 +206,23 @@
         <div class="form-row">
           <div class="form-group col-md-6">
             <label class="small text-muted">Centre Alpha *</label>
-            <select class="form-control form-control-sm" [(ngModel)]="form.idAlpha">
-              <option [ngValue]="null">—</option>
-              <option *ngFor="let alpha of alphas" [ngValue]="alphaOptionValue(alpha)">
-                {{ alphaOptionLabel(alpha) }}
-              </option>
-            </select>
+            <app-mena-searchable-select
+              class="form-control form-control-sm"
+              [(ngModel)]="form.idAlpha"
+              [options]="menaAlphaFormOptions()"
+              inputClass="form-control form-control-sm"
+              [disabled]="saving"
+            />
           </div>
           <div class="form-group col-md-6">
             <label class="small text-muted">Période d’activité *</label>
-            <select class="form-control form-control-sm" [(ngModel)]="form.idPeriodeActivite">
-              <option [ngValue]="null">—</option>
-              <option *ngFor="let p of periodes" [ngValue]="p.id ?? null">
-                {{ periodeOptionLabel(p) }}
-              </option>
-            </select>
+            <app-mena-searchable-select
+              class="form-control form-control-sm"
+              [(ngModel)]="form.idPeriodeActivite"
+              [options]="menaPeriodeFormOptions()"
+              inputClass="form-control form-control-sm"
+              [disabled]="saving"
+            />
           </div>
         </div>
 

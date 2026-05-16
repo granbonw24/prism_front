@@ -1,20 +1,36 @@
-<div class="container-fluid">
+﻿<div class="container-fluid">
   <div class="d-sm-flex align-items-center justify-content-between mb-3">
-    <h1 class="h4 mb-0 text-gray-800">{{ title }}</h1>
-    <button class="btn btn-sm btn-outline-primary" (click)="loadAll()" [disabled]="loading || saving">
-      Rafraîchir
-    </button>
+    <div>
+      <h1 class="h4 mb-0 text-gray-800">{{ isCreatePage ? createTitle : title }}</h1>
+      <p *ngIf="isCreatePage && pageSubtitle" class="small text-muted mb-0 mt-1">{{ pageSubtitle }}</p>
+    </div>
+    <div class="d-flex flex-wrap mena-toolbar mt-2 mt-sm-0">
+      <app-mena-toolbar-btn
+        *ngIf="isCreatePage && listPath"
+        variant="cancel"
+        label="Retour à la liste"
+        [routerLink]="listPath"
+      />
+      <app-mena-toolbar-btn *ngIf="isListPage && createPath" variant="add" label="Ajouter un centre" [routerLink]="createPath" />
+      <app-mena-toolbar-btn
+        *ngIf="isListPage"
+        variant="refresh"
+        [disabled]="loading || saving"
+        [loading]="loading"
+        (clicked)="loadAll()"
+      />
+    </div>
   </div>
 
   <div *ngIf="errorMessage" class="alert alert-danger py-2">
     {{ errorMessage }}
   </div>
 
-  <div class="card border-0 shadow-sm mb-4">
+  <div *ngIf="isCreatePage" class="card border-0 shadow-sm mb-4 mena-long-form-card">
     <div class="card-header py-3 bg-white border-bottom-0">
       <h6 class="m-0 font-weight-bold text-primary">Enregistrer</h6>
     </div>
-    <div class="card-body pt-2">
+    <div class="card-body pt-2 mena-wizard-form-panel">
       <div class="mena-wizard-steps">
         <a class="mena-wizard-step" [class.is-active]="stepIndex === 0" [class.is-disabled]="saving" (click)="goTo(0)">
           1 · Promoteur
@@ -44,10 +60,12 @@
         <div class="form-row">
           <div class="form-group col-md-12" *ngIf="promoteurMode === 'existing'">
             <label class="small text-muted">Promoteur existant</label>
-            <select class="form-control" [(ngModel)]="model.promoteur.id" [disabled]="saving">
-              <option [ngValue]="null">--</option>
-              <option *ngFor="let p of promoteurs" [ngValue]="p.id">{{ refOptionLabel(p) }}</option>
-            </select>
+            <app-mena-searchable-select
+              [(ngModel)]="model.promoteur.id"
+              (ngModelChange)="onWizardPromoteurIdChange($event)"
+              [options]="menaPromoteurOptions()"
+              [disabled]="saving || wizardPromoteurLoading"
+            />
           </div>
           <div class="form-group col-md-4" *ngIf="promoteurMode === 'new'">
             <label class="small text-muted">Type promoteur</label>
@@ -126,10 +144,11 @@
           </div>
           <div class="form-group col-md-4">
             <label class="small text-muted">Type personne morale</label>
-            <select class="form-control" [(ngModel)]="model.promoteur.personneMorale!.idTypePersonneMorale" [disabled]="saving">
-              <option [ngValue]="null">--</option>
-              <option *ngFor="let t of typePersonneMoraleOptions" [ngValue]="t.id">{{ refOptionLabel(t) }}</option>
-            </select>
+            <app-mena-searchable-select
+              [(ngModel)]="model.promoteur.personneMorale!.idTypePersonneMorale"
+              [options]="menaTypePersonneMoraleOptions()"
+              [disabled]="saving"
+            />
           </div>
         </div>
         <div class="form-row" *ngIf="promoteurMode === 'new' && model.promoteur.typePromoteur === 'MORALE'">
@@ -157,78 +176,79 @@
         <div class="form-row">
           <div class="form-group col-md-3">
             <label class="small text-muted">Région administrative</label>
-            <select class="form-control" [(ngModel)]="createRegionId" (ngModelChange)="onCreateRegionChange()" [disabled]="saving || lockSessionGeoRegion()">
-              <option [ngValue]="null">--</option>
-              <option *ngFor="let r of regions" [ngValue]="r.id">{{ refOptionLibelle(r) }}</option>
-            </select>
+            <app-mena-searchable-select
+              [(ngModel)]="createRegionId"
+              (ngModelChange)="onCreateRegionChange()"
+              [options]="menaRefOptions(regions)"
+              [disabled]="saving || lockSessionGeoRegion()"
+            />
           </div>
           <div class="form-group col-md-3">
             <label class="small text-muted">DRENA</label>
-            <select class="form-control" [(ngModel)]="createDrenaId" (ngModelChange)="onCreateDrenaChange()" [disabled]="saving || lockSessionGeoDrena()">
-              <option [ngValue]="null">--</option>
-              <option *ngFor="let d of filteredCreateDrenas()" [ngValue]="d.id">{{ refOptionLibelle(d) }}</option>
-            </select>
+            <app-mena-searchable-select
+              [(ngModel)]="createDrenaId"
+              (ngModelChange)="onCreateDrenaChange()"
+              [options]="menaRefOptions(filteredCreateDrenas())"
+              [disabled]="saving || lockSessionGeoDrena()"
+            />
           </div>
           <div class="form-group col-md-3">
             <label class="small text-muted">Département</label>
-            <select class="form-control" [(ngModel)]="createDepartementId" (ngModelChange)="onCreateDepartementChange()" [disabled]="saving || lockSessionGeoDepartement()">
-              <option [ngValue]="null">--</option>
-              <option *ngFor="let d of filteredCreateDepartements()" [ngValue]="d.id">{{ refOptionLibelle(d) }}</option>
-            </select>
+            <app-mena-searchable-select
+              [(ngModel)]="createDepartementId"
+              (ngModelChange)="onCreateDepartementChange()"
+              [options]="menaRefOptions(filteredCreateDepartements())"
+              [disabled]="saving || lockSessionGeoDepartement()"
+            />
           </div>
           <div class="form-group col-md-3">
             <label class="small text-muted">Commune</label>
-            <select class="form-control" [(ngModel)]="createCommuneId" (ngModelChange)="onCreateCommuneChange()" [disabled]="saving || lockSessionGeoCommune()">
-              <option [ngValue]="null">--</option>
-              <option *ngFor="let c of filteredCreateCommunes()" [ngValue]="c.id">{{ refOptionLibelle(c) }}</option>
-            </select>
+            <app-mena-searchable-select
+              [(ngModel)]="createCommuneId"
+              (ngModelChange)="onCreateCommuneChange()"
+              [options]="menaRefOptions(filteredCreateCommunes())"
+              [disabled]="saving || lockSessionGeoCommune()"
+            />
           </div>
         </div>
 
         <div class="form-row">
           <div class="form-group col-md-3">
             <label class="small text-muted">Localité</label>
-            <select class="form-control" [(ngModel)]="model.centre.localiteId" (ngModelChange)="onCreateLocaliteChange()" [disabled]="saving || lockSessionGeoLocalite()">
-              <option [ngValue]="null">--</option>
-              <option *ngFor="let l of filteredCreateLocalites()" [ngValue]="l.id">{{ localiteOptionLabel(l) }}</option>
-            </select>
+            <app-mena-searchable-select
+              [(ngModel)]="model.centre.localiteId"
+              (ngModelChange)="onCreateLocaliteChange()"
+              [options]="menaLocaliteOptions(filteredCreateLocalites())"
+              [disabled]="saving || lockSessionGeoLocalite()"
+            />
           </div>
           <div class="form-group col-md-3">
             <label class="small text-muted">IEP</label>
-            <select class="form-control" [(ngModel)]="model.centre.iepId" (ngModelChange)="onCreateIepChange()" [disabled]="saving || lockSessionGeoIep()">
-              <option [ngValue]="null">--</option>
-              <option *ngFor="let i of filteredCreateIeps()" [ngValue]="i.id">{{ iepOptionLabel(i) }}</option>
-            </select>
+            <app-mena-searchable-select
+              [(ngModel)]="model.centre.iepId"
+              (ngModelChange)="onCreateIepChange()"
+              [options]="menaIepOptions(filteredCreateIeps())"
+              [disabled]="saving || lockSessionGeoIep()"
+            />
           </div>
-          <div class="form-group col-md-3">
+          <div class="form-group col-md-6">
             <label class="small text-muted">Nature centre</label>
-            <select class="form-control" [(ngModel)]="model.centre.natureCentreId" [disabled]="saving">
-              <option [ngValue]="null">--</option>
-              <option *ngFor="let n of natures" [ngValue]="n.id">{{ natureOptionLabel(n) }}</option>
-            </select>
-          </div>
-          <div class="form-group col-md-3">
-            <label class="small text-muted">Périodicité</label>
-            <select class="form-control" [(ngModel)]="model.centre.periodiciteId" [disabled]="saving">
-              <option [ngValue]="null">--</option>
-              <option *ngFor="let p of periodicites" [ngValue]="p.id">{{ periodiciteOptionLabel(p) }}</option>
-            </select>
+            <app-mena-searchable-select
+              [(ngModel)]="model.centre.natureCentreId"
+              [options]="menaNatureOptions()"
+              [disabled]="saving"
+            />
           </div>
         </div>
 
         <div class="form-row">
-          <div class="form-group col-md-6">
+          <div class="form-group col-md-12">
             <label class="small text-muted">Autorité autorisation</label>
-            <select class="form-control" [(ngModel)]="model.centre.autoriteAutorisationId" [disabled]="saving">
-              <option [ngValue]="null">--</option>
-              <option *ngFor="let a of autorites" [ngValue]="a.id">
-                {{ a.codeAutorisation ?? ('AUT#' + a.id) }} — {{ a.libelleAutoriteAutorisation ?? '—' }}
-              </option>
-            </select>
-          </div>
-          <div class="form-group col-md-6">
-            <label class="small text-muted">Code centre</label>
-            <div class="form-control bg-light text-muted">Auto-généré</div>
+            <app-mena-searchable-select
+              [(ngModel)]="model.centre.autoriteAutorisationId"
+              [options]="menaAutoriteOptions()"
+              [disabled]="saving"
+            />
           </div>
         </div>
 
@@ -338,16 +358,6 @@
           </div>
         </div>
 
-        <div class="form-row">
-          <div class="form-group col-md-6">
-            <label class="small text-muted">Structure partenaire</label>
-            <input class="form-control" [(ngModel)]="model.centre.structurePartenaire" [disabled]="saving" />
-          </div>
-          <div class="form-group col-md-6">
-            <label class="small text-muted">Nom du partenaire</label>
-            <input class="form-control" [(ngModel)]="model.centre.nomPartenaire" [disabled]="saving" />
-          </div>
-        </div>
       </div>
 
       <!-- Étape 3: Type (CEC/CP/SIE) -->
@@ -395,17 +405,19 @@
           <div *ngFor="let n of model.niveaux ?? []; let i = index" class="form-row align-items-end">
             <div class="form-group col-md-3">
               <label class="small text-muted">Année scolaire</label>
-              <select class="form-control" [(ngModel)]="n.anneeScolaireId" [disabled]="saving">
-                <option [ngValue]="null">--</option>
-                <option *ngFor="let a of anneesScolaires" [ngValue]="a.id">{{ refOptionLibelle(a) }}</option>
-              </select>
+              <app-mena-searchable-select
+                [(ngModel)]="n.anneeScolaireId"
+                [options]="menaAnneeScolaireOptions()"
+                [disabled]="saving"
+              />
             </div>
             <div class="form-group col-md-4">
               <label class="small text-muted">{{ niveauTitle() }}</label>
-              <select class="form-control" [(ngModel)]="n.niveauId" [disabled]="saving">
-                <option [ngValue]="null">--</option>
-                <option *ngFor="let niveau of niveaux" [ngValue]="niveau.id">{{ refOptionLibelle(niveau) }}</option>
-              </select>
+              <app-mena-searchable-select
+                [(ngModel)]="n.niveauId"
+                [options]="menaNiveauOptions()"
+                [disabled]="saving"
+              />
             </div>
             <div class="form-group col-md-3">
               <label class="small text-muted">{{ salleTitle() }}</label>
@@ -426,178 +438,158 @@
 
       <!-- Étape 4: Récap -->
       <div *ngIf="stepIndex === 3">
-        <div class="alert alert-secondary py-2 small">
+        <div *ngIf="wizardSavedSuccess && wizardSavedMessage" class="alert alert-success py-2">{{ wizardSavedMessage }}</div>
+        <div *ngIf="!wizardSavedSuccess" class="alert alert-secondary py-2 small">
           Vérifie les informations ci-dessous puis clique sur <strong>Enregistrer</strong>.
         </div>
+        <div *ngIf="wizardPromoteurLoading" class="small text-muted mb-2">Chargement des informations promoteur…</div>
 
-        <div class="table-responsive">
-          <table class="table table-sm table-bordered mb-0">
-            <tbody>
-              <tr>
-                <th style="width: 220px">Promoteur</th>
-                <td>
-                  <div><strong>Mode</strong>: {{ promoteurMode === 'existing' ? 'Promoteur existant' : 'Nouveau promoteur' }}</div>
-                  <ng-container *ngIf="promoteurMode === 'existing'">
-                    <ng-container *ngIf="recapWizardExistingPromoteurDetails() as p; else noExistingPromoteurDetails">
-                      <div><strong>Code</strong>: {{ p.details?.codePromoteur || p.code || '—' }}</div>
-                      <div><strong>Libellé</strong>: {{ p.details?.libellePromoteur || p.libelle || '—' }}</div>
-                      <div><strong>Type</strong>: {{ p.details?.typePromoteur || '—' }}</div>
-                      <ng-container *ngIf="p.details?.personnePhysique as pp">
-                        <hr class="my-2" />
-                        <div class="font-weight-bold small text-secondary mb-1">Personne physique</div>
-                        <div *ngIf="pp.civilite"><span class="text-muted">Civilité</span> : {{ pp.civilite }}</div>
-                        <div *ngIf="pp.sexe"><span class="text-muted">Sexe</span> : {{ pp.sexe }}</div>
-                        <div *ngIf="pp.dateNaissance"><span class="text-muted">Date de naissance</span> : {{ pp.dateNaissance }}</div>
-                        <div *ngIf="pp.anciennete"><span class="text-muted">Ancienneté</span> : {{ pp.anciennete }}</div>
-                        <div *ngIf="pp.boitePostale"><span class="text-muted">Boîte postale</span> : {{ pp.boitePostale }}</div>
-                        <div *ngIf="pp.niveauEtudes"><span class="text-muted">Niveau d'études</span> : {{ pp.niveauEtudes }}</div>
-                        <div><strong>Nom</strong>: {{ pp.nom?.trim() || '—' }}</div>
-                        <div><strong>Prénom</strong>: {{ pp.prenom?.trim() || '—' }}</div>
-                        <div><strong>Contact</strong>: {{ pp.contact?.trim() || '—' }}</div>
-                        <div><strong>Fonction</strong>: {{ pp.fonction?.trim() || '—' }}</div>
-                      </ng-container>
-                      <ng-container *ngIf="p.details?.personneMorale as pm">
-                        <hr class="my-2" />
-                        <div class="font-weight-bold small text-secondary mb-1">Personne morale</div>
-                        <div><strong>Dénomination</strong>: {{ pm.denomination?.trim() || '—' }}</div>
-                        <div><strong>Nom programme</strong>: {{ pm.nomProgramme?.trim() || '—' }}</div>
-                        <div><strong>Représentant</strong>: {{ pm.nomRepresentant?.trim() || '—' }}</div>
-                        <div><strong>Contact</strong>: {{ pm.contact?.trim() || '—' }}</div>
-                        <div><strong>Boîte postale</strong>: {{ pm.boitePostale?.trim() || '—' }}</div>
-                        <div><strong>E-mail</strong>: {{ pm.mail?.trim() || '—' }}</div>
-                        <div><strong>Type personne morale</strong>: {{ pm.libelleTypePersonneMorale?.trim() || '—' }}</div>
-                      </ng-container>
-                    </ng-container>
-                    <ng-template #noExistingPromoteurDetails>
-                      <div><strong>Sélection</strong>: {{ recapWizardExistingPromoteurLabel() }}</div>
-                    </ng-template>
+        <div id="centre-wizard-fiche-print" class="mena-centre-fiche-identite">
+          <header class="mena-centre-fiche-identite__header">
+            <h2 class="mena-centre-fiche-identite__title">Fiche d'identification — {{ title }}</h2>
+            <p class="mena-centre-fiche-identite__subtitle">{{ wizardRecapLibelle() }}</p>
+            <p *ngIf="wizardSavedSuccess && savedFiche?.codeCentre" class="mena-centre-fiche-identite__code mb-0">
+              Code centre : <strong>{{ savedFiche?.codeCentre }}</strong>
+            </p>
+          </header>
+
+          <div class="mena-centre-fiche-grid">
+            <section class="mena-centre-fiche-card">
+              <h3 class="mena-centre-fiche-card__title"><i class="fas fa-user-tie" aria-hidden="true"></i> Promoteur</h3>
+              <dl class="mena-centre-fiche-dl">
+                <dt>Mode</dt>
+                <dd>{{ promoteurMode === 'existing' ? 'Promoteur existant' : 'Nouveau promoteur' }}</dd>
+              </dl>
+              <ng-container *ngIf="promoteurMode === 'existing'">
+                <ng-container *ngIf="recapWizardExistingPromoteurDetails() as p; else noExistingPromoteurDetails">
+                  <dl class="mena-centre-fiche-dl">
+                    <dt>Code</dt><dd>{{ p.details?.codePromoteur || p.code || '—' }}</dd>
+                    <dt>Libellé</dt><dd>{{ p.details?.libellePromoteur || p.libelle || '—' }}</dd>
+                    <dt>Type</dt><dd>{{ p.details?.typePromoteur || '—' }}</dd>
+                  </dl>
+                  <ng-container *ngIf="p.details?.personnePhysique as pp">
+                    <dl class="mena-centre-fiche-dl mena-centre-fiche-dl--stack">
+                      <dt>Personne physique</dt>
+                      <dd>
+                        <span *ngIf="pp.civilite">{{ pp.civilite }} · </span>{{ pp.nom?.trim() || '—' }} {{ pp.prenom?.trim() || '' }}
+                        <span *ngIf="pp.contact"> · {{ pp.contact }}</span>
+                      </dd>
+                    </dl>
                   </ng-container>
-                  <ng-container *ngIf="promoteurMode === 'new'">
-                    <div><strong>Type promoteur</strong>: {{ model.promoteur.typePromoteur ?? '—' }}</div>
-                    <div class="text-muted small"><strong>Code promoteur</strong>: auto-généré à l’enregistrement</div>
-                    <ng-container *ngIf="model.promoteur.typePromoteur === 'PHYSIQUE'">
-                      <hr class="my-2" />
-                      <div class="font-weight-bold small text-secondary mb-1">Personne physique</div>
-                      <div *ngIf="model.promoteur.personnePhysique?.civilite">
-                        <strong>Civilité</strong>: {{ model.promoteur.personnePhysique?.civilite }}
-                      </div>
-                      <div *ngIf="model.promoteur.personnePhysique?.sexe"><strong>Sexe</strong>: {{ model.promoteur.personnePhysique?.sexe }}</div>
-                      <div *ngIf="model.promoteur.personnePhysique?.dateNaissance">
-                        <strong>Date de naissance</strong>: {{ model.promoteur.personnePhysique?.dateNaissance }}
-                      </div>
-                      <div *ngIf="model.promoteur.personnePhysique?.anciennete">
-                        <strong>Ancienneté</strong>: {{ model.promoteur.personnePhysique?.anciennete }}
-                      </div>
-                      <div *ngIf="model.promoteur.personnePhysique?.boitePostale">
-                        <strong>Boîte postale</strong>: {{ model.promoteur.personnePhysique?.boitePostale }}
-                      </div>
-                      <div *ngIf="model.promoteur.personnePhysique?.niveauEtudes">
-                        <strong>Niveau d'études</strong>: {{ model.promoteur.personnePhysique?.niveauEtudes }}
-                      </div>
-                      <div><strong>Nom</strong>: {{ model.promoteur.personnePhysique?.nom?.trim() || '—' }}</div>
-                      <div><strong>Prénom</strong>: {{ model.promoteur.personnePhysique?.prenom?.trim() || '—' }}</div>
-                      <div><strong>Contact</strong>: {{ model.promoteur.personnePhysique?.contact?.trim() || '—' }}</div>
-                      <div><strong>Fonction</strong>: {{ model.promoteur.personnePhysique?.fonction?.trim() || '—' }}</div>
-                    </ng-container>
-                    <ng-container *ngIf="model.promoteur.typePromoteur === 'MORALE'">
-                      <hr class="my-2" />
-                      <div class="font-weight-bold small text-secondary mb-1">Personne morale</div>
-                      <div><strong>Dénomination</strong>: {{ model.promoteur.personneMorale?.denomination?.trim() || '—' }}</div>
-                      <div><strong>Nom programme</strong>: {{ model.promoteur.personneMorale?.nomProgramme?.trim() || '—' }}</div>
-                      <div><strong>Représentant</strong>: {{ model.promoteur.personneMorale?.nomRepresentant?.trim() || '—' }}</div>
-                      <div><strong>Contact</strong>: {{ model.promoteur.personneMorale?.contact?.trim() || '—' }}</div>
-                      <div><strong>Boîte postale</strong>: {{ model.promoteur.personneMorale?.boitePostale?.trim() || '—' }}</div>
-                      <div><strong>E-mail</strong>: {{ model.promoteur.personneMorale?.mail?.trim() || '—' }}</div>
-                      <div><strong>Type personne morale</strong>: {{ recapWizardTypePersonneMoraleLabel() }}</div>
-                    </ng-container>
+                  <ng-container *ngIf="p.details?.personneMorale as pm">
+                    <dl class="mena-centre-fiche-dl mena-centre-fiche-dl--stack">
+                      <dt>Personne morale</dt>
+                      <dd>{{ pm.denomination?.trim() || '—' }} · {{ pm.nomRepresentant?.trim() || '—' }}</dd>
+                    </dl>
                   </ng-container>
-                </td>
-              </tr>
-              <tr>
-                <th>Centre</th>
-                <td>
-                  <div><strong>Code</strong>: <span class="text-muted">auto</span></div>
-                  <div><strong>Localité</strong>: {{ localiteLabel(model.centre.localiteId) }}</div>
-                  <div><strong>IEP</strong>: {{ iepLabel(model.centre.iepId) }}</div>
-                  <div><strong>Nature</strong>: {{ natureLabel(model.centre.natureCentreId) }}</div>
-                  <div><strong>Périodicité</strong>: {{ periodiciteLabel(model.centre.periodiciteId) }}</div>
-                  <div><strong>Autorité</strong>: {{ autoriteLabel(model.centre.autoriteAutorisationId) }}</div>
-                  <div>
-                    <strong>Autorisation</strong>:
-                    {{ model.centre.autorisation === true ? 'Oui' : model.centre.autorisation === false ? 'Non' : '—' }}
-                  </div>
-                  <div>
-                    <strong>Électrifié</strong>:
-                    {{ model.centre.estElectrifie === true ? 'Oui' : model.centre.estElectrifie === false ? 'Non' : '—' }}
-                  </div>
-                  <div>
-                    <strong>Eau</strong>:
-                    {{ model.centre.aDeLeau === true ? 'Oui' : model.centre.aDeLeau === false ? 'Non' : '—' }}
-                  </div>
-                  <div><strong>Total apprenants</strong>: {{ model.centre.totalApprenants ?? '—' }}</div>
-                  <div><strong>Hommes / garçons</strong>: {{ model.centre.totalHommes ?? '—' }}</div>
-                  <div><strong>Femmes / filles</strong>: {{ model.centre.totalFemmes ?? '—' }}</div>
-                  <div><strong>Latitude GPS</strong>: {{ model.centre.latitudeGps?.trim() || '—' }}</div>
-                  <div><strong>Longitude GPS</strong>: {{ model.centre.longitudeGps?.trim() || '—' }}</div>
-                  <div>
-                    <strong>GPS valide</strong>:
-                    {{ model.centre.gpsValide === true ? 'Oui' : model.centre.gpsValide === false ? 'Non' : 'Non vérifié' }}
-                  </div>
-                  <div><strong>Structure partenaire</strong>: {{ model.centre.structurePartenaire?.trim() || '—' }}</div>
-                  <div><strong>Nom du partenaire</strong>: {{ model.centre.nomPartenaire?.trim() || '—' }}</div>
-                  <div><strong>Encadreur non MENA</strong>: {{ model.centre.encadreurNonMena || '—' }}</div>
-                  <div>
-                    <strong>Encadré par MENA</strong>:
-                    {{ model.centre.encadrerParMena === true ? 'Oui' : model.centre.encadrerParMena === false ? 'Non' : '—' }}
-                  </div>
-                  <div><strong>Localisation</strong>: {{ model.centre.localisationCentre || '—' }}</div>
-                  <div><strong>Milieu d'implantation</strong>: {{ model.centre.nomMilieuImplentation || '—' }}</div>
-                </td>
-              </tr>
-              <tr>
-                <th>{{ title }}</th>
-                <td>
-                  <div>Libellé: {{ model.libelle }}</div>
-                  <div *ngIf="isCecWizard()">
-                    <strong>École tutrice</strong>: {{ model.ecoleTutrice?.trim() || '—' }} · <strong>Année de création</strong>:
-                    {{ model.anneeCreation ?? '—' }}
-                  </div>
-                </td>
-              </tr>
-              <tr>
-                <th>Niveaux</th>
-                <td>
-                  <div *ngIf="(model.niveaux ?? []).length === 0" class="text-muted">Aucun niveau rattaché.</div>
-                  <div *ngFor="let n of model.niveaux ?? []; let i = index">
-                    {{ i + 1 }}.
-                    {{ niveauLabel(n.niveauId) }}
-                    <span class="text-muted">/ {{ anneeScolaireLabel(n.anneeScolaireId) }}</span>
-                    <span *ngIf="n.nombreSalle != null" class="text-muted">/ {{ n.nombreSalle }} salle(s)</span>
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+                </ng-container>
+                <ng-template #noExistingPromoteurDetails>
+                  <dl class="mena-centre-fiche-dl"><dt>Sélection</dt><dd>{{ recapWizardExistingPromoteurLabel() }}</dd></dl>
+                </ng-template>
+              </ng-container>
+              <ng-container *ngIf="promoteurMode === 'new'">
+                <dl class="mena-centre-fiche-dl">
+                  <dt>Type</dt><dd>{{ model.promoteur.typePromoteur ?? '—' }}</dd>
+                  <dt>Code promoteur</dt><dd class="text-muted">Auto-généré à l'enregistrement</dd>
+                </dl>
+              </ng-container>
+            </section>
+
+            <section class="mena-centre-fiche-card">
+              <h3 class="mena-centre-fiche-card__title"><i class="fas fa-school" aria-hidden="true"></i> Centre</h3>
+              <dl class="mena-centre-fiche-dl">
+                <dt>Code centre</dt>
+                <dd>{{ wizardSavedSuccess ? wizardRecapCodeCentre() : "Attribué à l'enregistrement" }}</dd>
+                <dt>Localité</dt><dd>{{ localiteLabel(model.centre.localiteId) }}</dd>
+                <dt>IEP</dt><dd>{{ iepLabel(model.centre.iepId) }}</dd>
+                <dt>Nature</dt><dd>{{ natureLabel(model.centre.natureCentreId) }}</dd>
+                <dt>Autorité</dt><dd>{{ autoriteLabel(model.centre.autoriteAutorisationId) }}</dd>
+                <dt>Autorisation</dt>
+                <dd>{{ model.centre.autorisation === true ? 'Oui' : model.centre.autorisation === false ? 'Non' : '—' }}</dd>
+                <dt>Électrifié</dt>
+                <dd>{{ model.centre.estElectrifie === true ? 'Oui' : model.centre.estElectrifie === false ? 'Non' : '—' }}</dd>
+                <dt>Eau</dt>
+                <dd>{{ model.centre.aDeLeau === true ? 'Oui' : model.centre.aDeLeau === false ? 'Non' : '—' }}</dd>
+                <dt>Effectifs</dt>
+                <dd>{{ model.centre.totalApprenants ?? '—' }} (H: {{ model.centre.totalHommes ?? '—' }} / F: {{ model.centre.totalFemmes ?? '—' }})</dd>
+                <dt>GPS</dt>
+                <dd>{{ model.centre.latitudeGps?.trim() || '—' }}, {{ model.centre.longitudeGps?.trim() || '—' }}</dd>
+                <dt>Localisation</dt><dd>{{ model.centre.localisationCentre || '—' }}</dd>
+                <dt>Milieu</dt><dd>{{ model.centre.nomMilieuImplentation || '—' }}</dd>
+              </dl>
+            </section>
+
+            <section class="mena-centre-fiche-card">
+              <h3 class="mena-centre-fiche-card__title"><i class="fas fa-info-circle" aria-hidden="true"></i> {{ title }}</h3>
+              <dl class="mena-centre-fiche-dl">
+                <dt>Libellé</dt><dd>{{ wizardRecapLibelle() }}</dd>
+                <ng-container *ngIf="isCecWizard()">
+                  <dt>École tutrice</dt><dd>{{ model.ecoleTutrice?.trim() || '—' }}</dd>
+                  <dt>Année création</dt><dd>{{ model.anneeCreation ?? '—' }}</dd>
+                </ng-container>
+              </dl>
+            </section>
+
+            <section class="mena-centre-fiche-card">
+              <h3 class="mena-centre-fiche-card__title"><i class="fas fa-layer-group" aria-hidden="true"></i> Niveaux</h3>
+              <div *ngIf="(model.niveaux ?? []).length === 0" class="text-muted small">Aucun niveau rattaché.</div>
+              <div class="mena-centre-fiche-pills">
+                <span *ngFor="let n of model.niveaux ?? []" class="mena-centre-fiche-pill">
+                  {{ niveauLabel(n.niveauId) }} / {{ anneeScolaireLabel(n.anneeScolaireId) }}
+                </span>
+              </div>
+            </section>
+          </div>
         </div>
       </div>
 
       <div class="mena-wizard-actions">
-        <a class="mena-wizard-link" (click)="prev()" [class.is-disabled]="saving || stepIndex === 0">Retour</a>
-        <div style="display: flex; gap: 0.75rem; align-items: center">
-          <a class="mena-wizard-link text-muted" (click)="resetWizard()" [class.is-disabled]="saving">Réinitialiser</a>
-          <a class="mena-wizard-link" *ngIf="stepIndex < 3" (click)="next()" [class.is-disabled]="!canGoNext()"
-            >Continuer</a
-          >
-          <a class="mena-wizard-link" *ngIf="stepIndex === 3" (click)="submit()" [class.is-disabled]="!canSubmit()">
-            <span *ngIf="saving">Enregistrement…</span>
-            <span *ngIf="!saving">Enregistrer</span>
-          </a>
+        <app-mena-toolbar-btn
+          variant="cancel"
+          label="Retour"
+          [disabled]="saving || stepIndex === 0 || wizardLockedAfterSave"
+          (clicked)="prev()"
+        />
+        <div class="mena-toolbar mena-wizard-actions__group">
+          <app-mena-toolbar-btn variant="reset" [disabled]="saving" (clicked)="resetWizard()" />
+          <app-mena-toolbar-btn
+            *ngIf="stepIndex < 3 && !wizardLockedAfterSave"
+            variant="next"
+            label="Continuer"
+            [disabled]="!canGoNext()"
+            (clicked)="next()"
+          />
+          <app-mena-toolbar-btn
+            *ngIf="stepIndex === 3 && !wizardLockedAfterSave"
+            variant="save"
+            [label]="saving ? 'Enregistrement…' : 'Enregistrer'"
+            [disabled]="!canSubmit()"
+            (clicked)="submit()"
+          />
+          <app-mena-toolbar-btn
+            *ngIf="wizardLockedAfterSave"
+            variant="print"
+            label="Imprimer la fiche"
+            (clicked)="printWizardFiche()"
+          />
+          <app-mena-toolbar-btn
+            *ngIf="wizardLockedAfterSave && listPath"
+            variant="cancel"
+            label="Retour à la liste"
+            [routerLink]="listPath"
+          />
+          <app-mena-toolbar-btn
+            *ngIf="wizardLockedAfterSave"
+            variant="add-outline"
+            label="Nouveau centre"
+            (clicked)="resetWizard()"
+          />
         </div>
       </div>
     </div>
   </div>
 
-  <div class="card border-0 shadow-sm">
+  <div *ngIf="isListPage" class="card border-0 shadow-sm">
     <div class="card-header py-3 bg-white border-bottom-0">
       <h6 class="m-0 font-weight-bold text-primary">Liste</h6>
     </div>
@@ -605,9 +597,9 @@
       <div class="mb-3 p-2 bg-light rounded small border">
         <div class="mb-3">
           <div class="font-weight-bold text-secondary mb-1">Recherche rapide</div>
-          <p class="text-muted mb-2" style="font-size: 0.85rem">
+          <!-- <p class="text-muted mb-2" style="font-size: 0.85rem">
             Recherche <strong>codes / libellés</strong> via le paramètre <code>q</code>.
-          </p>
+          </p> -->
           <div class="form-group col-md-12 px-0 mb-0">
             <label class="mb-0 text-muted">Texte libre</label>
             <input
@@ -993,10 +985,11 @@
           <div class="form-row">
             <div class="form-group col-md-12">
               <label class="small text-muted">Promoteur</label>
-              <select class="form-control" [(ngModel)]="editForm.idPromoteur" [disabled]="saving">
-                <option [ngValue]="null">—</option>
-                <option *ngFor="let p of promoteurs" [ngValue]="p.id">{{ refOptionLabel(p) }}</option>
-              </select>
+              <app-mena-searchable-select
+                [(ngModel)]="editForm.idPromoteur"
+                [options]="menaPromoteurOptions()"
+                [disabled]="saving"
+              />
             </div>
           </div>
 
@@ -1014,72 +1007,87 @@
           <div class="form-row">
             <div class="form-group col-md-3">
               <label class="small text-muted">Région administrative</label>
-              <select class="form-control" [(ngModel)]="editRegionId" (ngModelChange)="onEditRegionChange()" [disabled]="saving || lockSessionGeoRegion()">
-                <option [ngValue]="null">--</option>
-                <option *ngFor="let r of regions" [ngValue]="r.id">{{ refOptionLibelle(r) }}</option>
-              </select>
+              <app-mena-searchable-select
+                [(ngModel)]="editRegionId"
+                (ngModelChange)="onEditRegionChange()"
+                [options]="menaRefOptions(regions)"
+                [disabled]="saving || lockSessionGeoRegion()"
+              />
             </div>
             <div class="form-group col-md-3">
               <label class="small text-muted">DRENA</label>
-              <select class="form-control" [(ngModel)]="editDrenaId" (ngModelChange)="onEditDrenaChange()" [disabled]="saving || lockSessionGeoDrena()">
-                <option [ngValue]="null">--</option>
-                <option *ngFor="let d of filteredEditDrenas()" [ngValue]="d.id">{{ refOptionLibelle(d) }}</option>
-              </select>
+              <app-mena-searchable-select
+                [(ngModel)]="editDrenaId"
+                (ngModelChange)="onEditDrenaChange()"
+                [options]="menaRefOptions(filteredEditDrenas())"
+                [disabled]="saving || lockSessionGeoDrena()"
+              />
             </div>
             <div class="form-group col-md-3">
               <label class="small text-muted">IEP</label>
-              <select class="form-control" [(ngModel)]="editForm.idIep" (ngModelChange)="onEditIepChange()" [disabled]="saving || lockSessionGeoIep()">
-                <option [ngValue]="null">--</option>
-                <option *ngFor="let i of filteredEditIeps()" [ngValue]="i.id">{{ iepOptionLabel(i) }}</option>
-              </select>
+              <app-mena-searchable-select
+                [(ngModel)]="editForm.idIep"
+                (ngModelChange)="onEditIepChange()"
+                [options]="menaIepOptions(filteredEditIeps())"
+                [disabled]="saving || lockSessionGeoIep()"
+              />
             </div>
             <div class="form-group col-md-3">
               <label class="small text-muted">Département</label>
-              <select class="form-control" [(ngModel)]="editDepartementId" (ngModelChange)="onEditDepartementChange()" [disabled]="saving || lockSessionGeoDepartement()">
-                <option [ngValue]="null">--</option>
-                <option *ngFor="let d of filteredEditDepartements()" [ngValue]="d.id">{{ refOptionLibelle(d) }}</option>
-              </select>
+              <app-mena-searchable-select
+                [(ngModel)]="editDepartementId"
+                (ngModelChange)="onEditDepartementChange()"
+                [options]="menaRefOptions(filteredEditDepartements())"
+                [disabled]="saving || lockSessionGeoDepartement()"
+              />
             </div>
           </div>
 
           <div class="form-row">
             <div class="form-group col-md-3">
               <label class="small text-muted">Commune</label>
-              <select class="form-control" [(ngModel)]="editCommuneId" (ngModelChange)="onEditCommuneChange()" [disabled]="saving || lockSessionGeoCommune()">
-                <option [ngValue]="null">--</option>
-                <option *ngFor="let c of filteredEditCommunes()" [ngValue]="c.id">{{ refOptionLibelle(c) }}</option>
-              </select>
+              <app-mena-searchable-select
+                [(ngModel)]="editCommuneId"
+                (ngModelChange)="onEditCommuneChange()"
+                [options]="menaRefOptions(filteredEditCommunes())"
+                [disabled]="saving || lockSessionGeoCommune()"
+              />
             </div>
             <div class="form-group col-md-3">
               <label class="small text-muted">Localité</label>
-              <select class="form-control" [(ngModel)]="editForm.idLocalite" (ngModelChange)="onEditLocaliteChange()" [disabled]="saving || lockSessionGeoLocalite()">
-                <option [ngValue]="null">--</option>
-                <option *ngFor="let l of filteredEditLocalites()" [ngValue]="l.id">{{ localiteOptionLabel(l) }}</option>
-              </select>
+              <app-mena-searchable-select
+                [(ngModel)]="editForm.idLocalite"
+                (ngModelChange)="onEditLocaliteChange()"
+                [options]="menaLocaliteOptions(filteredEditLocalites())"
+                [disabled]="saving || lockSessionGeoLocalite()"
+              />
             </div>
             <div class="form-group col-md-3">
               <label class="small text-muted">Nature</label>
-              <select class="form-control" [(ngModel)]="editForm.idNaturecentre" [disabled]="saving">
-                <option [ngValue]="null">--</option>
-                <option *ngFor="let n of natures" [ngValue]="n.id">{{ natureOptionLabel(n) }}</option>
-              </select>
+              <app-mena-searchable-select
+                [(ngModel)]="editForm.idNaturecentre"
+                [options]="menaNatureOptions()"
+                [disabled]="saving"
+              />
             </div>
             <div class="form-group col-md-3">
               <label class="small text-muted">Périodicité</label>
-              <select class="form-control" [(ngModel)]="editForm.idPeriodicite" [disabled]="saving">
-                <option [ngValue]="null">--</option>
-                <option *ngFor="let p of periodicites" [ngValue]="p.id">{{ periodiciteOptionLabel(p) }}</option>
-              </select>
+              <app-mena-searchable-select
+                [(ngModel)]="editForm.idPeriodicite"
+                [options]="menaPeriodiciteOptions()"
+                [disabled]="saving"
+              />
             </div>
           </div>
 
           <div class="form-row">
             <div class="form-group col-md-6">
               <label class="small text-muted">Autorité autorisation</label>
-              <select class="form-control" [(ngModel)]="editForm.idAutoriteAutorisation" [disabled]="saving">
-                <option [ngValue]="null">--</option>
-                <option *ngFor="let a of autorites" [ngValue]="a.id">{{ autoriteOptionLabel(a) }}</option>
-              </select>
+              <app-mena-searchable-select
+                [(ngModel)]="editForm.idAutoriteAutorisation"
+                [options]="menaAutoriteOptions()"
+                [disabled]="saving"
+              />
             </div>
             <div class="form-group col-md-2">
               <label class="small text-muted">Autorisation</label>
@@ -1216,17 +1224,19 @@
             <div *ngFor="let n of editNiveaux; let i = index" class="form-row align-items-end">
               <div class="form-group col-md-3">
                 <label class="small text-muted">Année scolaire</label>
-                <select class="form-control" [(ngModel)]="n.anneeScolaireId" [disabled]="saving">
-                  <option [ngValue]="null">--</option>
-                  <option *ngFor="let a of anneesScolaires" [ngValue]="a.id">{{ refOptionLibelle(a) }}</option>
-                </select>
+                <app-mena-searchable-select
+                  [(ngModel)]="n.anneeScolaireId"
+                  [options]="menaAnneeScolaireOptions()"
+                  [disabled]="saving"
+                />
               </div>
               <div class="form-group col-md-4">
                 <label class="small text-muted">{{ niveauTitle() }}</label>
-                <select class="form-control" [(ngModel)]="n.niveauId" [disabled]="saving">
-                  <option [ngValue]="null">--</option>
-                  <option *ngFor="let niveau of niveaux" [ngValue]="niveau.id">{{ refOptionLibelle(niveau) }}</option>
-                </select>
+                <app-mena-searchable-select
+                  [(ngModel)]="n.niveauId"
+                  [options]="menaNiveauOptions()"
+                  [disabled]="saving"
+                />
               </div>
               <div class="form-group col-md-3">
                 <label class="small text-muted">{{ salleTitle() }}</label>

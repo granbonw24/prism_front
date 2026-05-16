@@ -8,6 +8,12 @@ import { unwrapListBody } from '@core/http/unwrap-spring-page';
 import { API_BASE_URL } from '@core/tokens/api-base-url.token';
 import { SpringPage, VisiteDocumentRow } from '@models/centre';
 import { MenaRowActionButtonComponent } from '@shared/mena-row-action-button/mena-row-action-button.component';
+import { MenaSearchableSelectComponent } from '@shared/mena-searchable-select/mena-searchable-select.component';
+import {
+  MenaSelectOption,
+  sortByLabel,
+  toMenaSelectOptions,
+} from '@shared/mena-searchable-select/mena-select-options.util';
 import { MenaToolbarButtonComponent } from '@shared/mena-toolbar-button/mena-toolbar-button.component';
 
 /**
@@ -36,7 +42,13 @@ type DocumentUpsertPayload = {
 @Component({
   selector: 'app-visites-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, MenaRowActionButtonComponent, MenaToolbarButtonComponent],
+  imports: [
+    CommonModule,
+    FormsModule,
+    MenaRowActionButtonComponent,
+    MenaSearchableSelectComponent,
+    MenaToolbarButtonComponent,
+  ],
   templateUrl: './visites-list.component.html',
   styleUrl: './visites-list.component.css',
 })
@@ -109,9 +121,9 @@ export class VisitesListComponent implements OnInit {
       }),
     }).subscribe({
       next: (res) => {
-        this.natures = this.normalizeNatureDocs(res.natures);
-        this.types = this.normalizeTypeDocs(res.types);
-        this.alphas = res.alphas.content ?? [];
+        this.natures = sortByLabel(this.normalizeNatureDocs(res.natures), (n) => this.natureOptionLabel(n));
+        this.types = sortByLabel(this.normalizeTypeDocs(res.types), (t) => this.typeOptionLabel(t));
+        this.alphas = sortByLabel(res.alphas.content ?? [], (a) => this.alphaOptionLabel(a));
         this.refsLoaded = true;
         this.applyPage(res.list);
         this.loading = false;
@@ -353,6 +365,39 @@ export class VisitesListComponent implements OnInit {
     const lib = (t.libelleTypeDocument ?? '').trim();
     if (code && lib) return `${code} — ${lib}`;
     return lib || code || `Type #${t.id}`;
+  }
+
+  menaAlphaFilterOptions(): MenaSelectOption<number | ''>[] {
+    return [
+      { value: '', label: 'Tous' },
+      ...toMenaSelectOptions(this.alphas, (a) => a.idCentre, (a) => this.alphaOptionLabel(a)),
+    ];
+  }
+
+  menaNatureFilterOptions(): MenaSelectOption<number | ''>[] {
+    return [
+      { value: '', label: 'Toutes' },
+      ...toMenaSelectOptions(this.natures, (n) => n.id, (n) => this.natureOptionLabel(n)),
+    ];
+  }
+
+  menaTypeFilterOptions(): MenaSelectOption<number | ''>[] {
+    return [
+      { value: '', label: 'Tous' },
+      ...toMenaSelectOptions(this.types, (t) => t.id, (t) => this.typeOptionLabel(t)),
+    ];
+  }
+
+  menaAlphaFormOptions(): MenaSelectOption<number | null>[] {
+    return toMenaSelectOptions(this.alphas, (a) => a.idCentre, (a) => this.alphaOptionLabel(a));
+  }
+
+  menaNatureFormOptions(): MenaSelectOption<number | null>[] {
+    return toMenaSelectOptions(this.natures, (n) => n.id, (n) => this.natureOptionLabel(n));
+  }
+
+  menaTypeFormOptions(): MenaSelectOption<number | null>[] {
+    return toMenaSelectOptions(this.types, (t) => t.id, (t) => this.typeOptionLabel(t));
   }
 
   private coerceId(v: unknown): number | null {

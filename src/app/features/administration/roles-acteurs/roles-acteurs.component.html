@@ -13,18 +13,13 @@
           <label class="small text-muted" for="roleSelect">
             Acteur (rôle)
           </label>
-          <select
+          <app-mena-searchable-select
             id="roleSelect"
-            class="form-control"
             [(ngModel)]="selectedRoleId"
             (ngModelChange)="onRoleChange()"
+            [options]="menaRoleOptions()"
             [disabled]="loading || saving"
-          >
-            <option [ngValue]="null">-- Sélectionner --</option>
-            <option *ngFor="let r of roles" [ngValue]="r.id">
-              {{ roleOptionLabel(r) }}
-            </option>
-          </select>
+          />
         </div>
       </div>
 

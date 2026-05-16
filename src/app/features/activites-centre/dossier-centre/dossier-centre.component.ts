@@ -5,6 +5,12 @@ import { FormsModule } from '@angular/forms';
 import { unwrapListBody } from '@core/http/unwrap-spring-page';
 import { API_BASE_URL } from '@core/tokens/api-base-url.token';
 import { AuthService } from '@services/auth.service';
+import { MenaSearchableSelectComponent } from '@shared/mena-searchable-select/mena-searchable-select.component';
+import {
+  sortByLabel,
+  toMenaSelectOptions,
+  toMenaSelectOptionsFromPairs,
+} from '@shared/mena-searchable-select/mena-select-options.util';
 import { forkJoin } from 'rxjs';
 
 type CentreType = 'alpha' | 'cec' | 'cp' | 'sie';
@@ -80,7 +86,7 @@ type DossierSection = 'appuis' | 'documents';
 @Component({
   selector: 'app-dossier-centre',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, MenaSearchableSelectComponent],
   template: `
     <div class="container-fluid">
       <div class="d-sm-flex align-items-center justify-content-between mb-3">
@@ -103,17 +109,23 @@ type DossierSection = 'appuis' | 'documents';
           <div class="form-row">
             <div class="form-group col-md-4 mb-md-0">
               <label class="small text-muted mb-1">Type de centre</label>
-              <select class="form-control" [(ngModel)]="selectedCentreType" (ngModelChange)="onCentreTypeChange()">
-                <option [ngValue]="null">Sélectionner</option>
-                <option *ngFor="let option of centreTypeOptions" [ngValue]="option.value">{{ option.label }}</option>
-              </select>
+              <app-mena-searchable-select
+                [(ngModel)]="selectedCentreType"
+                (ngModelChange)="onCentreTypeChange()"
+                [options]="menaCentreTypeOptions()"
+                nullLabel="Sélectionner"
+                [searchable]="false"
+              />
             </div>
             <div class="form-group col-md-8 mb-0">
               <label class="small text-muted mb-1">Centre</label>
-              <select class="form-control" [(ngModel)]="selectedCentreId" (ngModelChange)="onCentreChange()" [disabled]="!selectedCentreType || centresLoading">
-                <option [ngValue]="null">{{ centresLoading ? 'Chargement...' : 'Sélectionner un centre' }}</option>
-                <option *ngFor="let centre of centres" [ngValue]="centreId(centre)">{{ centreLabel(centre) }}</option>
-              </select>
+              <app-mena-searchable-select
+                [(ngModel)]="selectedCentreId"
+                (ngModelChange)="onCentreChange()"
+                [options]="menaCentreOptions()"
+                [nullLabel]="centresLoading ? 'Chargement...' : 'Sélectionner un centre'"
+                [disabled]="!selectedCentreType || centresLoading"
+              />
             </div>
           </div>
         </div>
@@ -166,17 +178,19 @@ type DossierSection = 'appuis' | 'documents';
                 <div class="form-row">
                   <div class="form-group col-md-6">
                     <label>Partenaire</label>
-                    <select class="form-control" [(ngModel)]="appuiForm.idPartenaire">
-                      <option [ngValue]="null">Sélectionner</option>
-                      <option *ngFor="let p of partenaires" [ngValue]="p.id ?? null">{{ refLabel(p) }}</option>
-                    </select>
+                    <app-mena-searchable-select
+                      [(ngModel)]="appuiForm.idPartenaire"
+                      [options]="menaPartenaireOptions()"
+                      nullLabel="Sélectionner"
+                    />
                   </div>
                   <div class="form-group col-md-6">
                     <label>Catégorie d'appui</label>
-                    <select class="form-control" [(ngModel)]="appuiForm.idCategorieAppui">
-                      <option [ngValue]="null">Sélectionner</option>
-                      <option *ngFor="let c of categoriesAppui" [ngValue]="c.id ?? null">{{ refLabel(c) }}</option>
-                    </select>
+                    <app-mena-searchable-select
+                      [(ngModel)]="appuiForm.idCategorieAppui"
+                      [options]="menaCategorieAppuiOptions()"
+                      nullLabel="Sélectionner"
+                    />
                   </div>
                 </div>
                 <div class="form-group">
@@ -232,17 +246,19 @@ type DossierSection = 'appuis' | 'documents';
                 <div class="form-row">
                   <div class="form-group col-md-6">
                     <label>Nature</label>
-                    <select class="form-control" [(ngModel)]="documentForm.idNatureDocument">
-                      <option [ngValue]="null">Sélectionner</option>
-                      <option *ngFor="let n of naturesDocument" [ngValue]="n.id ?? null">{{ refLabel(n) }}</option>
-                    </select>
+                    <app-mena-searchable-select
+                      [(ngModel)]="documentForm.idNatureDocument"
+                      [options]="menaNatureDocumentOptions()"
+                      nullLabel="Sélectionner"
+                    />
                   </div>
                   <div class="form-group col-md-6">
                     <label>Type</label>
-                    <select class="form-control" [(ngModel)]="documentForm.idTypeDocument">
-                      <option [ngValue]="null">Sélectionner</option>
-                      <option *ngFor="let t of typesDocument" [ngValue]="t.id ?? null">{{ refLabel(t) }}</option>
-                    </select>
+                    <app-mena-searchable-select
+                      [(ngModel)]="documentForm.idTypeDocument"
+                      [options]="menaTypeDocumentOptions()"
+                      nullLabel="Sélectionner"
+                    />
                   </div>
                 </div>
                 <div class="form-row">
@@ -424,10 +440,22 @@ export class DossierCentreComponent implements OnInit {
       next: (res) => {
         this.appuis = unwrapListBody(res.appuis) as AppuiRow[];
         this.documents = unwrapListBody(res.documents) as DocumentRow[];
-        this.partenaires = unwrapListBody(res.partenaires).map((row) => this.refFromAny(row, 'libellePartenaire'));
-        this.categoriesAppui = unwrapListBody(res.categoriesAppui).map((row) => this.refFromAny(row, 'libelleCategorieAppui'));
-        this.naturesDocument = unwrapListBody(res.naturesDocument).map((row) => this.refFromAny(row, 'libelleNatureDocument'));
-        this.typesDocument = unwrapListBody(res.typesDocument).map((row) => this.refFromAny(row, 'libelleTypeDocument'));
+        this.partenaires = sortByLabel(
+          unwrapListBody(res.partenaires).map((row) => this.refFromAny(row, 'libellePartenaire')),
+          (r) => this.refLabel(r),
+        );
+        this.categoriesAppui = sortByLabel(
+          unwrapListBody(res.categoriesAppui).map((row) => this.refFromAny(row, 'libelleCategorieAppui')),
+          (r) => this.refLabel(r),
+        );
+        this.naturesDocument = sortByLabel(
+          unwrapListBody(res.naturesDocument).map((row) => this.refFromAny(row, 'libelleNatureDocument')),
+          (r) => this.refLabel(r),
+        );
+        this.typesDocument = sortByLabel(
+          unwrapListBody(res.typesDocument).map((row) => this.refFromAny(row, 'libelleTypeDocument')),
+          (r) => this.refLabel(r),
+        );
         this.loading = false;
         this.loadDocumentWorkflowStatuses();
         if (this.selectedCentreType) {
@@ -456,7 +484,7 @@ export class DossierCentreComponent implements OnInit {
       params: { page: '0', size: '2000', sort: 'id,asc' },
     }).subscribe({
       next: (body) => {
-        this.centres = unwrapListBody(body) as CentreOption[];
+        this.centres = sortByLabel(unwrapListBody(body) as CentreOption[], (c) => this.centreLabel(c));
         this.centresLoading = false;
       },
       error: (err: HttpErrorResponse) => {
@@ -586,6 +614,30 @@ export class DossierCentreComponent implements OnInit {
         this.errorMessage = this.httpError(err);
       },
     });
+  }
+
+  menaCentreTypeOptions() {
+    return toMenaSelectOptionsFromPairs(this.centreTypeOptions);
+  }
+
+  menaCentreOptions() {
+    return toMenaSelectOptions(this.centres, (c) => this.centreId(c), (c) => this.centreLabel(c));
+  }
+
+  menaPartenaireOptions() {
+    return toMenaSelectOptions(this.partenaires, (p) => p.id ?? null, (p) => this.refLabel(p));
+  }
+
+  menaCategorieAppuiOptions() {
+    return toMenaSelectOptions(this.categoriesAppui, (c) => c.id ?? null, (c) => this.refLabel(c));
+  }
+
+  menaNatureDocumentOptions() {
+    return toMenaSelectOptions(this.naturesDocument, (n) => n.id ?? null, (n) => this.refLabel(n));
+  }
+
+  menaTypeDocumentOptions() {
+    return toMenaSelectOptions(this.typesDocument, (t) => t.id ?? null, (t) => this.refLabel(t));
   }
 
   centreLabel(centre: CentreOption): string {

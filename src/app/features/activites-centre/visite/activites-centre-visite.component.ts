@@ -3,7 +3,14 @@ import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http'
 import { Component, Inject, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
+import {
+  menaActivitesRefOptions,
+  menaActivitesRefOptionsWithAll,
+  sortActivitesRefs,
+} from '@features/activites-centre/activites-centre-select.util';
 import { MenaRowActionButtonComponent } from '@shared/mena-row-action-button/mena-row-action-button.component';
+import { MenaSearchableSelectComponent } from '@shared/mena-searchable-select/mena-searchable-select.component';
+import { sortByLabel, toMenaSelectOptions } from '@shared/mena-searchable-select/mena-select-options.util';
 import { forkJoin } from 'rxjs';
 import { unwrapListBody } from '@core/http/unwrap-spring-page';
 import { formatHttpError } from '@core/utils/http-error.util';
@@ -126,7 +133,7 @@ type WorkflowDecisionAction = 'rejeter' | 'retourner';
 @Component({
   selector: 'app-activites-centre-visite',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, MenaRowActionButtonComponent],
+  imports: [CommonModule, FormsModule, RouterLink, MenaRowActionButtonComponent, MenaSearchableSelectComponent],
   templateUrl: './activites-centre-visite.component.html',
   styleUrl: './activites-centre-visite.component.css',
 })
@@ -286,8 +293,8 @@ export class ActivitesCentreVisiteComponent implements OnInit {
     }).subscribe({
       next: ({ visites, alphas, periodes }) => {
         this.rows = (unwrapListBody(visites) as VisiteRow[]).sort((a, b) => Number(a.id ?? 0) - Number(b.id ?? 0));
-        this.alphas = unwrapListBody(alphas) as AlphaOption[];
-        this.periodes = unwrapListBody(periodes) as VisiteRef[];
+        this.alphas = sortByLabel(unwrapListBody(alphas) as AlphaOption[], (a) => this.alphaOptionLabel(a));
+        this.periodes = sortActivitesRefs(unwrapListBody(periodes) as VisiteRef[]);
         this.loading = false;
         this.loadVisiteWorkflowStatuses();
       },
@@ -319,8 +326,8 @@ export class ActivitesCentreVisiteComponent implements OnInit {
           .map((row) => ({ ...row, centralSource: 'Superviseur' }));
         this.rows = [...visitesValidees, ...ieppValidees, ...superviseurValidees]
           .sort((a, b) => this.centralSortKey(a).localeCompare(this.centralSortKey(b)));
-        this.alphas = unwrapListBody(alphas) as AlphaOption[];
-        this.periodes = unwrapListBody(periodes) as VisiteRef[];
+        this.alphas = sortByLabel(unwrapListBody(alphas) as AlphaOption[], (a) => this.alphaOptionLabel(a));
+        this.periodes = sortActivitesRefs(unwrapListBody(periodes) as VisiteRef[]);
         this.loading = false;
       },
       error: (err) => this.onError(err),
@@ -633,6 +640,32 @@ export class ActivitesCentreVisiteComponent implements OnInit {
     const code = alpha.codeAlpha ?? alpha.codeCentre ?? null;
     const libelle = alpha.libelleAlpha ?? alpha.libelle ?? null;
     return [code, libelle].filter(Boolean).join(' — ') || `Alpha #${this.alphaOptionValue(alpha) ?? '—'}`;
+  }
+
+  menaAlphaFilterOptions() {
+    return menaActivitesRefOptionsWithAll(
+      this.alphas,
+      (a) => this.alphaOptionValue(a as AlphaOption) ?? '',
+      'Tous',
+      '',
+    );
+  }
+
+  menaPeriodeFilterOptions() {
+    return menaActivitesRefOptionsWithAll(
+      this.periodes,
+      (p) => p.id ?? '',
+      'Toutes',
+      '',
+    );
+  }
+
+  menaAlphaFormOptions() {
+    return toMenaSelectOptions(this.alphas, (a) => this.alphaOptionValue(a), (a) => this.alphaOptionLabel(a));
+  }
+
+  menaPeriodeFormOptions() {
+    return menaActivitesRefOptions(this.periodes, (p) => p.id ?? null);
   }
 
   fieldValue(row: VisiteRow, key: VisitePayloadFieldKey): string | number {

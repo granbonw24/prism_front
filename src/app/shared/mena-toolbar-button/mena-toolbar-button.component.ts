@@ -9,6 +9,8 @@ export type MenaToolbarButtonVariant =
   | 'reset'
   | 'filter'
   | 'cancel'
+  | 'next'
+  | 'print'
   | 'save'
   | 'confirm'
   | 'confirm-danger'
@@ -50,6 +52,10 @@ export class MenaToolbarButtonComponent {
         return 'Filtrer';
       case 'cancel':
         return 'Annuler';
+      case 'next':
+        return 'Continuer';
+      case 'print':
+        return 'Imprimer';
       case 'save':
         return 'Enregistrer';
       case 'confirm-danger':
@@ -89,7 +95,11 @@ export class MenaToolbarButtonComponent {
       case 'filter':
         return 'fas fa-filter';
       case 'cancel':
-        return 'fas fa-times';
+        return 'fas fa-arrow-left';
+      case 'next':
+        return 'fas fa-arrow-right';
+      case 'print':
+        return 'fas fa-print';
       case 'save':
         return 'fas fa-save';
       case 'confirm-danger':
@@ -113,13 +123,18 @@ export class MenaToolbarButtonComponent {
       case 'add-outline':
       case 'refresh':
         return `btn btn-sm btn-outline-primary mena-toolbar-btn${block}`;
-      case 'reset':
       case 'cancel':
-        return `btn btn-sm btn-outline-secondary mena-toolbar-btn${block}`;
+        return `btn btn-sm btn-outline-secondary mena-toolbar-btn mena-toolbar-btn--soft-secondary${block}`;
+      case 'reset':
+        return `btn btn-sm btn-outline-warning mena-toolbar-btn mena-toolbar-btn--soft-reset${block}`;
+      case 'next':
+        return `btn btn-sm btn-outline-primary mena-toolbar-btn mena-toolbar-btn--soft-primary${block}`;
+      case 'print':
+        return `btn btn-sm btn-outline-primary mena-toolbar-btn mena-toolbar-btn--soft-print${block}`;
       case 'filter':
       case 'save':
       case 'confirm':
-        return `btn btn-sm btn-primary mena-toolbar-btn${block}`;
+        return `btn btn-sm btn-primary mena-toolbar-btn mena-toolbar-btn--soft-primary-solid${block}`;
       case 'confirm-danger':
         return `btn btn-sm btn-danger mena-toolbar-btn${block}`;
       case 'confirm-success':

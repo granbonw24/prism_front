@@ -26,21 +26,23 @@
         </div>
         <div class="form-group col-md-3 col-sm-12 mb-2 mb-md-0">
           <label class="small text-muted mb-1">Centre Alpha</label>
-          <select class="form-control form-control-sm" [(ngModel)]="filterAlphaId">
-            <option [ngValue]="''">Tous</option>
-            <option *ngFor="let alpha of alphas" [ngValue]="alphaOptionValue(alpha)">
-              {{ alphaOptionLabel(alpha) }}
-            </option>
-          </select>
+          <app-mena-searchable-select
+            class="form-control form-control-sm"
+            [(ngModel)]="filterAlphaId"
+            [options]="menaAlphaFilterOptions()"
+            [allowNull]="false"
+            inputClass="form-control form-control-sm"
+            [disabled]="loading" />
         </div>
         <div class="form-group col-md-3 col-sm-12 mb-2 mb-md-0">
           <label class="small text-muted mb-1">Période d’activité</label>
-          <select class="form-control form-control-sm" [(ngModel)]="filterPeriodeId">
-            <option [ngValue]="''">Toutes</option>
-            <option *ngFor="let p of periodes" [ngValue]="p.id ?? ''">
-              {{ refLabel(p) }}
-            </option>
-          </select>
+          <app-mena-searchable-select
+            class="form-control form-control-sm"
+            [(ngModel)]="filterPeriodeId"
+            [options]="menaPeriodeFilterOptions()"
+            [allowNull]="false"
+            inputClass="form-control form-control-sm"
+            [disabled]="loading" />
         </div>
         <div class="form-group col-md-2 col-sm-12 mb-0">
           <button type="button" class="btn btn-sm btn-outline-secondary btn-block" (click)="clearFilters()" [disabled]="loading">
@@ -148,21 +150,20 @@
         <div class="form-row">
           <div class="form-group col-md-4">
             <label>Centre Alpha</label>
-            <select class="form-control" [(ngModel)]="form.idAlpha" (ngModelChange)="form.idNiveauAlpha = null">
-              <option [ngValue]="null">Sélectionner</option>
-              <option *ngFor="let alpha of alphas" [ngValue]="alphaOptionId(alpha)">
-                {{ alphaOptionLabel(alpha) }}
-              </option>
-            </select>
+            <app-mena-searchable-select
+              [(ngModel)]="form.idAlpha"
+              (ngModelChange)="form.idNiveauAlpha = null"
+              [options]="menaAlphaFormOptions()"
+              [disabled]="saving"
+            />
           </div>
           <div class="form-group col-md-4">
             <label>Période d’activité</label>
-            <select class="form-control" [(ngModel)]="form.idPeriodeActivite">
-              <option [ngValue]="null">Sélectionner</option>
-              <option *ngFor="let p of periodes" [ngValue]="p.id ?? null">
-                {{ refLabel(p) }}
-              </option>
-            </select>
+            <app-mena-searchable-select
+              [(ngModel)]="form.idPeriodeActivite"
+              [options]="menaPeriodeFormOptions()"
+              [disabled]="saving"
+            />
           </div>
           <div class="form-group col-md-2">
             <label>Date de démarrage</label>
@@ -170,12 +171,11 @@
           </div>
           <div class="form-group col-md-2">
             <label>Niveau</label>
-            <select class="form-control" [(ngModel)]="form.idNiveauAlpha">
-              <option [ngValue]="null">Sélectionner</option>
-              <option *ngFor="let niveau of niveauxForSelectedAlpha()" [ngValue]="niveau.id ?? null">
-                {{ refLabel(niveau) }}
-              </option>
-            </select>
+            <app-mena-searchable-select
+              [(ngModel)]="form.idNiveauAlpha"
+              [options]="menaNiveauFormOptions()"
+              [disabled]="saving"
+            />
           </div>
         </div>
 
@@ -205,12 +205,13 @@
           <div class="form-row align-items-end" *ngFor="let kit of form.kitsManuels; let i = index; trackBy: trackByIndex">
             <div class="form-group col-md-5">
               <label>Manuel</label>
-              <select class="form-control form-control-sm" [(ngModel)]="kit.idManuel">
-                <option [ngValue]="null">Sélectionner</option>
-                <option *ngFor="let manuel of manuels" [ngValue]="manuel.id ?? null">
-                  {{ refLabel(manuel) }}
-                </option>
-              </select>
+              <app-mena-searchable-select
+                  class="form-control form-control-sm"
+                  [(ngModel)]="kit.idManuel"
+                  [options]="menaManuelOptions()"
+                  inputClass="form-control form-control-sm"
+                  [disabled]="saving"
+                />
             </div>
             <div class="form-group col-md-2">
               <label>Nombre</label>

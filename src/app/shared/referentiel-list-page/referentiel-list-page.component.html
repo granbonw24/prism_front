@@ -12,14 +12,15 @@
         <label class="small text-muted mb-0 font-weight-bold" [attr.for]="'mena-toolbar-centre-type'">{{
           addFormContextLabel
         }}</label>
-        <select
+        <app-mena-searchable-select
           [id]="'mena-toolbar-centre-type'"
-          class="form-control form-control-sm mena-toolbar-type-select"
-          [value]="addFormContextValue ?? ''"
-          (change)="onAddFormContextChange($event)"
-        >
-          <option *ngFor="let opt of addFormContextOptions" [value]="opt.value">{{ opt.label }}</option>
-        </select>
+          class="mena-toolbar-type-select"
+          [ngModel]="addFormContextValue ?? ''"
+          (ngModelChange)="onAddFormContextValueChange($event)"
+          [options]="menaContextOptions()"
+          [allowNull]="false"
+          inputClass="form-control form-control-sm"
+        />
       </div>
     </div>
     <div class="d-flex flex-wrap gap-2 mena-toolbar">
@@ -361,15 +362,13 @@
             class="form-group"
           >
             <label class="small font-weight-bold">{{ addFormContextLabel }}</label>
-            <select
-              class="form-control form-control-sm"
-              [value]="addFormContextValue ?? ''"
-              (change)="onAddFormContextChange($event)"
-            >
-              <option *ngFor="let opt of addFormContextOptions" [value]="opt.value">
-                {{ opt.label }}
-              </option>
-            </select>
+            <app-mena-searchable-select
+              [ngModel]="addFormContextValue ?? ''"
+              (ngModelChange)="onAddFormContextValueChange($event)"
+              [options]="menaContextOptions()"
+              [allowNull]="false"
+              inputClass="form-control form-control-sm"
+            />
           </div>
           <div *ngIf="formError" class="alert alert-danger small">
             {{ formError }}
@@ -407,17 +406,14 @@
                   [id]="'cf-' + field.key"
                   [formControlName]="field.key"
                 />
-                <select
+                <app-mena-searchable-select
                   *ngIf="field.type === 'select'"
-                  class="form-control form-control-sm"
                   [id]="'cf-' + field.key"
                   [formControlName]="field.key"
-                >
-                  <option [ngValue]="null">-- Sélectionner --</option>
-                  <option *ngFor="let opt of getFieldOptions(field)" [ngValue]="opt.value">
-                    {{ opt.label }}
-                  </option>
-                </select>
+                  [options]="menaFieldOptions(field)"
+                  nullLabel="-- Sélectionner --"
+                  inputClass="form-control form-control-sm"
+                />
                 <div *ngIf="field.type === 'checkbox'" class="custom-control custom-checkbox mt-1">
                   <input
                     type="checkbox"

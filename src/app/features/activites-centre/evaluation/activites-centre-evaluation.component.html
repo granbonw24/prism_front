@@ -123,35 +123,39 @@
         <div class="form-row">
           <div class="form-group col-md-6">
             <label>Centre Alpha</label>
-            <select class="form-control" [(ngModel)]="form.idAlpha">
-              <option [ngValue]="null">Sélectionner</option>
-              <option *ngFor="let alpha of alphas" [ngValue]="alphaOptionId(alpha)">{{ alphaOptionLabel(alpha) }}</option>
-            </select>
+            <app-mena-searchable-select
+              [(ngModel)]="form.idAlpha"
+              [options]="menaAlphaFormOptions()"
+              [disabled]="saving"
+            />
           </div>
           <div class="form-group col-md-6">
             <label>Période</label>
-            <select class="form-control" [(ngModel)]="form.idPeriodeEvaluation">
-              <option [ngValue]="null">Sélectionner</option>
-              <option *ngFor="let periode of periodes" [ngValue]="periode.id ?? null">{{ refLabel(periode) }}</option>
-            </select>
+            <app-mena-searchable-select
+              [(ngModel)]="form.idPeriodeEvaluation"
+              [options]="menaPeriodeFormOptions()"
+              [disabled]="saving"
+            />
           </div>
         </div>
         <div class="form-row">
           <div class="form-group col-md-6">
             <label>Niveau</label>
-            <select class="form-control" [(ngModel)]="form.idNiveauEvaluation" (ngModelChange)="onNiveauChange()">
-              <option [ngValue]="null">Sélectionner</option>
-              <option *ngFor="let niveau of niveaux" [ngValue]="niveau.id ?? null">{{ refLabel(niveau) }}</option>
-            </select>
+            <app-mena-searchable-select
+              [(ngModel)]="form.idNiveauEvaluation"
+              (ngModelChange)="onNiveauChange()"
+              [options]="menaNiveauFormOptions()"
+              [disabled]="saving"
+            />
           </div>
           <div class="form-group col-md-6">
             <label>Type d’évaluation</label>
-            <select class="form-control" [(ngModel)]="form.typeEvaluation" (ngModelChange)="onTypeChange()" [disabled]="!form.idNiveauEvaluation">
-              <option [ngValue]="null">Sélectionner</option>
-              <option *ngFor="let type of availableTypeOptions" [ngValue]="type">
-                {{ typeLabel(type) }}
-              </option>
-            </select>
+            <app-mena-searchable-select
+              [(ngModel)]="form.typeEvaluation"
+              (ngModelChange)="onTypeChange()"
+              [options]="menaTypeFormOptions()"
+              [disabled]="saving || !form.idNiveauEvaluation"
+            />
           </div>
         </div>
         <div class="theme-taux-box">

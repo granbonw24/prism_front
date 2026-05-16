@@ -1,8 +1,8 @@
 export const environment = {
   production: true,
   /**
-   * URL du backend (sans slash final), incluant le context-path Tomcat si utilisé.
-   * Ex. : https://votre-serveur.ci/ipt/prism
+   * Même origine logique que le front : les appels vont vers /dcspa/api/… (reverse proxy → Tomcat).
+   * Sans slash final (le code ajoute /api/...).
    */
-  apiBaseUrl: 'https://VOTRE_DOMAINE/ipt/prism',
+  apiBaseUrl: 'http://154.0.30.233/dcspa',
 };
