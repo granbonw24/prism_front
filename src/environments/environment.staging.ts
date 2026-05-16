@@ -1,8 +1,9 @@
 export const environment = {
   production: true,
   /**
-   * Même origine logique que le front : les appels vont vers /dcspa/api/… (reverse proxy → Tomcat).
+   * Chemin relatif = même hôte/port que le front (ex. :91/dcspa → :91/dcspa/api/…).
+   * Comme Dismas (:91/dismas-api/…). Apache proxy /dcspa/api/ → Tomcat :8081/prism/api/.
    * Sans slash final (le code ajoute /api/...).
    */
-  apiBaseUrl: 'http://154.0.30.233/dcspa',
+  apiBaseUrl: '/dcspa',
 };
