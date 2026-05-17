@@ -43,7 +43,7 @@
           class="nav-link"
           [class.collapsed]="!isMenuSectionOpen('centres', ['/centres'])"
           href="#"
-          (click)="toggleMenuSection('centres', $event)"
+          (click)="toggleMenuSection('centres', $event, ['/centres'])"
           [attr.aria-expanded]="isMenuSectionOpen('centres', ['/centres'])"
           aria-controls="collapseTwo"
         >
@@ -81,7 +81,7 @@
           class="nav-link"
           [class.collapsed]="!isMenuSectionOpen('apprenant', ['/apprenant'])"
           href="#"
-          (click)="toggleMenuSection('apprenant', $event)"
+          (click)="toggleMenuSection('apprenant', $event, ['/apprenant'])"
           [attr.aria-expanded]="isMenuSectionOpen('apprenant', ['/apprenant'])"
           aria-controls="collapseUtilities2"
         >
@@ -117,7 +117,7 @@
           class="nav-link"
           [class.collapsed]="!activitesCentreSectionOpen()"
           href="#"
-          (click)="toggleMenuSection('activites-centre', $event)"
+          (click)="toggleMenuSection('activites-centre', $event, ['/activites-centre', '/visites'])"
           [attr.aria-expanded]="activitesCentreSectionOpen()"
           aria-controls="collapseActivitesCentre"
         >
@@ -184,7 +184,7 @@
               class="collapse-item mena-submenu-toggle"
               [class.collapsed]="!activitesCentreVisiteSectionOpen()"
               href="#"
-              (click)="toggleMenuSection('activites-visite', $event)"
+              (click)="toggleMenuSection('activites-visite', $event, ['/activites-centre/visite', '/visites'])"
               [attr.aria-expanded]="activitesCentreVisiteSectionOpen()"
               aria-controls="activites-centre-visite"
               >Visite</a
@@ -252,7 +252,7 @@
           class="nav-link"
           [class.collapsed]="!isMenuSectionOpen('administration', ['/administration'])"
           href="#"
-          (click)="toggleMenuSection('administration', $event)"
+          (click)="toggleMenuSection('administration', $event, ['/administration'])"
           [attr.aria-expanded]="isMenuSectionOpen('administration', ['/administration'])"
           aria-controls="collapseAdministration"
         >
@@ -270,7 +270,7 @@
               class="collapse-item mena-submenu-toggle"
               [class.collapsed]="!isMenuSectionOpen('admin-gestion', ['/administration/personnel', '/administration/utilisateurs'])"
               href="#"
-              (click)="toggleMenuSection('admin-gestion', $event)"
+              (click)="toggleMenuSection('admin-gestion', $event, ['/administration/personnel', '/administration/utilisateurs'])"
               [attr.aria-expanded]="isMenuSectionOpen('admin-gestion', ['/administration/personnel', '/administration/utilisateurs'])"
               aria-controls="admin-gestion"
               >Gestion</a
@@ -294,7 +294,7 @@
               class="collapse-item mena-submenu-toggle"
               [class.collapsed]="!isMenuSectionOpen('admin-securite', ['/administration/acteurs', '/administration/role-permissions'])"
               href="#"
-              (click)="toggleMenuSection('admin-securite', $event)"
+              (click)="toggleMenuSection('admin-securite', $event, ['/administration/acteurs', '/administration/role-permissions'])"
               [attr.aria-expanded]="isMenuSectionOpen('admin-securite', ['/administration/acteurs', '/administration/role-permissions'])"
               aria-controls="admin-securite"
               >Sécurité</a
@@ -343,7 +343,7 @@
                 class="collapse-item mena-submenu-toggle"
                 [class.collapsed]="!isRefGroupOpen(g)"
                 href="#"
-                (click)="toggleMenuSection(groupCollapseId('ref', g.title), $event)"
+                (click)="toggleMenuSection(groupCollapseId('ref', g.title), $event, refGroupPrefixes(g))"
                 [attr.aria-expanded]="isRefGroupOpen(g)"
                 [attr.aria-controls]="groupCollapseId('ref', g.title)"
                 >{{ g.title }}</a

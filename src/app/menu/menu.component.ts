@@ -133,8 +133,11 @@ export class MenuComponent {
 
   isRefGroupOpen(group: ReferentielMenuGroup): boolean {
     const id = this.groupCollapseId('ref', group.title);
-    const prefixes = group.items.map((r) => '/' + r.path);
-    return this.isMenuSectionOpen(id, prefixes);
+    return this.isMenuSectionOpen(id, this.refGroupPrefixes(group));
+  }
+
+  refGroupPrefixes(group: ReferentielMenuGroup): string[] {
+    return group.items.map((r) => '/' + r.path);
   }
 
   private parametragePrefixes(): string[] {
@@ -146,7 +149,7 @@ export class MenuComponent {
   }
 
   toggleParametrage(event: Event): void {
-    this.toggleMenuSection('parametrage', event);
+    this.toggleMenuSection('parametrage', event, this.parametragePrefixes());
   }
 
   /** Ouvre le bloc ACTIVITES CENTRE lorsque l’URL courante est une route d’activité centre. */
