@@ -206,18 +206,31 @@
             <label class="small text-muted">Centre d'Alphabétisation *</label>
             <app-mena-searchable-select
               [(ngModel)]="form.idAlpha"
+              (ngModelChange)="onAlphaFormChange()"
               [options]="menaAlphaFormOptions()"
               inputClass="form-control form-control-sm"
-              [disabled]="saving"
+              [disabled]="saving || loading"
+              [loading]="loading"
             />
           </div>
-          <div class="form-group col-md-6">
+          <div class="form-group col-md-6" *ngIf="formMode === 'points'">
+            <label class="small text-muted">Niveau Alpha *</label>
+            <app-mena-searchable-select
+              [(ngModel)]="form.idNiveauAlpha"
+              [options]="menaNiveauFormOptions()"
+              inputClass="form-control form-control-sm"
+              [disabled]="saving || loading"
+              [loading]="loading"
+            />
+          </div>
+          <div class="form-group col-md-6" [class.col-md-12]="formMode !== 'points'">
             <label class="small text-muted">Période d’activité *</label>
             <app-mena-searchable-select
               [(ngModel)]="form.idPeriodeActivite"
               [options]="menaPeriodeFormOptions()"
               inputClass="form-control form-control-sm"
-              [disabled]="saving"
+              [disabled]="saving || loading"
+              [loading]="loading"
             />
           </div>
         </div>

@@ -4,6 +4,11 @@
   width: 100%;
 }
 
+.mena-searchable-select--loading .mena-searchable-select__control input {
+  color: #6c757d;
+  font-style: italic;
+}
+
 /* Évite le double cadre si un parent applique encore .form-control sur le composant */
 :host.form-control,
 :host.form-control-sm {

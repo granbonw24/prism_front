@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { unwrapListBody } from '@core/http/unwrap-spring-page';
 import { forkJoin } from 'rxjs';
 import { PersonnelAdmin, PersonnelAdminDashboard } from '@models/administration';
 import { AdministrationService, PersonnelListQuery } from '@services/administration.service';
@@ -57,28 +58,20 @@ export class PersonnelComponent {
     q: '',
   };
 
-  centres: any[] = [];
+  centres: Array<{ id?: number; codeCentre?: string | null }> = [];
   fonctions: any[] = [];
   civilites: any[] = [];
   niveaux: any[] = [];
   statuts: any[] = [];
+  diplomes: any[] = [];
+  structuresFormation: any[] = [];
 
-  loading = false;
+  refsLoading = false;
+  listLoading = false;
   saving = false;
   errorMessage: string | null = null;
 
-  creating: any = {
-    idCentreId: null,
-    idFonctionId: null,
-    idCiviliteId: null,
-    idNiveauPersonnelId: null,
-    idStatutPersonnelId: null,
-    nomPersonnel: '',
-    prenomsPersonnel: '',
-    contactPersonnel: '',
-    emailPersonnel: '',
-    sexePersonnel: '',
-  };
+  creating: any = this.emptyCreating();
 
   editingId: number | null = null;
   edit: any = null;
@@ -91,33 +84,45 @@ export class PersonnelComponent {
     this.loadRefs();
   }
 
-  scrollToCreate(): void {
-    const el = globalThis.document?.getElementById('createPersonnelCard');
-    el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  get loading(): boolean {
+    return this.refsLoading || this.listLoading;
+  }
+
+  get selectedCentreKind(): 'ALPHA' | 'CEC' | 'CP' | 'SIE' | 'AUTRE' {
+    const centre = this.centres.find((c) => c.id === this.centreId);
+    return this.centreKindFromCode(centre?.codeCentre);
   }
 
   loadRefs(): void {
-    this.loading = true;
+    this.refsLoading = true;
     this.errorMessage = null;
 
     forkJoin({
-      centres: this.http.get<any[]>(`${this.apiBaseUrl}/api/centres`),
-      fonctions: this.http.get<any[]>(`${this.apiBaseUrl}/api/fonctions`),
-      civilites: this.http.get<any[]>(`${this.apiBaseUrl}/api/civilite`),
-      niveaux: this.http.get<any[]>(`${this.apiBaseUrl}/api/niveau-personnel`),
-      statuts: this.http.get<any[]>(`${this.apiBaseUrl}/api/StatutPersonnels`),
+      centres: this.http.get<unknown>(`${this.apiBaseUrl}/api/centres`),
+      fonctions: this.http.get<unknown>(`${this.apiBaseUrl}/api/fonctions`),
+      civilites: this.http.get<unknown>(`${this.apiBaseUrl}/api/civilite`),
+      niveaux: this.http.get<unknown>(`${this.apiBaseUrl}/api/niveau-personnel`),
+      statuts: this.http.get<unknown>(`${this.apiBaseUrl}/api/StatutPersonnels`),
+      diplomes: this.http.get<unknown>(`${this.apiBaseUrl}/api/diplome`),
+      structuresFormation: this.http.get<unknown>(`${this.apiBaseUrl}/api/structure-formation-certification`),
     }).subscribe({
       next: (res) => {
-        this.centres = sortByLabel(res.centres ?? [], (c) => this.centreLabel(c));
-        this.fonctions = sortByLabel(res.fonctions ?? [], (f) => this.fonctionLabel(f));
-        this.civilites = sortByLabel(res.civilites ?? [], (c) => this.civiliteLabel(c));
-        this.niveaux = sortByLabel(res.niveaux ?? [], (n) => this.niveauLabel(n));
-        this.statuts = sortByLabel(res.statuts ?? [], (s) => this.statutLabel(s));
-        this.loading = false;
+        this.centres = sortByLabel(unwrapListBody(res.centres) as typeof this.centres, (c) =>
+          this.centreLabel(c),
+        );
+        this.fonctions = sortByLabel(unwrapListBody(res.fonctions) as any[], (f) => this.fonctionLabel(f));
+        this.civilites = sortByLabel(unwrapListBody(res.civilites) as any[], (c) => this.civiliteLabel(c));
+        this.niveaux = sortByLabel(unwrapListBody(res.niveaux) as any[], (n) => this.niveauLabel(n));
+        this.statuts = sortByLabel(unwrapListBody(res.statuts) as any[], (s) => this.statutLabel(s));
+        this.diplomes = sortByLabel(unwrapListBody(res.diplomes) as any[], (d) => this.diplomeLabel(d));
+        this.structuresFormation = sortByLabel(unwrapListBody(res.structuresFormation) as any[], (s) =>
+          this.structureFormationLabel(s),
+        );
+        this.refsLoading = false;
       },
       error: (e) => {
         this.errorMessage = this.formatError(e);
-        this.loading = false;
+        this.refsLoading = false;
       },
     });
   }
@@ -171,7 +176,7 @@ export class PersonnelComponent {
 
   reload(): void {
     if (this.centreId == null) return;
-    this.loading = true;
+    this.listLoading = true;
     this.errorMessage = null;
     this.admin.listPersonnelByCentrePage(this.centreId, this.pageIndex, this.pageSize, this.buildListQuery()).subscribe({
       next: (page) => {
@@ -182,11 +187,11 @@ export class PersonnelComponent {
           centreId: this.centreId!,
           total: page.totalElements ?? 0,
         };
-        this.loading = false;
+        this.listLoading = false;
       },
       error: (e) => {
         this.errorMessage = this.formatError(e);
-        this.loading = false;
+        this.listLoading = false;
       },
     });
   }
@@ -227,15 +232,20 @@ export class PersonnelComponent {
 
   canCreate(): boolean {
     const r = this.creating;
+    const certified = r.certifierPersonnel === true;
     return (
       !this.saving &&
+      !this.refsLoading &&
       r.idCentreId != null &&
       r.idFonctionId != null &&
       r.idCiviliteId != null &&
       r.idNiveauPersonnelId != null &&
       r.idStatutPersonnelId != null &&
+      r.idDiplomeId != null &&
       String(r.nomPersonnel ?? '').trim().length > 0 &&
-      String(r.prenomsPersonnel ?? '').trim().length > 0
+      String(r.prenomsPersonnel ?? '').trim().length > 0 &&
+      String(r.contactPersonnel ?? '').trim().length > 0 &&
+      (!certified || r.idStructureFormationCertificationId != null)
     );
   }
 
@@ -246,11 +256,10 @@ export class PersonnelComponent {
     this.admin.createPersonnel(this.creating).subscribe({
       next: () => {
         this.saving = false;
-        this.creating.nomPersonnel = '';
-        this.creating.prenomsPersonnel = '';
-        this.creating.contactPersonnel = '';
-        this.creating.emailPersonnel = '';
-        this.creating.sexePersonnel = '';
+        this.creating = this.emptyCreating();
+        if (this.centreId != null) {
+          this.creating.idCentreId = this.centreId;
+        }
         this.reload();
       },
       error: (e) => {
@@ -270,6 +279,7 @@ export class PersonnelComponent {
     this.edit.idCiviliteId = row.civiliteId;
     this.edit.idNiveauPersonnelId = row.niveauPersonnelId;
     this.edit.idStatutPersonnelId = row.statutPersonnelId;
+    this.edit.idDiplomeId = row.diplomeId;
     this.edit.idStructureFormationCertificationId =
       row.structureFormationCertificationId;
   }
@@ -350,7 +360,7 @@ export class PersonnelComponent {
   }
 
   menaCentreOptions() {
-    return toMenaSelectOptions(this.centres, (c) => c.id, (c) => this.centreLabel(c));
+    return toMenaSelectOptions(this.centres, (c) => c.id ?? null, (c) => this.centreLabel(c));
   }
 
   menaFonctionOptions() {
@@ -367,6 +377,74 @@ export class PersonnelComponent {
 
   menaStatutOptions() {
     return toMenaSelectOptions(this.statuts, (s) => s.id, (s) => this.statutLabel(s));
+  }
+
+  menaDiplomeOptions() {
+    return toMenaSelectOptions(this.diplomes, (d) => d.id, (d) => this.diplomeLabel(d));
+  }
+
+  menaStructureFormationOptions() {
+    return toMenaSelectOptions(this.structuresFormation, (s) => s.id, (s) => this.structureFormationLabel(s));
+  }
+
+  diplomeLabel(d: Record<string, unknown>): string {
+    return refEntityLabel(d, ['libelleDiplome'], ['codeDiplome']);
+  }
+
+  structureFormationLabel(s: Record<string, unknown>): string {
+    return refEntityLabel(s, ['libelleStructureCertification'], ['codeStructureCertification']);
+  }
+
+  centreKindFromCode(code: string | null | undefined): 'ALPHA' | 'CEC' | 'CP' | 'SIE' | 'AUTRE' {
+    const c = (code ?? '').toUpperCase();
+    if (c.includes('ALP') || c.includes('ALPHA')) return 'ALPHA';
+    if (c.includes('CEC')) return 'CEC';
+    if (c.includes('SIE')) return 'SIE';
+    if (c.includes('CP')) return 'CP';
+    return 'AUTRE';
+  }
+
+  showDenominationField(): boolean {
+    return this.selectedCentreKind === 'CEC' || this.selectedCentreKind === 'AUTRE';
+  }
+
+  showProgrammeField(): boolean {
+    return this.selectedCentreKind === 'CP';
+  }
+
+  showRepresentantLegalField(): boolean {
+    return this.selectedCentreKind === 'SIE';
+  }
+
+  onCertificationChange(value: boolean | string | null): void {
+    const certified = value === true || value === 'true';
+    this.creating.certifierPersonnel = certified;
+    if (!certified) {
+      this.creating.idStructureFormationCertificationId = null;
+    }
+  }
+
+  private emptyCreating(): any {
+    return {
+      idCentreId: null,
+      idFonctionId: null,
+      idCiviliteId: null,
+      idNiveauPersonnelId: null,
+      idStatutPersonnelId: null,
+      idDiplomeId: null,
+      idStructureFormationCertificationId: null,
+      certifierPersonnel: null,
+      nomPersonnel: '',
+      prenomsPersonnel: '',
+      dateNaissance: '',
+      contactPersonnel: '',
+      emailPersonnel: '',
+      anneExpePersonnel: null,
+      sexePersonnel: '',
+      denominationPersonnel: '',
+      nomDuPrgramme: '',
+      nomRepresentantLegalSturcture: '',
+    };
   }
 
   private formatError(e: unknown): string {

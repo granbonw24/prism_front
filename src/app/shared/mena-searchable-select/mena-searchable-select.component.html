@@ -1,7 +1,8 @@
 <div
   class="mena-searchable-select"
   [class.mena-searchable-select--open]="open"
-  [class.mena-searchable-select--disabled]="disabled"
+  [class.mena-searchable-select--disabled]="isControlDisabled"
+  [class.mena-searchable-select--loading]="loading"
 >
   <div class="mena-searchable-select__control">
     <input
@@ -9,7 +10,7 @@
       [class]="inputClass"
       [value]="query"
       [placeholder]="displayPlaceholder"
-      [disabled]="disabled"
+      [disabled]="isControlDisabled"
       [readonly]="!searchable"
       autocomplete="off"
       (focus)="onInputFocus()"
@@ -20,7 +21,7 @@
       type="button"
       class="mena-searchable-select__toggle"
       tabindex="-1"
-      [disabled]="disabled"
+      [disabled]="isControlDisabled"
       (mousedown)="togglePanel($event)"
       aria-label="Ouvrir la liste"
     >

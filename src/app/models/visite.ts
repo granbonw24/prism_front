@@ -10,6 +10,7 @@ export type VisiteRow = {
   id?: number | null;
   alpha?: VisiteRef | null;
   periodeActivite?: VisiteRef | null;
+  niveauAlpha?: VisiteRef | null;
   idAlpha?: number | null;
   maitriseSeanceLecture?: string | null;
   maitriseSeanceEcriture?: string | null;
@@ -38,6 +39,7 @@ export type VisitePayload = {
   mode?: 'points' | VisiteSuiviMode | null;
   idAlpha: number | null;
   idPeriodeActivite: number | null;
+  idNiveauAlpha: number | null;
   maitriseSeanceLecture: string | null;
   maitriseSeanceEcriture: string | null;
   maitriseSeanceCalcul: string | null;

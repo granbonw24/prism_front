@@ -83,6 +83,7 @@ export interface PersonnelAdmin {
   centreId: number | null;
   structureFormationCertificationId: number | null;
   statutPersonnelId: number | null;
+  diplomeId?: number | null;
   codePersonnel?: string | null;
   certifierPersonnel?: boolean | null;
   nomPersonnel?: string | null;

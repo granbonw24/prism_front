@@ -28,7 +28,7 @@ type AlphaOption = {
   libelle?: string | null;
 };
 
-type VisitePayloadFieldKey = Exclude<keyof VisitePayload, 'mode' | 'idPeriodeActivite'>;
+type VisitePayloadFieldKey = Exclude<keyof VisitePayload, 'mode' | 'idPeriodeActivite' | 'idNiveauAlpha'>;
 
 type VisiteField = {
   key: VisitePayloadFieldKey;
@@ -148,6 +148,7 @@ export class ActivitesCentreVisiteComponent implements OnInit {
   rows: CentralRow[] = [];
   alphas: AlphaOption[] = [];
   periodes: VisiteRef[] = [];
+  niveaux: VisiteRef[] = [];
   searchText = '';
   filterAlphaId: number | '' = '';
   filterPeriodeId: number | '' = '';
@@ -290,11 +291,13 @@ export class ActivitesCentreVisiteComponent implements OnInit {
         params: new HttpParams().set('page', '0').set('size', '1000').set('sort', 'id,asc'),
       }),
       periodes: this.http.get<VisiteRef[]>(`${this.apiBaseUrl}/api/PeriodeActivites`),
+      niveaux: this.http.get<unknown>(`${this.apiBaseUrl}/api/niveaualpha`),
     }).subscribe({
-      next: ({ visites, alphas, periodes }) => {
+      next: ({ visites, alphas, periodes, niveaux }) => {
         this.rows = (unwrapListBody(visites) as VisiteRow[]).sort((a, b) => Number(a.id ?? 0) - Number(b.id ?? 0));
         this.alphas = sortByLabel(unwrapListBody(alphas) as AlphaOption[], (a) => this.alphaOptionLabel(a));
         this.periodes = sortActivitesRefs(unwrapListBody(periodes) as VisiteRef[]);
+        this.niveaux = sortActivitesRefs(unwrapListBody(niveaux) as VisiteRef[]);
         this.loading = false;
         this.loadVisiteWorkflowStatuses();
       },
@@ -313,8 +316,9 @@ export class ActivitesCentreVisiteComponent implements OnInit {
         params: new HttpParams().set('page', '0').set('size', '1000').set('sort', 'id,asc'),
       }),
       periodes: this.http.get<VisiteRef[]>(`${this.apiBaseUrl}/api/PeriodeActivites`),
+      niveaux: this.http.get<unknown>(`${this.apiBaseUrl}/api/niveaualpha`),
     }).subscribe({
-      next: ({ visites, suivisIepp, suivisSuperviseur, alphas, periodes }) => {
+      next: ({ visites, suivisIepp, suivisSuperviseur, alphas, periodes, niveaux }) => {
         const visitesValidees: CentralRow[] = (unwrapListBody(visites) as VisiteRow[])
           .filter((row) => Boolean(row.valideeCoordonnateur))
           .map((row) => ({ ...row, centralSource: 'Coordonnateur' }));
@@ -328,6 +332,7 @@ export class ActivitesCentreVisiteComponent implements OnInit {
           .sort((a, b) => this.centralSortKey(a).localeCompare(this.centralSortKey(b)));
         this.alphas = sortByLabel(unwrapListBody(alphas) as AlphaOption[], (a) => this.alphaOptionLabel(a));
         this.periodes = sortActivitesRefs(unwrapListBody(periodes) as VisiteRef[]);
+        this.niveaux = sortActivitesRefs(unwrapListBody(niveaux) as VisiteRef[]);
         this.loading = false;
       },
       error: (err) => this.onError(err),
@@ -440,6 +445,10 @@ export class ActivitesCentreVisiteComponent implements OnInit {
     const editId = this.editTarget?.id;
     if (editId == null && payload.idPeriodeActivite == null) {
       this.errorMessage = 'La période d’activité est obligatoire.';
+      return;
+    }
+    if (this.formMode === 'points' && !payload.idNiveauAlpha) {
+      this.errorMessage = 'Le niveau Alpha est obligatoire.';
       return;
     }
     if (this.formMode === 'points' && this.mode !== 'conseiller') {
@@ -666,6 +675,14 @@ export class ActivitesCentreVisiteComponent implements OnInit {
 
   menaPeriodeFormOptions() {
     return menaActivitesRefOptions(this.periodes, (p) => p.id ?? null);
+  }
+
+  menaNiveauFormOptions() {
+    return menaActivitesRefOptions(this.niveaux, (n) => n.id ?? null);
+  }
+
+  onAlphaFormChange(): void {
+    this.form.idNiveauAlpha = null;
   }
 
   fieldValue(row: VisiteRow, key: VisitePayloadFieldKey): string | number {
@@ -1005,6 +1022,7 @@ export class ActivitesCentreVisiteComponent implements OnInit {
       mode: null,
       idAlpha: null,
       idPeriodeActivite: null,
+      idNiveauAlpha: null,
       maitriseSeanceLecture: null,
       maitriseSeanceEcriture: null,
       maitriseSeanceCalcul: null,
@@ -1023,6 +1041,7 @@ export class ActivitesCentreVisiteComponent implements OnInit {
       ...this.emptyForm(),
       idAlpha: this.alphaId(row),
       idPeriodeActivite: row.periodeActivite?.id ?? null,
+      idNiveauAlpha: row.niveauAlpha?.id ?? null,
       maitriseSeanceLecture: row.maitriseSeanceLecture ?? null,
       maitriseSeanceEcriture: row.maitriseSeanceEcriture ?? null,
       maitriseSeanceCalcul: row.maitriseSeanceCalcul ?? null,
@@ -1042,6 +1061,7 @@ export class ActivitesCentreVisiteComponent implements OnInit {
       mode: payload.mode ?? null,
       idAlpha: this.toNumberOrNull(payload.idAlpha),
       idPeriodeActivite: this.toNumberOrNull(payload.idPeriodeActivite),
+      idNiveauAlpha: this.toNumberOrNull(payload.idNiveauAlpha),
       maitriseSeanceLecture: this.normalizeMaitriseResponse(payload.maitriseSeanceLecture),
       maitriseSeanceEcriture: this.normalizeMaitriseResponse(payload.maitriseSeanceEcriture),
       maitriseSeanceCalcul: this.normalizeMaitriseResponse(payload.maitriseSeanceCalcul),

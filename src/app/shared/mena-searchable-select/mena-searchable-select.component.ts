@@ -33,6 +33,7 @@ export class MenaSearchableSelectComponent implements ControlValueAccessor, OnIn
   @Input() nullLabel = '—';
   @Input() placeholder = 'Rechercher…';
   @Input() disabled = false;
+  @Input() loading = false;
   @Input() inputClass = 'form-control';
 
   value: number | string | boolean | null = null;
@@ -77,7 +78,14 @@ export class MenaSearchableSelectComponent implements ControlValueAccessor, OnIn
     }
   }
 
+  get isControlDisabled(): boolean {
+    return this.disabled || this.loading;
+  }
+
   get displayPlaceholder(): string {
+    if (this.loading) {
+      return 'Chargement…';
+    }
     if (this.searchable) {
       return this.placeholder;
     }
@@ -85,7 +93,7 @@ export class MenaSearchableSelectComponent implements ControlValueAccessor, OnIn
   }
 
   onInputFocus(): void {
-    if (this.disabled) {
+    if (this.isControlDisabled) {
       return;
     }
     this.open = true;
@@ -96,7 +104,7 @@ export class MenaSearchableSelectComponent implements ControlValueAccessor, OnIn
   }
 
   onInputInput(raw: string): void {
-    if (!this.searchable || this.disabled) {
+    if (!this.searchable || this.isControlDisabled) {
       return;
     }
     this.query = raw;
@@ -126,7 +134,7 @@ export class MenaSearchableSelectComponent implements ControlValueAccessor, OnIn
   clearSelection(event: MouseEvent): void {
     event.preventDefault();
     event.stopPropagation();
-    if (!this.allowNull || this.disabled) {
+    if (!this.allowNull || this.isControlDisabled) {
       return;
     }
     this.applyValue(null);
@@ -138,7 +146,7 @@ export class MenaSearchableSelectComponent implements ControlValueAccessor, OnIn
   togglePanel(event: MouseEvent): void {
     event.preventDefault();
     event.stopPropagation();
-    if (this.disabled) {
+    if (this.isControlDisabled) {
       return;
     }
     this.open = !this.open;
@@ -190,6 +198,17 @@ export class MenaSearchableSelectComponent implements ControlValueAccessor, OnIn
   }
 
   private valuesEqual(a: unknown, b: unknown): boolean {
-    return a === b;
+    if (a === b) {
+      return true;
+    }
+    if (a == null && b == null) {
+      return true;
+    }
+    const na = Number(a);
+    const nb = Number(b);
+    if (!Number.isNaN(na) && !Number.isNaN(nb) && na === nb) {
+      return true;
+    }
+    return false;
   }
 }
