@@ -60,6 +60,11 @@ body {
       var(--mena-orange-600) 100%
     ) !important;
   background-color: var(--mena-orange-800) !important;
+  height: 100vh;
+  max-height: 100vh;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .sidebar.mena-sidebar .sidebar-brand {

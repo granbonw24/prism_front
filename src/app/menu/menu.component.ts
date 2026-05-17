@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
-import { Router, RouterLink, RouterLinkActive } from '@angular/router';
+import { NavigationEnd, Router, RouterLink, RouterLinkActive } from '@angular/router';
+import { filter } from 'rxjs/operators';
 import { BRAND_CONFIG } from '@core/config/brand.config';
 import type { ReferentielMenuGroup } from '@core/config/referentiel-menu.groups';
 import { groupReferentielsForMenu } from '@core/config/referentiel-menu.groups';
@@ -21,6 +22,8 @@ import { AuthService } from '@services/auth.service';
 export class MenuComponent {
   /** Sections ouvertes manuellement (en plus de l’ouverture automatique par URL). */
   private readonly menuExpanded = new Set<string>();
+  /** Sections repliées explicitement par l’utilisateur (même si l’URL correspond). */
+  private readonly menuCollapsed = new Set<string>();
 
   private readonly activitesCentrePermissions = [
     'ACTIVITES_CENTRE_PARTENARIAT:LIRE',
@@ -40,7 +43,11 @@ export class MenuComponent {
   constructor(
     private readonly router: Router,
     private readonly auth: AuthService,
-  ) {}
+  ) {
+    this.router.events
+      .pipe(filter((e): e is NavigationEnd => e instanceof NavigationEnd))
+      .subscribe(() => this.menuCollapsed.clear());
+  }
 
   canViewActivitesCentre(): boolean {
     return this.auth.hasAnyPermission(this.activitesCentrePermissions);
@@ -98,6 +105,9 @@ export class MenuComponent {
 
   /** Ouverture sidebar sans dépendre du JS Bootstrap (Angular + classes `.show`). */
   isMenuSectionOpen(sectionId: string, routePrefixes: string[]): boolean {
+    if (this.menuCollapsed.has(sectionId)) {
+      return false;
+    }
     const url = this.router.url.split('?')[0];
     if (routePrefixes.some((p) => url === p || url.startsWith(p + '/'))) {
       return true;
@@ -105,11 +115,18 @@ export class MenuComponent {
     return this.menuExpanded.has(sectionId);
   }
 
-  toggleMenuSection(sectionId: string, event: Event): void {
+  toggleMenuSection(sectionId: string, event: Event, routePrefixes: string[] = []): void {
     event.preventDefault();
-    if (this.menuExpanded.has(sectionId)) {
+    const url = this.router.url.split('?')[0];
+    const activeOnRoute = routePrefixes.some((p) => url === p || url.startsWith(p + '/'));
+    const open = this.isMenuSectionOpen(sectionId, routePrefixes);
+    if (open) {
+      this.menuCollapsed.add(sectionId);
       this.menuExpanded.delete(sectionId);
-    } else {
+      return;
+    }
+    this.menuCollapsed.delete(sectionId);
+    if (!activeOnRoute) {
       this.menuExpanded.add(sectionId);
     }
   }
