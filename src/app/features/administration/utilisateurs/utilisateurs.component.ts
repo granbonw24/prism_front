@@ -12,7 +12,12 @@ import {
 } from '@models/administration';
 import { AdministrationService, type AppUsersListQuery } from '@services/administration.service';
 import { MenaSearchableSelectComponent } from '@shared/mena-searchable-select/mena-searchable-select.component';
-import { sortByLabel, toMenaSelectOptions } from '@shared/mena-searchable-select/mena-select-options.util';
+import { MenaContextDashboardComponent } from '@shared/mena-context-dashboard/mena-context-dashboard.component';
+import {
+  MenaSelectOption,
+  sortByLabel,
+  toMenaSelectOptions,
+} from '@shared/mena-searchable-select/mena-select-options.util';
 
 type ScopeKey =
   | 'idRegion'
@@ -24,10 +29,10 @@ type ScopeKey =
   | 'idLocalite';
 
 const SCOPE_DESCENDANTS: Record<ScopeKey, ScopeKey[]> = {
-  idRegion: ['idDrena', 'idIep', 'idDepartement', 'idSousPrefecture', 'idCommune', 'idLocalite'],
-  idDrena: ['idIep', 'idDepartement', 'idSousPrefecture', 'idCommune', 'idLocalite'],
+  idRegion: ['idDepartement', 'idDrena', 'idIep', 'idSousPrefecture', 'idCommune', 'idLocalite'],
+  idDepartement: ['idDrena', 'idIep', 'idSousPrefecture', 'idCommune', 'idLocalite'],
+  idDrena: ['idIep'],
   idIep: [],
-  idDepartement: ['idSousPrefecture', 'idCommune', 'idLocalite'],
   idSousPrefecture: ['idCommune', 'idLocalite'],
   idCommune: ['idLocalite'],
   idLocalite: [],
@@ -36,7 +41,7 @@ const SCOPE_DESCENDANTS: Record<ScopeKey, ScopeKey[]> = {
 @Component({
   selector: 'app-utilisateurs',
   standalone: true,
-  imports: [CommonModule, FormsModule, MenaSearchableSelectComponent],
+  imports: [CommonModule, FormsModule, MenaSearchableSelectComponent, MenaContextDashboardComponent],
   templateUrl: './utilisateurs.component.html',
   styleUrl: './utilisateurs.component.css',
 })
@@ -46,6 +51,7 @@ export class UtilisateursComponent implements OnInit, OnDestroy {
   errorMessage: string | null = null;
 
   roles: AppRole[] = [];
+  roleSelectOptions: MenaSelectOption[] = [];
   users: AppUserAdmin[] = [];
   regions: AdminScopeOption[] = [];
   drenas: AdminScopeOption[] = [];
@@ -61,9 +67,9 @@ export class UtilisateursComponent implements OnInit, OnDestroy {
     label: string;
   }> = [
     { key: 'idRegion', label: 'Région' },
+    { key: 'idDepartement', label: 'Département' },
     { key: 'idDrena', label: 'DRENA' },
     { key: 'idIep', label: 'IEPP' },
-    { key: 'idDepartement', label: 'Département' },
     { key: 'idSousPrefecture', label: 'Sous-préfecture' },
     { key: 'idCommune', label: 'Commune' },
     { key: 'idLocalite', label: 'Localité' },
@@ -106,8 +112,6 @@ export class UtilisateursComponent implements OnInit, OnDestroy {
     idLocalite: null,
   };
 
-  roleFilterCreate = '';
-  roleFilterEdit = '';
   createSelectedRoleId: number | null = null;
   editSelectedRoleId: number | null = null;
 
@@ -146,6 +150,11 @@ export class UtilisateursComponent implements OnInit, OnDestroy {
   private async loadRoles(): Promise<void> {
     const roles = await firstValueFrom(this.admin.getRoles());
     this.roles = sortByLabel(roles, (role) => role.libelleRole ?? role.codeRole ?? String(role.id));
+    this.roleSelectOptions = toMenaSelectOptions(
+      this.roles,
+      (role) => role.id,
+      (role) => role.libelleRole ?? role.codeRole ?? String(role.id),
+    );
   }
 
   private async loadScopeOptions(): Promise<void> {
@@ -293,7 +302,6 @@ export class UtilisateursComponent implements OnInit, OnDestroy {
 
   openCreate(): void {
     this.createOpen = true;
-    this.roleFilterCreate = '';
     this.createForm = {
       username: '',
       email: '',
@@ -360,7 +368,6 @@ export class UtilisateursComponent implements OnInit, OnDestroy {
 
   openEdit(u: AppUserAdmin): void {
     this.editUserId = u.id;
-    this.roleFilterEdit = '';
     this.editForm = {
       username: u.username,
       email: u.email ?? '',
@@ -476,9 +483,9 @@ export class UtilisateursComponent implements OnInit, OnDestroy {
   userScopeSummary(user: AppUserAdmin): string {
     const labels = [
       user.region ? `Région: ${this.scopeLabel(user.region)}` : '',
+      user.departement ? `Département: ${this.scopeLabel(user.departement)}` : '',
       user.drena ? `DRENA: ${this.scopeLabel(user.drena)}` : '',
       user.iep ? `IEPP: ${this.scopeLabel(user.iep)}` : '',
-      user.departement ? `Département: ${this.scopeLabel(user.departement)}` : '',
       user.sousPrefecture ? `Sous-préfecture: ${this.scopeLabel(user.sousPrefecture)}` : '',
       user.commune ? `Commune: ${this.scopeLabel(user.commune)}` : '',
       user.localite ? `Localité: ${this.scopeLabel(user.localite)}` : '',
@@ -504,14 +511,6 @@ export class UtilisateursComponent implements OnInit, OnDestroy {
       idLocalite: () => this.filteredLocalites(form),
     };
     return sortByLabel(optionsByScope[key](), (option) => this.optionLabel(option));
-  }
-
-  menaRoleOptions(roleFilter: string) {
-    return toMenaSelectOptions(
-      this.filteredRoles(roleFilter),
-      (role) => role.id,
-      (role) => role.libelleRole ?? role.codeRole ?? String(role.id),
-    );
   }
 
   menaScopeOptions(key: ScopeKey, form: AppUserAdminUpsertRequest) {
@@ -540,14 +539,6 @@ export class UtilisateursComponent implements OnInit, OnDestroy {
         form[descendantKey] = null;
       }
     }
-  }
-
-  filteredRoles(q: string): AppRole[] {
-    const s = String(q ?? '').trim().toLowerCase();
-    if (!s) return this.roles;
-    return this.roles.filter((r) =>
-      `${r.libelleRole ?? ''} ${r.codeRole ?? ''} ${r.id}`.toLowerCase().includes(s),
-    );
   }
 
   trackRoleById(_idx: number, r: AppRole): number {
@@ -592,11 +583,21 @@ export class UtilisateursComponent implements OnInit, OnDestroy {
   }
 
   private filteredDrenas(form: AppUserAdminUpsertRequest): AdminScopeOption[] {
+    let options = this.drenas;
     const drenaIds = this.allowedDrenaIds(form.idRegion ?? null);
-    if (drenaIds == null) {
-      return this.drenas;
+    if (drenaIds != null) {
+      options = options.filter((option) => drenaIds.has(option.id));
     }
-    return this.drenas.filter((option) => drenaIds.has(option.id));
+    if (form.idDepartement != null) {
+      const drenaIdsForDept = new Set(
+        this.drenaDepartements
+          .filter((link) => this.refId(link, 'departement') === form.idDepartement)
+          .map((link) => this.refId(link, 'drena'))
+          .filter((id): id is number => id != null),
+      );
+      options = options.filter((option) => drenaIdsForDept.has(option.id));
+    }
+    return options;
   }
 
   private filteredDepartements(form: AppUserAdminUpsertRequest): AdminScopeOption[] {

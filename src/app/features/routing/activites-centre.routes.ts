@@ -81,6 +81,9 @@ export const activitesCentreFeatureRoutes: Routes = [
       title: 'ACTIVITES CENTRE — Performance',
       subtitle: 'Fréquentation et progression des apprentissages par centre Alpha.',
       apiPath: '/api/performance',
+      contextDashboardModule: 'ACTIVITES',
+      contextDashboardSubModule: 'performance',
+      contextDashboardAlwaysVisible: true,
       permissionFeature: 'ACTIVITES_CENTRE_PERFORMANCE',
       workflowFeature: 'ACTIVITES_CENTRE_PERFORMANCE',
       listColumnKeys: [

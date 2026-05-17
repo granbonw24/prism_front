@@ -33,11 +33,13 @@ import {
   TypePromoteur,
 } from '@models/centre';
 import { API_BASE_URL } from '@core/tokens/api-base-url.token';
+import { isNationalView } from '@core/circonscription/circonscription.util';
 import { AuthSession } from '@core/models/auth.models';
 import { AuthService } from '@services/auth.service';
 import { MenaRowActionButtonComponent } from '@shared/mena-row-action-button/mena-row-action-button.component';
 import { MenaSearchableSelectComponent } from '@shared/mena-searchable-select/mena-searchable-select.component';
 import { MenaToolbarButtonComponent } from '@shared/mena-toolbar-button/mena-toolbar-button.component';
+import { MenaContextDashboardComponent } from '@shared/mena-context-dashboard/mena-context-dashboard.component';
 import {
   CentrePageMode,
   centrePageModeFromRoute,
@@ -74,6 +76,7 @@ type DrenaDepartementOption = RefOption & {
     MenaRowActionButtonComponent,
     MenaSearchableSelectComponent,
     MenaToolbarButtonComponent,
+    MenaContextDashboardComponent,
   ],
   templateUrl: './simple-centre-type-page.component.html',
 })
@@ -854,6 +857,14 @@ export class SimpleCentreTypePageComponent implements OnInit {
     return found ? this.refOptionLibelle(found) : '—';
   }
 
+  centreTypeForDashboard(): string {
+    const p = (this.apiPath ?? '').toLowerCase();
+    if (p.includes('/cec')) return 'CEC';
+    if (p.includes('/cp')) return 'CP';
+    if (p.includes('/sie')) return 'SIE';
+    return 'ALPHA';
+  }
+
   niveauApiPath(): string {
     const p = this.apiPath ?? '';
     if (p.includes('/cp')) return '/api/niveaucp';
@@ -1080,8 +1091,7 @@ export class SimpleCentreTypePageComponent implements OnInit {
   }
 
   private isNationalScope(s: AuthSession | null): boolean {
-    if (!s?.roles?.length) return false;
-    return s.roles.some((r) => SimpleCentreTypePageComponent.NATIONAL_ROLES.has(r));
+    return isNationalView(s);
   }
 
   /** Pré-remplit région / DRENA / IEP / localité à partir du profil (hors rôles nationaux). */

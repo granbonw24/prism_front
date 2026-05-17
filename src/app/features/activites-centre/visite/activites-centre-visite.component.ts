@@ -18,6 +18,14 @@ import { API_BASE_URL } from '@core/tokens/api-base-url.token';
 import type { SpringPage } from '@models/centre';
 import type { VisitePayload, VisiteRef, VisiteRow, VisiteSuiviMode } from '@models/visite';
 import { AuthService } from '@services/auth.service';
+import { MenaWorkflowQueueToolbarComponent } from '@shared/mena-workflow-queue-toolbar/mena-workflow-queue-toolbar.component';
+import {
+  collectConseillerFilterOptions,
+  readWorkflowQueueTab,
+  resolveRowConseillerLogin,
+  rowMatchesWorkflowTab,
+  type WorkflowQueueTab,
+} from '@core/workflow/workflow-queue.util';
 
 type AlphaOption = {
   idCentre?: number | null;
@@ -133,7 +141,14 @@ type WorkflowDecisionAction = 'rejeter' | 'retourner';
 @Component({
   selector: 'app-activites-centre-visite',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, MenaRowActionButtonComponent, MenaSearchableSelectComponent],
+  imports: [
+    CommonModule,
+    FormsModule,
+    RouterLink,
+    MenaRowActionButtonComponent,
+    MenaSearchableSelectComponent,
+    MenaWorkflowQueueToolbarComponent,
+  ],
   templateUrl: './activites-centre-visite.component.html',
   styleUrl: './activites-centre-visite.component.css',
 })
@@ -152,6 +167,8 @@ export class ActivitesCentreVisiteComponent implements OnInit {
   searchText = '';
   filterAlphaId: number | '' = '';
   filterPeriodeId: number | '' = '';
+  workflowQueueTab: WorkflowQueueTab = 'ACTION';
+  workflowFilterConseiller = '';
 
   createOpen = false;
   editTarget: VisiteRow | null = null;
@@ -171,8 +188,28 @@ export class ActivitesCentreVisiteComponent implements OnInit {
     private readonly http: HttpClient,
     private readonly route: ActivatedRoute,
     @Inject(API_BASE_URL) private readonly apiBaseUrl: string,
-    private readonly auth: AuthService,
+    readonly auth: AuthService,
   ) {}
+
+  get showWorkflowQueueTabs(): boolean {
+    return this.mode === 'conseiller';
+  }
+
+  get workflowConseillerFilterOptions() {
+    return collectConseillerFilterOptions(this.rows as Record<string, unknown>[]);
+  }
+
+  get workflowCentreFilterOptions(): Array<{ value: number | ''; label: string }> {
+    return [
+      { value: '', label: 'Tous les centres' },
+      ...this.alphas
+        .map((a) => ({
+          value: this.alphaOptionValue(a) ?? ('' as const),
+          label: this.alphaOptionLabel(a),
+        }))
+        .filter((o) => o.value !== ''),
+    ];
+  }
 
   ngOnInit(): void {
     const title = this.route.snapshot.data['title'];
@@ -257,6 +294,18 @@ export class ActivitesCentreVisiteComponent implements OnInit {
       const periodeId = row.periodeActivite?.id ?? null;
       if (this.filterPeriodeId !== '' && periodeId !== Number(this.filterPeriodeId)) {
         return false;
+      }
+      if (this.showWorkflowQueueTabs) {
+        const tab = readWorkflowQueueTab(row as Record<string, unknown>);
+        if (tab && !rowMatchesWorkflowTab(row as Record<string, unknown>, this.workflowQueueTab)) {
+          return false;
+        }
+        if (this.workflowFilterConseiller) {
+          const login = resolveRowConseillerLogin(row as Record<string, unknown>);
+          if (login !== this.workflowFilterConseiller) {
+            return false;
+          }
+        }
       }
       if (!q) {
         return true;
@@ -567,6 +616,15 @@ export class ActivitesCentreVisiteComponent implements OnInit {
     this.searchText = '';
     this.filterAlphaId = '';
     this.filterPeriodeId = '';
+    this.workflowFilterConseiller = '';
+  }
+
+  onWorkflowQueueTabChange(tab: WorkflowQueueTab): void {
+    this.workflowQueueTab = tab;
+  }
+
+  onWorkflowCentreFilterChange(centreId: number | ''): void {
+    this.filterAlphaId = centreId;
   }
 
   alphaId(row: VisiteRow): number | null {

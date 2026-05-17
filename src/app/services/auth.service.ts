@@ -72,6 +72,16 @@ export class AuthService {
           idSousPrefecture: res.idSousPrefecture ?? null,
           idCommune: res.idCommune ?? null,
           idLocalite: res.idLocalite ?? null,
+          region: res.region ?? null,
+          drena: res.drena ?? null,
+          iep: res.iep ?? null,
+          departement: res.departement ?? null,
+          sousPrefecture: res.sousPrefecture ?? null,
+          commune: res.commune ?? null,
+          localite: res.localite ?? null,
+          nationalView: res.nationalView ?? false,
+          scopeMode: res.scopeMode ?? undefined,
+          scopeLabel: res.scopeLabel ?? undefined,
         });
       }),
     );
@@ -101,6 +111,16 @@ export class AuthService {
           idSousPrefecture: me.idSousPrefecture ?? prev?.idSousPrefecture ?? null,
           idCommune: me.idCommune ?? prev?.idCommune ?? null,
           idLocalite: me.idLocalite ?? prev?.idLocalite ?? null,
+          region: me.region ?? prev?.region ?? null,
+          drena: me.drena ?? prev?.drena ?? null,
+          iep: me.iep ?? prev?.iep ?? null,
+          departement: me.departement ?? prev?.departement ?? null,
+          sousPrefecture: me.sousPrefecture ?? prev?.sousPrefecture ?? null,
+          commune: me.commune ?? prev?.commune ?? null,
+          localite: me.localite ?? prev?.localite ?? null,
+          nationalView: me.nationalView ?? prev?.nationalView ?? false,
+          scopeMode: me.scopeMode ?? prev?.scopeMode,
+          scopeLabel: me.scopeLabel ?? prev?.scopeLabel,
         });
       }),
       finalize(() => {

@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { filter } from 'rxjs/operators';
 import { BRAND_CONFIG } from '@core/config/brand.config';
@@ -19,7 +19,8 @@ import { AuthService } from '@services/auth.service';
     }
   `,
 })
-export class MenuComponent {
+export class MenuComponent implements OnInit, OnDestroy {
+  private documentClickHandler?: (event: MouseEvent) => void;
   /** Sections ouvertes manuellement (en plus de l’ouverture automatique par URL). */
   private readonly menuExpanded = new Set<string>();
   /** Sections repliées explicitement par l’utilisateur (même si l’URL correspond). */
@@ -46,7 +47,155 @@ export class MenuComponent {
   ) {
     this.router.events
       .pipe(filter((e): e is NavigationEnd => e instanceof NavigationEnd))
-      .subscribe(() => this.menuCollapsed.clear());
+      .subscribe(() => {
+        this.menuCollapsed.clear();
+        this.closeMobileSidebar();
+      });
+  }
+
+  ngOnInit(): void {
+    this.unbindSbAdminMobileToggle();
+    window.addEventListener('load', () => this.unbindSbAdminMobileToggle());
+    setTimeout(() => this.unbindSbAdminMobileToggle(), 0);
+    this.syncMobileSidebarClosed();
+
+    this.documentClickHandler = (event: MouseEvent) => {
+      if (!this.isMobileViewport() || !document.body.classList.contains('mena-mobile-nav-open')) {
+        return;
+      }
+      const target = event.target as HTMLElement | null;
+      if (!target) {
+        return;
+      }
+      if (target.closest('.sidebar.mena-sidebar') || target.closest('#sidebarToggleTop')) {
+        return;
+      }
+      this.closeMobileSidebar();
+    };
+    document.addEventListener('click', this.documentClickHandler);
+  }
+
+  /** Désactive le toggle jQuery (conflit avec notre tiroir `mena-mobile-nav-open`). */
+  private unbindSbAdminMobileToggle(): void {
+    const jq = (window as unknown as { jQuery?: (sel: string) => { off: (ev: string) => void } }).jQuery;
+    jq?.('#sidebarToggleTop')?.off('click');
+  }
+
+  private syncMobileSidebarClosed(): void {
+    if (!this.isMobileViewport()) {
+      document.body.classList.remove('mena-mobile-nav-open');
+      return;
+    }
+    document.body.classList.remove('mena-mobile-nav-open');
+    document.body.classList.add('sidebar-toggled');
+    document.querySelector('.sidebar.mena-sidebar')?.classList.add('toggled');
+  }
+
+  ngOnDestroy(): void {
+    if (this.documentClickHandler) {
+      document.removeEventListener('click', this.documentClickHandler);
+    }
+  }
+
+  private isMobileViewport(): boolean {
+    return typeof window !== 'undefined' && window.matchMedia('(max-width: 991.98px)').matches;
+  }
+
+  /** Ferme le tiroir latéral après navigation (SB Admin : body.sidebar-toggled). */
+  closeMobileSidebar(): void {
+    if (!this.isMobileViewport()) {
+      return;
+    }
+    document.body.classList.remove('mena-mobile-nav-open');
+    document.body.classList.add('sidebar-toggled');
+    document.querySelector('.sidebar.mena-sidebar')?.classList.add('toggled');
+  }
+
+  private allMenuSections(): ReadonlyArray<{ id: string; prefixes: string[] }> {
+    return [
+      { id: 'centres', prefixes: ['/centres'] },
+      { id: 'personnel', prefixes: ['/personnel'] },
+      { id: 'apprenant', prefixes: ['/apprenant'] },
+      { id: 'activites-centre', prefixes: ['/activites-centre', '/visites'] },
+      { id: 'activites-visite', prefixes: ['/activites-centre/visite', '/visites'] },
+      { id: 'administration', prefixes: ['/administration'] },
+      { id: 'admin-gestion', prefixes: ['/administration/utilisateurs'] },
+      { id: 'admin-securite', prefixes: ['/administration/acteurs', '/administration/role-permissions'] },
+      { id: 'parametrage', prefixes: this.parametragePrefixes() },
+      ...this.referentielGroups.map((g) => ({
+        id: this.groupCollapseId('ref', g.title),
+        prefixes: this.refGroupPrefixes(g),
+      })),
+    ];
+  }
+
+  private readonly topLevelMenuIds = [
+    'centres',
+    'apprenant',
+    'activites-centre',
+    'administration',
+    'parametrage',
+  ] as const;
+
+  /** Garde les ancêtres ouverts (ex. Paramétrage pour Géographie). */
+  private ensureAncestorSectionsOpen(sectionId: string): void {
+    if (sectionId.startsWith('ref-')) {
+      this.menuCollapsed.delete('parametrage');
+      this.menuExpanded.add('parametrage');
+    }
+    if (sectionId === 'admin-gestion' || sectionId === 'admin-securite') {
+      this.menuCollapsed.delete('administration');
+      this.menuExpanded.add('administration');
+    }
+    if (sectionId === 'activites-visite') {
+      this.menuCollapsed.delete('activites-centre');
+      this.menuExpanded.add('activites-centre');
+    }
+  }
+
+  /** Replie uniquement les frères du même niveau (ne ferme pas le parent). */
+  private applyMobileAccordion(openingId: string): void {
+    if (!this.isMobileViewport()) {
+      return;
+    }
+    const url = this.router.url.split('?')[0];
+
+    if ((this.topLevelMenuIds as readonly string[]).includes(openingId)) {
+      for (const id of this.topLevelMenuIds) {
+        if (id === openingId) {
+          this.menuCollapsed.delete(id);
+          continue;
+        }
+        const prefixes = this.prefixesForSection(id);
+        if (prefixes.some((p) => url === p || url.startsWith(p + '/'))) {
+          continue;
+        }
+        this.menuExpanded.delete(id);
+        this.menuCollapsed.add(id);
+      }
+      return;
+    }
+
+    if (openingId.startsWith('ref-')) {
+      for (const { id } of this.allMenuSections()) {
+        if (!id.startsWith('ref-') || id === openingId) {
+          continue;
+        }
+        this.menuExpanded.delete(id);
+        this.menuCollapsed.add(id);
+      }
+      return;
+    }
+
+    if (openingId === 'admin-gestion' || openingId === 'admin-securite') {
+      const sibling = openingId === 'admin-gestion' ? 'admin-securite' : 'admin-gestion';
+      this.menuExpanded.delete(sibling);
+      this.menuCollapsed.add(sibling);
+    }
+  }
+
+  private prefixesForSection(sectionId: string): string[] {
+    return this.allMenuSections().find((s) => s.id === sectionId)?.prefixes ?? [];
   }
 
   canViewActivitesCentre(): boolean {
@@ -117,6 +266,7 @@ export class MenuComponent {
 
   toggleMenuSection(sectionId: string, event: Event, routePrefixes: string[] = []): void {
     event.preventDefault();
+    event.stopPropagation();
     const url = this.router.url.split('?')[0];
     const activeOnRoute = routePrefixes.some((p) => url === p || url.startsWith(p + '/'));
     const open = this.isMenuSectionOpen(sectionId, routePrefixes);
@@ -125,6 +275,8 @@ export class MenuComponent {
       this.menuExpanded.delete(sectionId);
       return;
     }
+    this.ensureAncestorSectionsOpen(sectionId);
+    this.applyMobileAccordion(sectionId);
     this.menuCollapsed.delete(sectionId);
     if (!activeOnRoute) {
       this.menuExpanded.add(sectionId);

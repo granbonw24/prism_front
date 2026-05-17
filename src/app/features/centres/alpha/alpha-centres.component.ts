@@ -33,11 +33,13 @@ import {
   TypePromoteur,
 } from '@models/centre';
 import { API_BASE_URL } from '@core/tokens/api-base-url.token';
+import { isNationalView } from '@core/circonscription/circonscription.util';
 import { AuthSession } from '@core/models/auth.models';
 import { AuthService } from '@services/auth.service';
 import { MenaRowActionButtonComponent } from '@shared/mena-row-action-button/mena-row-action-button.component';
 import { MenaSearchableSelectComponent } from '@shared/mena-searchable-select/mena-searchable-select.component';
 import { MenaToolbarButtonComponent } from '@shared/mena-toolbar-button/mena-toolbar-button.component';
+import { MenaContextDashboardComponent } from '@shared/mena-context-dashboard/mena-context-dashboard.component';
 import {
   CentrePageMode,
   centrePageModeFromRoute,
@@ -74,6 +76,7 @@ type DrenaDepartementOption = RefOption & {
     MenaRowActionButtonComponent,
     MenaSearchableSelectComponent,
     MenaToolbarButtonComponent,
+    MenaContextDashboardComponent,
   ],
   templateUrl: './alpha-centres.component.html',
 })
@@ -563,8 +566,7 @@ export class AlphaCentresComponent {
   }
 
   private isNationalScope(s: AuthSession | null): boolean {
-    if (!s?.roles?.length) return false;
-    return s.roles.some((r) => AlphaCentresComponent.NATIONAL_ROLES.has(r));
+    return isNationalView(s);
   }
 
   private applySessionGeographyAnchors(): void {

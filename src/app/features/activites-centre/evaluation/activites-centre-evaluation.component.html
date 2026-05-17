@@ -21,6 +21,8 @@
   <div *ngIf="errorMessage" class="alert alert-danger py-2">{{ errorMessage }}</div>
   <div *ngIf="successMessage" class="alert alert-success py-2">{{ successMessage }}</div>
 
+  <app-mena-context-dashboard module="ACTIVITES" subModule="evaluation" [alwaysVisible]="true" />
+
   <div class="card border-0 shadow-sm mb-3">
     <div class="card-body py-3">
       <label class="small text-muted mb-1">Recherche</label>

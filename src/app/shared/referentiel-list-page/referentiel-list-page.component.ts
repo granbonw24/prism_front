@@ -24,6 +24,21 @@ import {
   toMenaSelectOptionsFromPairs,
 } from '@shared/mena-searchable-select/mena-select-options.util';
 import { AuthService } from '@services/auth.service';
+import type { MenuContextDashboardModule } from '@models/context-dashboard';
+import { MenaContextDashboardComponent } from '@shared/mena-context-dashboard/mena-context-dashboard.component';
+import {
+  MenaRecordDetailField,
+  MenaRecordDetailModalComponent,
+} from '@shared/mena-record-detail-modal/mena-record-detail-modal.component';
+import { MenaWorkflowQueueToolbarComponent } from '@shared/mena-workflow-queue-toolbar/mena-workflow-queue-toolbar.component';
+import {
+  collectConseillerFilterOptions,
+  readWorkflowQueueTab,
+  resolveRowCentreId,
+  resolveRowConseillerLogin,
+  rowMatchesWorkflowTab,
+  type WorkflowQueueTab,
+} from '@core/workflow/workflow-queue.util';
 
 /**
  * Paramètres pour les listes déroulantes « centre » (API paginée).
@@ -52,6 +67,9 @@ type WorkflowDecisionAction = 'rejeter' | 'retourner';
     ConfirmDeleteComponent,
     MenaRowActionButtonComponent,
     MenaSearchableSelectComponent,
+    MenaContextDashboardComponent,
+    MenaRecordDetailModalComponent,
+    MenaWorkflowQueueToolbarComponent,
   ],
   templateUrl: './referentiel-list-page.component.html',
   styleUrl: './referentiel-list-page.component.css',
@@ -81,6 +99,12 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
   @Input() inputEffectifDenseForm = false;
   /** Menus multi-types (Alpha / CEC / CP / SIE) : sélecteur « Type de centre » visible dans la page. */
   @Input() inputShowToolbarCentreTypeFilter = false;
+  /** Module métier pour le mini tableau de bord contextuel (API). */
+  @Input() inputContextDashboardModule?: MenuContextDashboardModule;
+  @Input() inputContextDashboardSubModule?: string;
+  @Input() inputContextDashboardAlwaysVisible = false;
+  /** Type de centre forcé (ex. passage Alpha uniquement). */
+  @Input() inputContextDashboardCentreType?: string;
 
   title = '';
   subtitle = '';
@@ -88,6 +112,9 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
   permissionFeature: string | null = null;
   workflowFeature: string | null = null;
   createFields: ReferentielFormField[] = [];
+  contextDashboardModule: MenuContextDashboardModule | null = null;
+  contextDashboardSubModule = '';
+  contextDashboardAlwaysVisible = false;
   /** Surcharges libellés colonnes (route `data.columnLabels`). */
   columnLabels: Record<string, string> = {};
   loading = false;
@@ -99,6 +126,9 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
 
   /** Filtre texte client sur les colonnes affichées */
   listFilter = '';
+  workflowQueueTab: WorkflowQueueTab = 'ACTION';
+  workflowFilterCentreId: number | '' = '';
+  workflowFilterConseiller = '';
   listPageIndex = 0;
   listPageSize = 20;
   readonly listPageSizeOptions = [10, 20, 50, 100, 200];
@@ -130,6 +160,10 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
   workflowDecisionTarget: Record<string, unknown> | null = null;
   workflowDecisionText = '';
   workflowDecisionError: string | null = null;
+  detailModalOpen = false;
+  detailLoading = false;
+  detailFields: MenaRecordDetailField[] = [];
+  detailSubtitle = '';
   fieldOptions: Record<string, Array<{ value: string | number; label: string }>> = {};
 
   /** Évite de relancer les GET d’options quand le cache est déjà rempli par l’API. */
@@ -151,7 +185,7 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
     private readonly route: ActivatedRoute,
     private readonly http: HttpClient,
     private readonly fb: FormBuilder,
-    private readonly auth: AuthService,
+    readonly auth: AuthService,
     @Inject(API_BASE_URL) private readonly apiBaseUrl: string,
   ) {}
 
@@ -165,6 +199,9 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
       const routeCreateFields = (data['createFields'] as ReferentielFormField[]) ?? [];
       const routeColumnLabels = (data['columnLabels'] as Record<string, string>) ?? {};
       const routeListColumnKeys = (data['listColumnKeys'] as string[] | undefined) ?? undefined;
+      const routeDashModule = (data['contextDashboardModule'] as MenuContextDashboardModule | undefined) ?? undefined;
+      const routeDashSub = (data['contextDashboardSubModule'] as string | undefined) ?? '';
+      const routeDashAlways = (data['contextDashboardAlwaysVisible'] as boolean | undefined) ?? false;
       this.title = this.inputTitle ?? routeTitle;
       this.subtitle = this.inputSubtitle ?? routeSubtitle;
       this.apiPath = this.inputApiPath ?? routeApiPath;
@@ -174,6 +211,7 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
         this.inputCreateFields != null ? this.inputCreateFields : routeCreateFields;
       this.columnLabels = routeColumnLabels;
       this.routeListColumnKeys = routeListColumnKeys;
+      this.syncContextDashboardConfig(routeDashModule, routeDashSub, routeDashAlways);
       this.fetch();
     });
   }
@@ -207,6 +245,41 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
     if (this.inputPermissionFeature !== undefined) this.permissionFeature = this.inputPermissionFeature;
     if (this.inputWorkflowFeature !== undefined) this.workflowFeature = this.inputWorkflowFeature;
     if (this.inputCreateFields != null) this.createFields = this.inputCreateFields;
+    this.syncContextDashboardConfig();
+  }
+
+  private syncContextDashboardConfig(
+    routeModule?: MenuContextDashboardModule,
+    routeSubModule?: string,
+    routeAlwaysVisible?: boolean,
+  ): void {
+    const mod = this.inputContextDashboardModule ?? routeModule ?? null;
+    this.contextDashboardModule = mod ?? null;
+    this.contextDashboardSubModule =
+      this.inputContextDashboardSubModule ?? routeSubModule ?? '';
+    this.contextDashboardAlwaysVisible =
+      this.inputContextDashboardAlwaysVisible || (routeAlwaysVisible ?? false);
+  }
+
+  contextCentreTypeForDash(): string | undefined {
+    const forced = (this.inputContextDashboardCentreType ?? '').trim();
+    if (forced) {
+      return forced.toUpperCase();
+    }
+    if (!this.inputShowToolbarCentreTypeFilter) {
+      return undefined;
+    }
+    const v = (this.addFormContextValue ?? '').trim().toLowerCase();
+    if (!v) {
+      return undefined;
+    }
+    const map: Record<string, string> = {
+      alpha: 'ALPHA',
+      cec: 'CEC',
+      cp: 'CP',
+      sie: 'SIE',
+    };
+    return map[v] ?? v.toUpperCase();
   }
 
   onAddFormContextChange(ev: Event): void {
@@ -261,7 +334,35 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
   }
 
   get hasActiveFilter(): boolean {
-    return !!this.listFilter?.trim();
+    return (
+      !!this.listFilter?.trim() ||
+      this.workflowFilterCentreId !== '' ||
+      !!this.workflowFilterConseiller
+    );
+  }
+
+  get workflowCentreFilterOptions(): Array<{ value: number | ''; label: string }> {
+    const map = new Map<number, string>();
+    for (const row of this.rows) {
+      const id = resolveRowCentreId(row);
+      if (id == null) {
+        continue;
+      }
+      const alpha = row['alpha'] as { code?: string; libelle?: string } | null | undefined;
+      const label =
+        [alpha?.code, alpha?.libelle].filter(Boolean).join(' — ') || `Centre #${id}`;
+      map.set(id, label);
+    }
+    return [
+      { value: '' as const, label: 'Tous les centres' },
+      ...[...map.entries()]
+        .sort((a, b) => a[1].localeCompare(b[1], 'fr'))
+        .map(([value, label]) => ({ value, label })),
+    ];
+  }
+
+  get workflowConseillerFilterOptions() {
+    return collectConseillerFilterOptions(this.rows);
   }
 
   get canGoPrevListPage(): boolean {
@@ -273,11 +374,40 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
   }
 
   get filteredRows(): Record<string, unknown>[] {
+    let base = this.rows;
+    if (this.hasWorkflow) {
+      base = base.filter((row) => {
+        const tab = readWorkflowQueueTab(row);
+        if (!tab) {
+          return true;
+        }
+        return rowMatchesWorkflowTab(row, this.workflowQueueTab);
+      });
+      if (this.workflowFilterCentreId !== '') {
+        const centreId = Number(this.workflowFilterCentreId);
+        base = base.filter((row) => resolveRowCentreId(row) === centreId);
+      }
+      if (this.workflowFilterConseiller) {
+        const c = this.workflowFilterConseiller;
+        base = base.filter((row) => resolveRowConseillerLogin(row) === c);
+      }
+    }
     const q = this.listFilter.trim().toLowerCase();
     if (!q) {
-      return this.rows;
+      return base;
     }
-    return this.rows.filter((row) => this.rowMatchesFilter(row, q));
+    return base.filter((row) => this.rowMatchesFilter(row, q));
+  }
+
+  onWorkflowQueueTabChange(tab: WorkflowQueueTab): void {
+    this.workflowQueueTab = tab;
+    this.resetListPage();
+  }
+
+  clearWorkflowQueueFilters(): void {
+    this.workflowFilterCentreId = '';
+    this.workflowFilterConseiller = '';
+    this.resetListPage();
   }
 
   get filteredRowCount(): number {
@@ -329,6 +459,10 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
     return s.charAt(0).toUpperCase() + s.slice(1);
   }
 
+  get detailModalTitle(): string {
+    return 'Détails de l’enregistrement';
+  }
+
   get formModalTitle(): string {
     if (!this.hasCreateForm) {
       return this.formMode === 'edit' ? 'Modifier' : 'Ajout';
@@ -338,8 +472,13 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
       : 'Nouvel enregistrement';
   }
 
+  /** Colonne Actions : au minimum le bouton Détails. */
+  get showActionsColumn(): boolean {
+    return !!this.apiPath;
+  }
+
   get canUseRowActions(): boolean {
-    return !!this.apiPath && (this.canUpdateRecord || this.canDeleteRecord || this.hasWorkflow);
+    return this.showActionsColumn && (this.canUpdateRecord || this.canDeleteRecord || this.hasWorkflow);
   }
 
   get canCreateRecord(): boolean {
@@ -584,6 +723,7 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
 
   clearAllListFilters(): void {
     this.clearListFilter();
+    this.clearWorkflowQueueFilters();
   }
 
   formatSyncTime(): string {
@@ -672,6 +812,58 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
     this.loadFieldOptions();
     this.recordForm = this.buildRecordForm();
     this.formModalOpen = true;
+  }
+
+  openDetails(row: Record<string, unknown>): void {
+    const id = this.resolveRowId(row);
+    if (id == null || !this.apiPath) {
+      return;
+    }
+    this.detailModalOpen = true;
+    this.detailLoading = true;
+    this.detailFields = [];
+    this.detailSubtitle = this.buildDeleteLabel(row);
+    const url = `${this.apiBaseUrl}${this.apiPath}/${encodeURIComponent(String(id))}`;
+    this.http.get<Record<string, unknown>>(url).subscribe({
+      next: (full) => {
+        this.detailFields = this.buildDetailFields(full);
+        this.detailLoading = false;
+      },
+      error: () => {
+        this.detailFields = this.buildDetailFields(row);
+        this.detailLoading = false;
+      },
+    });
+  }
+
+  closeDetails(): void {
+    this.detailModalOpen = false;
+    this.detailLoading = false;
+    this.detailFields = [];
+    this.detailSubtitle = '';
+  }
+
+  private buildDetailFields(row: Record<string, unknown>): MenaRecordDetailField[] {
+    const seen = new Set<string>();
+    const fields: MenaRecordDetailField[] = [];
+    const push = (key: string, label?: string) => {
+      if (seen.has(key) || key.startsWith('_') || key === 'hibernateLazyInitializer') {
+        return;
+      }
+      seen.add(key);
+      fields.push({
+        label: label ?? this.columnHeaderLabel(key),
+        value: this.formatCell(row[key], key),
+      });
+    };
+    for (const f of this.fieldsForForm) {
+      push(f.key, f.label);
+    }
+    const keys = Object.keys(row).sort((a, b) => a.localeCompare(b, 'fr'));
+    for (const k of keys) {
+      push(k);
+    }
+    return fields;
   }
 
   openEditModal(row: Record<string, unknown>): void {

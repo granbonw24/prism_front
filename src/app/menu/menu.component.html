@@ -40,7 +40,7 @@
       <!-- Nav Item - Pages Collapse Menu -->
       <li class="nav-item">
         <a
-          class="nav-link"
+          class="nav-link mena-submenu-toggle"
           [class.collapsed]="!isMenuSectionOpen('centres', ['/centres'])"
           href="#"
           (click)="toggleMenuSection('centres', $event, ['/centres'])"
@@ -68,6 +68,13 @@
       </li>
 
       <li class="nav-item">
+        <a class="nav-link" routerLink="/personnel" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
+          <i class="fas fa-fw fa-users"></i>
+          <span>PERSONNEL</span>
+        </a>
+      </li>
+
+      <li class="nav-item">
         <a class="nav-link" routerLink="/promoteurs" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
           <i class="fas fa-fw fa-chart-area"></i>
           <span>PROMOTEUR</span></a>
@@ -78,7 +85,7 @@
 
       <li class="nav-item">
         <a
-          class="nav-link"
+          class="nav-link mena-submenu-toggle"
           [class.collapsed]="!isMenuSectionOpen('apprenant', ['/apprenant'])"
           href="#"
           (click)="toggleMenuSection('apprenant', $event, ['/apprenant'])"
@@ -114,7 +121,7 @@
       <li class="nav-item" [class.active]="activitesCentreSectionOpen()" *ngIf="canViewActivitesCentre()">
         <a
           id="headingActivitesCentre"
-          class="nav-link"
+          class="nav-link mena-submenu-toggle"
           [class.collapsed]="!activitesCentreSectionOpen()"
           href="#"
           (click)="toggleMenuSection('activites-centre', $event, ['/activites-centre', '/visites'])"
@@ -249,7 +256,7 @@
       <li class="nav-item">
         <a
           id="headingAdministration"
-          class="nav-link"
+          class="nav-link mena-submenu-toggle"
           [class.collapsed]="!isMenuSectionOpen('administration', ['/administration'])"
           href="#"
           (click)="toggleMenuSection('administration', $event, ['/administration'])"
@@ -266,27 +273,9 @@
           aria-labelledby="headingAdministration"
         >
           <div class="bg-white py-2 collapse-inner rounded">
-            <a
-              class="collapse-item mena-submenu-toggle"
-              [class.collapsed]="!isMenuSectionOpen('admin-gestion', ['/administration/personnel', '/administration/utilisateurs'])"
-              href="#"
-              (click)="toggleMenuSection('admin-gestion', $event, ['/administration/personnel', '/administration/utilisateurs'])"
-              [attr.aria-expanded]="isMenuSectionOpen('admin-gestion', ['/administration/personnel', '/administration/utilisateurs'])"
-              aria-controls="admin-gestion"
-              >Gestion</a
+            <a class="collapse-item" routerLink="/administration/utilisateurs" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }"
+              >Utilisateurs</a
             >
-            <div
-              id="admin-gestion"
-              class="collapse"
-              [class.show]="isMenuSectionOpen('admin-gestion', ['/administration/personnel', '/administration/utilisateurs'])"
-            >
-              <a class="collapse-item pl-4" routerLink="/administration/personnel" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }"
-                >Personnel</a
-              >
-              <a class="collapse-item pl-4" routerLink="/administration/utilisateurs" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }"
-                >Utilisateurs</a
-              >
-            </div>
 
             <div class="dropdown-divider"></div>
 
@@ -321,7 +310,7 @@
 
       <li class="nav-item">
         <a
-          class="nav-link"
+          class="nav-link mena-submenu-toggle"
           [class.collapsed]="!isParametrageOpen()"
           href="#"
           (click)="toggleParametrage($event)"

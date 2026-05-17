@@ -536,6 +536,10 @@ body {
   opacity: 0.35;
 }
 
+.sidebar.mena-sidebar .nav-link.mena-submenu-toggle {
+  padding-right: 2rem !important;
+}
+
 /* Page login : orange doux + blanc + soupçon de vert */
 .mena-login-panel {
   background: linear-gradient(

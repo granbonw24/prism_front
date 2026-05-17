@@ -1,109 +1,106 @@
-<div class="container-fluid">
+<div class="container-fluid mena-page-content">
   <div class="d-sm-flex align-items-center justify-content-between mb-3">
-    <h1 class="h4 mb-0 text-gray-800">Tableau de bord</h1>
+    <div>
+      <h1 class="h4 mb-0 text-gray-800">Tableau de bord</h1>
+      <p class="small text-muted mb-0 mt-1" *ngIf="summary$ | async as sum">{{ sum.scopeLabel }}</p>
+    </div>
     <span class="small text-muted">PRISM · MENA Côte d’Ivoire</span>
   </div>
 
   <div
+    *ngIf="summary$ | async as sum"
     class="alert mb-4 border-0 shadow-sm mena-dashboard-banner"
-    role="alert"
+    [class.mena-dashboard-banner--scoped]="!sum.nationalView"
+    role="status"
   >
-    <strong>Dashboard (v1).</strong>
-    Synthèse opérationnelle (centres, personnels, utilisateurs) et accès rapides.
+    <ng-container *ngIf="session$ | async as session">
+      <strong>{{ presentation.roleLabel(session) }}</strong>
+      <span *ngIf="session.username"> — {{ session.username }}</span>
+      <span class="d-block small mt-1 mb-0">
+        <span *ngIf="sum.nationalView">Synthèse nationale : tous les centres et indicateurs métier.</span>
+        <span *ngIf="!sum.nationalView">Synthèse limitée à votre circonscription : <strong>{{ sum.scopeLabel }}</strong>.</span>
+        <span *ngIf="scopeDetail(session) as detail" class="d-block text-muted mt-1">{{ detail }}</span>
+      </span>
+    </ng-container>
   </div>
 
   <div class="row mena-mini-dash mb-4">
-    <div class="col-lg-4 mb-3">
+    <div class="col-sm-6 col-lg-3 mb-3">
       <div class="card mena-mini-card h-100 border-0 shadow-sm">
-        <div class="card-body py-3 d-flex align-items-center">
-          <div class="mena-mini-icon mr-3"><i class="fas fa-user-circle"></i></div>
-          <div class="w-100">
-            <div class="text-muted small mb-0">Session</div>
-            <div class="font-weight-bold text-dark" *ngIf="session$ | async as s; else sessionAnon">
-              {{ s.username }}
-              <span class="small text-muted" *ngIf="s.email">· {{ s.email }}</span>
-            </div>
-            <ng-template #sessionAnon>
-              <div class="font-weight-bold text-dark">Non connecté</div>
-            </ng-template>
-            <div class="small text-muted mb-0" *ngIf="session$ | async as s">
-              {{ s.roles.length }} rôle(s) · {{ s.permissions.length }} permission(s)
-            </div>
+        <div class="card-body py-3">
+          <div class="text-muted small mb-1">Centres</div>
+          <div class="h5 font-weight-bold text-dark mb-0" *ngIf="summary$ | async as sum; else sumLoading">
+            {{ sum.centresTotal }}
+          </div>
+          <div class="small text-muted" *ngIf="summary$ | async as sum">
+            α {{ sum.alphaTotal }} · CEC {{ sum.cecTotal }} · CP {{ sum.cpTotal }} · SIE {{ sum.sieTotal }}
           </div>
         </div>
       </div>
     </div>
 
-    <div class="col-lg-4 mb-3">
+    <div class="col-sm-6 col-lg-3 mb-3">
       <div class="card mena-mini-card h-100 border-0 shadow-sm">
-        <div class="card-body py-3 d-flex align-items-center">
-          <div class="mena-mini-icon mena-mini-icon--soft mr-3"><i class="fas fa-layer-group"></i></div>
-          <div>
-            <div class="text-muted small mb-0">Centres (par type)</div>
-            <div class="font-weight-bold text-dark" *ngIf="summary$ | async as sum; else sumLoading1">
-              Alpha {{ sum.alphaTotal }} · CEC {{ sum.cecTotal }} · CP {{ sum.cpTotal }} · SIE {{ sum.sieTotal }}
-            </div>
-            <ng-template #sumLoading1>
-              <div class="font-weight-bold text-dark">Chargement…</div>
-            </ng-template>
-            <div class="small text-muted mb-0" *ngIf="summary$ | async as sum">
-              Total centres: {{ sum.centresTotal }}
-            </div>
+        <div class="card-body py-3">
+          <div class="text-muted small mb-1"><i class="fas fa-users mr-1"></i> Personnel</div>
+          <div class="h5 font-weight-bold text-dark mb-0" *ngIf="summary$ | async as sum; else sumLoading">
+            {{ sum.personnelTotal }}
           </div>
         </div>
       </div>
     </div>
 
-    <div class="col-lg-4 mb-3">
-      <div class="card mena-mini-card h-100 border-0 shadow-sm">
-        <div class="card-body py-3 d-flex align-items-center">
-          <div class="mena-mini-icon mena-mini-icon--mint mr-3"><i class="fas fa-tools"></i></div>
-          <div>
-            <div class="text-muted small mb-0">Administration</div>
-            <div class="font-weight-bold text-dark" *ngIf="summary$ | async as sum; else sumLoading2">
-              {{ sum.personnelTotal }} personnel · {{ sum.usersTotal }} utilisateurs
-            </div>
-            <ng-template #sumLoading2>
-              <div class="font-weight-bold text-dark">Chargement…</div>
-            </ng-template>
-            <div class="small text-muted mb-0" *ngIf="summary$ | async as sum">
-              {{ sum.rolesTotal }} rôles configurés
-            </div>
+    <div class="col-sm-6 col-lg-3 mb-3">
+      <div class="card mena-mini-card h-100 border-0 shadow-sm mena-mini-card--mint">
+        <div class="card-body py-3">
+          <div class="text-muted small mb-1"><i class="fas fa-clipboard-check mr-1"></i> Activités centre</div>
+          <div class="h5 font-weight-bold text-dark mb-0" *ngIf="summary$ | async as sum; else sumLoading">
+            {{ sum.visitesTotal + sum.controlesTotal + sum.evaluationsTotal }}
+          </div>
+          <div class="small text-muted" *ngIf="summary$ | async as sum">
+            Visites {{ sum.visitesTotal }} · Contrôles {{ sum.controlesTotal }} · Éval. {{ sum.evaluationsTotal }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-sm-6 col-lg-3 mb-3" *ngIf="summary$ | async as sum">
+      <div class="card mena-mini-card h-100 border-0 shadow-sm" *ngIf="sum.usersTotal != null">
+        <div class="card-body py-3">
+          <div class="text-muted small mb-1">
+            <i class="fas fa-user-shield mr-1" *ngIf="sum.nationalView"></i>
+            <i class="fas fa-user-cog mr-1" *ngIf="!sum.nationalView"></i>
+            {{ sum.nationalView ? 'Administration' : 'Utilisateurs (périmètre)' }}
+          </div>
+          <div class="h5 font-weight-bold text-dark mb-0">{{ sum.usersTotal }}</div>
+          <div class="small text-muted" *ngIf="sum.nationalView && sum.rolesTotal != null">
+            {{ sum.rolesTotal }} rôles configurés
           </div>
         </div>
       </div>
     </div>
   </div>
 
-  <div class="card border-0 shadow-sm mb-4">
+  <ng-template #sumLoading>
+    <div class="h5 font-weight-bold text-dark mb-0">…</div>
+  </ng-template>
+
+  <div class="card border-0 shadow-sm mb-4" *ngIf="session$ | async as session">
     <div class="card-header py-3 bg-white border-bottom-0">
-      <h6 class="m-0 font-weight-bold text-primary">Accès rapides (Administration)</h6>
+      <h6 class="m-0 font-weight-bold text-primary">Accès rapides</h6>
     </div>
     <div class="card-body pt-0">
-      <div class="row">
-        <div class="col-md-6 col-lg-3 mb-2" *ngFor="let l of adminLinks">
+      <div class="row" *ngIf="quickLinks(session).length > 0; else noQuickLinks">
+        <div class="col-md-6 col-lg-4 col-xl-3 mb-2" *ngFor="let l of quickLinks(session)">
           <a class="mena-quickcard" [routerLink]="l.path">
             <i class="{{ l.icon }} mr-2" aria-hidden="true"></i>
             <span>{{ l.title }}</span>
           </a>
         </div>
       </div>
-    </div>
-  </div>
-
-  <div class="card border-0 shadow-sm mb-4">
-    <div class="card-header py-3 bg-white border-bottom-0">
-      <h6 class="m-0 font-weight-bold text-primary">Accès rapides (Paramétrage)</h6>
-    </div>
-    <div class="card-body pt-0">
-      <div class="d-flex flex-wrap mena-ref-quicklinks">
-        <a
-          *ngFor="let r of referentielRoutes"
-          class="badge badge-light border text-dark font-weight-normal mr-1 mb-1 px-2 py-1"
-          [routerLink]="r.path"
-          >{{ r.title }}</a
-        >
-      </div>
+      <ng-template #noQuickLinks>
+        <p class="text-muted small mb-0">Aucun raccourci disponible pour vos permissions.</p>
+      </ng-template>
     </div>
   </div>
 </div>

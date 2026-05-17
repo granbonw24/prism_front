@@ -26,6 +26,13 @@
     {{ errorMessage }}
   </div>
 
+  <app-mena-context-dashboard
+    *ngIf="isListPage"
+    module="CENTRES"
+    [centreType]="centreTypeForDashboard()"
+    [alwaysVisible]="true"
+  />
+
   <div *ngIf="isCreatePage" class="card border-0 shadow-sm mb-4 mena-long-form-card">
     <div class="card-header py-3 bg-white border-bottom-0">
       <h6 class="m-0 font-weight-bold text-primary">Enregistrement de centre</h6>

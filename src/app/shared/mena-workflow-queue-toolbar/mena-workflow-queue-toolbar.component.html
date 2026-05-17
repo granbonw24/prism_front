@@ -1,0 +1,48 @@
+<div class="mena-workflow-queue-toolbar">
+  <ul class="nav nav-tabs mena-workflow-tabs border-0 mb-3" role="tablist">
+    <li class="nav-item" *ngFor="let tab of tabs">
+      <button
+        type="button"
+        class="nav-link"
+        [class.active]="activeTab === tab"
+        [disabled]="disabled"
+        (click)="selectTab(tab)"
+        role="tab"
+        [attr.aria-selected]="activeTab === tab"
+      >
+        {{ labels[tab] }}
+        <span class="badge badge-light ml-1 mena-workflow-tab-count">{{ counts[tab] }}</span>
+      </button>
+    </li>
+  </ul>
+
+  <div
+    class="form-row align-items-end mena-workflow-filters mb-0"
+    *ngIf="centreOptions.length || conseillerOptions.length"
+  >
+    <div class="form-group col-md-4 col-sm-12 mb-2" *ngIf="centreOptions.length">
+      <label class="small text-muted mb-1">Centre</label>
+      <app-mena-searchable-select
+        class="form-control form-control-sm"
+        [ngModel]="filterCentreId === '' ? '' : filterCentreId"
+        (ngModelChange)="onCentreChange($event)"
+        [options]="menaCentreOptions()"
+        [allowNull]="false"
+        inputClass="form-control form-control-sm"
+        [disabled]="disabled"
+      />
+    </div>
+    <div class="form-group col-md-4 col-sm-12 mb-2" *ngIf="conseillerOptions.length">
+      <label class="small text-muted mb-1">Conseiller</label>
+      <app-mena-searchable-select
+        class="form-control form-control-sm"
+        [ngModel]="filterConseiller"
+        (ngModelChange)="onConseillerChange($event)"
+        [options]="menaConseillerOptions()"
+        [allowNull]="false"
+        inputClass="form-control form-control-sm"
+        [disabled]="disabled"
+      />
+    </div>
+  </div>
+</div>

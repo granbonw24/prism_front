@@ -100,6 +100,29 @@ export interface PersonnelAdmin {
   nomRepresentantLegalSturcture?: string | null;
 }
 
+export type PersonnelContextDashboard =
+  | {
+      scope: 'CENTRE';
+      centreId: number;
+      centreCode?: string | null;
+      centreType?: string;
+      total: number;
+      certifiedTotal: number;
+      hommesTotal: number;
+      femmesTotal: number;
+      fonctionsDistinctes: number;
+      topFonctionLabel?: string;
+      topFonctionCount?: number;
+    }
+  | {
+      scope: 'TYPE';
+      centreType: string;
+      centreTypeLabel: string;
+      centresCount: number;
+      personnelTotal: number;
+    };
+
+/** @deprecated Utiliser PersonnelContextDashboard */
 export interface PersonnelAdminDashboard {
   centreId: number;
   total: number;

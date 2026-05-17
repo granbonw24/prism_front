@@ -7,6 +7,15 @@ import { Component, Inject, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { forkJoin } from 'rxjs';
 import { AuthService } from '@services/auth.service';
+import { MenaWorkflowQueueToolbarComponent } from '@shared/mena-workflow-queue-toolbar/mena-workflow-queue-toolbar.component';
+import {
+  collectConseillerFilterOptions,
+  readWorkflowQueueTab,
+  resolveRowConseillerLogin,
+  rowMatchesWorkflowTab,
+  type WorkflowQueueTab,
+} from '@core/workflow/workflow-queue.util';
+
 import {
   menaActivitesRefOptions,
   menaActivitesRefOptionsWithAll,
@@ -14,6 +23,7 @@ import {
 } from '@features/activites-centre/activites-centre-select.util';
 import { MenaRowActionButtonComponent } from '@shared/mena-row-action-button/mena-row-action-button.component';
 import { MenaSearchableSelectComponent } from '@shared/mena-searchable-select/mena-searchable-select.component';
+import { MenaContextDashboardComponent } from '@shared/mena-context-dashboard/mena-context-dashboard.component';
 import { sortByLabel, toMenaSelectOptions } from '@shared/mena-searchable-select/mena-select-options.util';
 
 type Ref = {
@@ -102,7 +112,14 @@ const DAYS: Array<{ value: string; label: string }> = [
 @Component({
   selector: 'app-activites-centre-controle',
   standalone: true,
-  imports: [CommonModule, FormsModule, MenaRowActionButtonComponent, MenaSearchableSelectComponent],
+  imports: [
+    CommonModule,
+    FormsModule,
+    MenaRowActionButtonComponent,
+    MenaSearchableSelectComponent,
+    MenaWorkflowQueueToolbarComponent,
+    MenaContextDashboardComponent,
+  ],
   templateUrl: './activites-centre-controle.component.html',
   styleUrl: './activites-centre-controle.component.css',
 })
@@ -122,6 +139,8 @@ export class ActivitesCentreControleComponent implements OnInit {
   searchText = '';
   filterAlphaId: number | '' = '';
   filterPeriodeId: number | '' = '';
+  workflowQueueTab: WorkflowQueueTab = 'ACTION';
+  workflowFilterConseiller = '';
 
   formOpen = false;
   formMode: 'create' | 'edit' = 'create';
@@ -130,9 +149,25 @@ export class ActivitesCentreControleComponent implements OnInit {
 
   constructor(
     private readonly http: HttpClient,
-    private readonly auth: AuthService,
+    readonly auth: AuthService,
     @Inject(API_BASE_URL) private readonly apiBaseUrl: string,
   ) {}
+
+  get workflowConseillerFilterOptions() {
+    return collectConseillerFilterOptions(this.rows as Record<string, unknown>[]);
+  }
+
+  get workflowCentreFilterOptions(): Array<{ value: number | ''; label: string }> {
+    return [
+      { value: '', label: 'Tous les centres' },
+      ...this.alphas
+        .map((a) => ({
+          value: this.alphaOptionValue(a) ?? ('' as const),
+          label: this.alphaOptionLabel(a),
+        }))
+        .filter((o) => o.value !== ''),
+    ];
+  }
 
   ngOnInit(): void {
     this.reload();
@@ -160,6 +195,16 @@ export class ActivitesCentreControleComponent implements OnInit {
       const periodeId = row.periodeActivite?.id ?? null;
       if (this.filterPeriodeId !== '' && periodeId !== this.filterPeriodeId) {
         return false;
+      }
+      const tab = readWorkflowQueueTab(row as Record<string, unknown>);
+      if (tab && !rowMatchesWorkflowTab(row as Record<string, unknown>, this.workflowQueueTab)) {
+        return false;
+      }
+      if (this.workflowFilterConseiller) {
+        const login = resolveRowConseillerLogin(row as Record<string, unknown>);
+        if (login !== this.workflowFilterConseiller) {
+          return false;
+        }
       }
       if (!q) {
         return true;
@@ -338,10 +383,19 @@ export class ActivitesCentreControleComponent implements OnInit {
     });
   }
 
+  onWorkflowQueueTabChange(tab: WorkflowQueueTab): void {
+    this.workflowQueueTab = tab;
+  }
+
+  onWorkflowCentreFilterChange(centreId: number | ''): void {
+    this.filterAlphaId = centreId;
+  }
+
   clearFilters(): void {
     this.searchText = '';
     this.filterAlphaId = '';
     this.filterPeriodeId = '';
+    this.workflowFilterConseiller = '';
   }
 
   alphaOptionValue(alpha: AlphaOption): number | '' {

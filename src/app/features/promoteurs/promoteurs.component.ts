@@ -5,6 +5,7 @@ import { API_BASE_URL } from '@core/tokens/api-base-url.token';
 import { FormsModule } from '@angular/forms';
 import { SpringPage } from '@models/centre';
 import { MenaToolbarButtonComponent } from '@shared/mena-toolbar-button/mena-toolbar-button.component';
+import { MenaContextDashboardComponent } from '@shared/mena-context-dashboard/mena-context-dashboard.component';
 
 type Promoteur = {
   id: number;
@@ -15,7 +16,7 @@ type Promoteur = {
 @Component({
   selector: 'app-promoteurs',
   standalone: true,
-  imports: [CommonModule, FormsModule, MenaToolbarButtonComponent],
+  imports: [CommonModule, FormsModule, MenaToolbarButtonComponent, MenaContextDashboardComponent],
   templateUrl: './promoteurs.component.html',
   styleUrl: './promoteurs.component.css',
 })

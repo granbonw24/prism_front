@@ -1,0 +1,39 @@
+<div class="card border-0 shadow-sm mb-4 mena-context-dashboard" *ngIf="visible">
+  <div class="card-header py-3 bg-white border-bottom-0">
+    <h6 class="m-0 font-weight-bold text-primary">{{ title }}</h6>
+    <p class="small text-muted mb-0 mt-1" *ngIf="dashboard?.subtitle">{{ dashboard!.subtitle }}</p>
+    <p class="small text-muted mb-0 mt-1" *ngIf="dashboard?.nationalView">
+      Vue nationale — statistiques sur tout le territoire
+    </p>
+    <p class="small text-muted mb-0 mt-1" *ngIf="dashboard?.scopeLabel && !dashboard?.nationalView">
+      {{ dashboard!.scopeLabel }}
+    </p>
+  </div>
+  <div class="card-body pt-0">
+    <div *ngIf="loading" class="small text-muted py-2">Chargement des indicateurs…</div>
+    <div class="row mena-mini-dash mb-0" *ngIf="!loading && dashboard as dash">
+      <div
+        *ngFor="let c of dash.cards; let i = index"
+        [ngClass]="cardColClass(i, dash.cards.length)"
+        class="mb-3"
+      >
+        <div
+          class="card mena-mini-card h-100 border-0 shadow-sm"
+          [class.mena-mini-card--mint]="c.variant === 'mint'"
+        >
+          <div class="card-body py-3">
+            <div class="text-muted small mb-1">
+              <i *ngIf="c.icon" class="fas mr-1" [ngClass]="'fa-' + c.icon"></i>
+              {{ c.label }}
+            </div>
+            <div class="h5 font-weight-bold text-dark mb-0">{{ c.value }}</div>
+            <div class="small text-muted" *ngIf="c.hint">{{ c.hint }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div *ngIf="!loading && !dashboard" class="small text-muted py-2">
+      Indicateurs indisponibles pour cette sélection.
+    </div>
+  </div>
+</div>

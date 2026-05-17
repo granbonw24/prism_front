@@ -1,4 +1,4 @@
-<div class="container-fluid px-2 px-sm-3">
+<div class="container-fluid px-2 px-sm-3 mena-rfp-page">
   <div class="card border-0 shadow-sm">
     <div class="card-header py-3 bg-white border-bottom-0">
       <h6 class="m-0 font-weight-bold text-primary">Rôle permission</h6>
@@ -9,69 +9,74 @@
 
     <div class="card-body pt-3">
       <div class="row mb-3">
-        <div class="col-md-6">
-          <label class="small text-muted" for="roleSelect">
-            Acteur (rôle)
-          </label>
+        <div class="col-md-6 col-lg-5">
+          <label class="small text-muted mb-1" for="roleSelect">Acteur (rôle)</label>
           <app-mena-searchable-select
             id="roleSelect"
             [(ngModel)]="selectedRoleId"
             (ngModelChange)="onRoleChange()"
             [options]="menaRoleOptions()"
-            [disabled]="loading || saving"
+            [disabled]="loading"
           />
         </div>
       </div>
 
       <div *ngIf="loading" class="text-muted">Chargement…</div>
-      <div *ngIf="!loading && errorMessage" class="alert alert-danger">
+      <div *ngIf="!loading && errorMessage" class="alert alert-danger py-2 mb-3">
         {{ errorMessage }}
       </div>
 
       <div
-        *ngIf="!loading && !errorMessage && selectedRoleId != null"
-        class="table-responsive"
+        *ngIf="!loading && selectedRoleId != null"
+        class="mena-rfp-wrap"
       >
-        <table class="table table-bordered align-middle">
-          <thead class="thead-light">
+        <div class="mena-rfp-matrix">
+        <table class="table table-sm table-bordered mena-rfp-table mb-0">
+          <thead>
             <tr>
-              <th style="min-width: 260px;">Fonctionnalité</th>
-              <th *ngFor="let p of permissions" class="text-center small">
-                {{ permissionColumnLabel(p) }}
+              <th scope="col" class="mena-rfp-col-fn">Fonctionnalité</th>
+              <th
+                scope="col"
+                *ngFor="let p of permissions; trackBy: trackPermission"
+                class="mena-rfp-col-perm text-center"
+                [title]="permissionColumnLabel(p)"
+              >
+                <span class="mena-rfp-perm-head">{{ permissionHeaderShort(p) }}</span>
               </th>
             </tr>
           </thead>
           <tbody>
-            <tr *ngFor="let f of fonctionnalites">
-              <td>
-                <div class="font-weight-bold">
-                  {{ fonctionnaliteRowLabel(f) }}
-                </div>
-                <div class="small text-muted" *ngIf="f.module">
-                  {{ f.module }}
-                </div>
-              </td>
+            <tr *ngFor="let f of fonctionnalites; trackBy: trackFonctionnalite">
+              <th scope="row" class="mena-rfp-col-fn" [title]="fonctionnaliteRowLabel(f)">
+                <span class="mena-rfp-fn-title">{{ fonctionnaliteRowLabel(f) }}</span>
+                <span class="mena-rfp-fn-module" *ngIf="f.module">{{ f.module }}</span>
+              </th>
               <td
-                *ngFor="let p of permissions"
-                class="text-center"
-                style="white-space: nowrap;"
+                *ngFor="let p of permissions; trackBy: trackPermission"
+                class="mena-rfp-col-perm mena-rfp-cell text-center"
+                [class.mena-rfp-cell--pending]="isPending(f.id, p.id)"
               >
-                <input
-                  class="form-check-input"
-                  type="checkbox"
-                  [checked]="isChecked(f.id, p.id)"
-                  (change)="toggle(f.id, p.id, $event)"
-                  [disabled]="saving"
-                  aria-label="Toggle permission"
-                />
+                <label class="mena-rfp-check mb-0">
+                  <input
+                    class="form-check-input"
+                    type="checkbox"
+                    [checked]="isChecked(f.id, p.id)"
+                    (change)="toggle(f.id, p.id, $event)"
+                    [disabled]="isPending(f.id, p.id)"
+                    [attr.aria-busy]="isPending(f.id, p.id)"
+                    [attr.aria-label]="
+                      'Permission ' + permissionColumnLabel(p) + ' pour ' + fonctionnaliteRowLabel(f)
+                    "
+                  />
+                </label>
               </td>
             </tr>
           </tbody>
         </table>
-
-        <div *ngIf="saving" class="small text-muted">
-          Mise à jour des droits en cours…
         </div>
+        <p class="small text-muted mb-0 mt-2">
+          Les modifications sont enregistrées au fur et à mesure. Faites défiler horizontalement si besoin.
+        </p>
       </div>
     </div>
   </div>

@@ -40,27 +40,58 @@ export function toMenaSelectOptionsFromPairs(
   }));
 }
 
-/** Libellé référentiel : libelle*, code*, sinon #id. */
+/**
+ * Libellé d’un référentiel API.
+ * Gère le format enrichi `{ id, code, libelle }` (ReferentielEnricher.toRef)
+ * et les champs métier (`libelleCivilite`, `codeFonction`, etc.).
+ */
 export function refEntityLabel(
   item: Record<string, unknown>,
   libelleKeys: string[],
   codeKeys: string[] = [],
 ): string {
-  for (const key of libelleKeys) {
-    const v = item[key];
-    if (typeof v === 'string' && v.trim()) {
-      return v.trim();
+  const libKeys = dedupeKeys(['libelle', ...libelleKeys]);
+  const codKeys = dedupeKeys(['code', ...codeKeys]);
+
+  for (const key of libKeys) {
+    const label = stringField(item[key]);
+    if (label) {
+      return label;
     }
   }
-  for (const key of codeKeys) {
-    const v = item[key];
-    if (typeof v === 'string' && v.trim()) {
-      return v.trim();
+  for (const key of codKeys) {
+    const label = stringField(item[key]);
+    if (label) {
+      return label;
     }
   }
+
   const id = item['id'];
   if (typeof id === 'number') {
     return `#${id}`;
   }
+  if (typeof id === 'string' && id.trim()) {
+    return `#${id.trim()}`;
+  }
   return '—';
+}
+
+function dedupeKeys(keys: string[]): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const key of keys) {
+    if (!seen.has(key)) {
+      seen.add(key);
+      out.push(key);
+    }
+  }
+  return out;
+}
+
+function stringField(value: unknown): string | null {
+  if (typeof value !== 'string') {
+    return null;
+  }
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : null;
 }

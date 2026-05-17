@@ -18,6 +18,7 @@ import { partenairePlaceholderRoutes, sectionPlaceholderRoutes } from '@features
 import { profilFeatureRoutes } from '@features/routing/profil.routes';
 import { visitesFeatureRoutes } from '@features/routing/visites.routes';
 import { promoteursFeatureRoutes } from '@features/routing/promoteurs.routes';
+import { personnelFeatureRoutes } from '@features/routing/personnel.routes';
 import { referentielFeatureRoutes } from '@features/routing/referentiel.routes';
 
 export const mainChildRoutes: Routes = [
@@ -26,6 +27,7 @@ export const mainChildRoutes: Routes = [
   ...anneeScolaireFeatureRoutes,
   ...referentielFeatureRoutes,
   ...centresFeatureRoutes,
+  ...personnelFeatureRoutes,
   ...promoteursFeatureRoutes,
   ...administrationFeatureRoutes,
   ...activitesCentreFeatureRoutes,

@@ -67,4 +67,26 @@ export class MainComponent {
     this.logoutModalOpen = false;
     this.logout();
   }
+
+  /** Tiroir menu mobile (remplace le toggle jQuery SB Admin, source de conflits). */
+  toggleMobileNav(event: Event): void {
+    event.preventDefault();
+    event.stopPropagation();
+    if (!window.matchMedia('(max-width: 991.98px)').matches) {
+      return;
+    }
+    const opening = !document.body.classList.contains('mena-mobile-nav-open');
+    document.body.classList.toggle('mena-mobile-nav-open', opening);
+    const toggleBtn = document.getElementById('sidebarToggleTop');
+    toggleBtn?.setAttribute('aria-expanded', opening ? 'true' : 'false');
+    toggleBtn?.setAttribute('aria-label', opening ? 'Fermer le menu' : 'Ouvrir le menu');
+    const sidebar = document.querySelector('.sidebar.mena-sidebar');
+    if (opening) {
+      document.body.classList.remove('sidebar-toggled');
+      sidebar?.classList.remove('toggled');
+    } else {
+      document.body.classList.add('sidebar-toggled');
+      sidebar?.classList.add('toggled');
+    }
+  }
 }

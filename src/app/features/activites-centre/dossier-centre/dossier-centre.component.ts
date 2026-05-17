@@ -6,6 +6,7 @@ import { unwrapListBody } from '@core/http/unwrap-spring-page';
 import { API_BASE_URL } from '@core/tokens/api-base-url.token';
 import { AuthService } from '@services/auth.service';
 import { MenaSearchableSelectComponent } from '@shared/mena-searchable-select/mena-searchable-select.component';
+import { MenaContextDashboardComponent } from '@shared/mena-context-dashboard/mena-context-dashboard.component';
 import {
   sortByLabel,
   toMenaSelectOptions,
@@ -86,7 +87,7 @@ type DossierSection = 'appuis' | 'documents';
 @Component({
   selector: 'app-dossier-centre',
   standalone: true,
-  imports: [CommonModule, FormsModule, MenaSearchableSelectComponent],
+  imports: [CommonModule, FormsModule, MenaSearchableSelectComponent, MenaContextDashboardComponent],
   template: `
     <div class="container-fluid">
       <div class="d-sm-flex align-items-center justify-content-between mb-3">
@@ -103,6 +104,13 @@ type DossierSection = 'appuis' | 'documents';
 
       <div *ngIf="errorMessage" class="alert alert-danger py-2">{{ errorMessage }}</div>
       <div *ngIf="successMessage" class="alert alert-success py-2">{{ successMessage }}</div>
+
+      <app-mena-context-dashboard
+        module="ACTIVITES"
+        subModule="dossier"
+        [centreType]="selectedCentreType ? selectedCentreType.toUpperCase() : undefined"
+        [centreId]="selectedCentreId"
+      />
 
       <div class="card border-0 shadow-sm mb-3">
         <div class="card-body">

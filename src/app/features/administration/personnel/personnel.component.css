@@ -3,3 +3,25 @@
   vertical-align: middle;
 }
 
+.mena-personnel-filters-card .form-group {
+  margin-bottom: 0.5rem;
+}
+
+.mena-personnel-context-dash .card-header {
+  border-bottom: 1px solid var(--mena-card-border, #e8e4df);
+}
+
+.mena-personnel-context-dash .mena-mini-dash .col-6,
+.mena-personnel-context-dash .mena-mini-dash .col-sm-6,
+.mena-personnel-context-dash .mena-mini-dash .col-md-4,
+.mena-personnel-context-dash .mena-mini-dash .col-lg-2,
+.mena-personnel-context-dash .mena-mini-dash .col-lg-4 {
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+}
+
+@media (max-width: 575.98px) {
+  .mena-personnel-filters-card .form-row > [class*='col-'] + [class*='col-'] {
+    margin-top: 0.75rem;
+  }
+}

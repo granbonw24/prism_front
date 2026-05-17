@@ -331,6 +331,141 @@ html {
   }
 }
 
+/* ── Sidebar mobile : tiroir + accordéon inline ───────────────── */
+@media (max-width: 991.98px) {
+  /* Tiroir hors écran par défaut (SB Admin .toggled = width:0 sinon) */
+  .sidebar.mena-sidebar,
+  .sidebar.mena-sidebar.toggled {
+    position: fixed !important;
+    top: 0;
+    left: 0;
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+    width: min(17.5rem, 88vw) !important;
+    max-width: 88vw !important;
+    z-index: 1050 !important;
+    transform: translateX(-100%);
+    transition: transform 0.22s ease;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    visibility: visible !important;
+    box-shadow: none;
+  }
+
+  body.mena-mobile-nav-open .sidebar.mena-sidebar,
+  body.mena-mobile-nav-open .sidebar.mena-sidebar.toggled {
+    transform: translateX(0);
+    box-shadow: 4px 0 22px rgba(0, 0, 0, 0.22);
+  }
+
+  body.mena-mobile-nav-open::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: 1040;
+    background: rgba(42, 37, 32, 0.45);
+  }
+
+  .sidebar.mena-sidebar .sidebar-brand .sidebar-brand-text {
+    display: inline !important;
+  }
+
+  .sidebar.mena-sidebar .nav-item .nav-link {
+    width: 100% !important;
+    text-align: left !important;
+    padding: 0.7rem 2rem 0.7rem 0.85rem !important;
+  }
+
+  .sidebar.mena-sidebar .nav-item .nav-link span {
+    display: inline !important;
+    font-size: 0.82rem !important;
+    white-space: normal;
+    line-height: 1.25;
+  }
+
+  .sidebar.mena-sidebar .nav-item .nav-link i {
+    margin-right: 0.35rem !important;
+    font-size: 0.85rem !important;
+  }
+
+  /* Niveau 1 : sous-menus principaux */
+  .sidebar.mena-sidebar .nav-item > .collapse,
+  .sidebar.mena-sidebar .nav-item > .collapsing {
+    position: static !important;
+    left: auto !important;
+    top: auto !important;
+    width: 100% !important;
+    margin: 0 0.35rem 0.35rem !important;
+    animation: none !important;
+    z-index: auto !important;
+  }
+
+  /* Niveau 2+ : Géographie, Pédagogie, Gestion, Visite… */
+  .sidebar.mena-sidebar .collapse-inner > .collapse,
+  .sidebar.mena-sidebar .collapse-inner > .collapsing,
+  .sidebar.mena-sidebar .collapse-inner .collapse .collapse {
+    position: static !important;
+    left: auto !important;
+    top: auto !important;
+    width: 100% !important;
+    margin: 0 !important;
+    animation: none !important;
+    box-shadow: none !important;
+  }
+
+  .sidebar.mena-sidebar .nav-item > .collapse:not(.show),
+  .sidebar.mena-sidebar .collapse-inner > .collapse:not(.show) {
+    display: none !important;
+  }
+
+  .sidebar.mena-sidebar .nav-item > .collapse.show,
+  .sidebar.mena-sidebar .collapse-inner > .collapse.show {
+    display: block !important;
+    height: auto !important;
+  }
+
+  .sidebar.mena-sidebar .nav-item .collapsing,
+  .sidebar.mena-sidebar .collapse-inner .collapsing {
+    display: none !important;
+    height: 0 !important;
+  }
+
+  .sidebar.mena-sidebar .nav-item .collapse .collapse-inner {
+    min-width: 0 !important;
+    max-width: 100%;
+    margin: 0 0.35rem 0.5rem !important;
+    box-shadow: none !important;
+    border-radius: 8px !important;
+  }
+
+  .sidebar.mena-sidebar .collapse-inner .collapse-item {
+    white-space: normal;
+    line-height: 1.3;
+    padding-top: 0.45rem;
+    padding-bottom: 0.45rem;
+  }
+
+  .sidebar.mena-sidebar .collapse-inner .collapse-item.pl-4,
+  .sidebar.mena-sidebar .collapse-inner .collapse.show .collapse-item {
+    padding-left: 1.35rem !important;
+    font-size: 0.82rem;
+  }
+
+  .sidebar.mena-sidebar .collapse-inner .mena-submenu-toggle {
+    padding-right: 1.75rem !important;
+  }
+
+  .sidebar.mena-sidebar .mena-submenu-toggle::after {
+    right: 0.5rem;
+  }
+}
+
+@media (max-width: 767.98px) {
+  .sidebar.mena-sidebar .nav-item .nav-link {
+    font-size: 0.9rem;
+  }
+}
+
 /* Safe areas (encoches) */
 @supports (padding: max(0px)) {
   .mena-content-wrapper {

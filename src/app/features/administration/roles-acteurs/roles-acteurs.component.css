@@ -1,9 +1,125 @@
-/* Page admin : petite mise en page sobre, dépend du thème bootstrap */
-.container-fluid {
-  padding-bottom: 2rem;
+.mena-rfp-page {
+  padding-bottom: 1.5rem;
 }
 
-table input[type='checkbox'] {
-  transform: scale(1.05);
+.mena-rfp-wrap {
+  border: 1px solid #e3e6f0;
+  border-radius: 0.35rem;
+  background: #fff;
 }
 
+.mena-rfp-matrix {
+  max-height: min(70vh, 820px);
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Ne pas étirer les colonnes sur toute la largeur de l’écran */
+.mena-rfp-table {
+  width: max-content;
+  min-width: 100%;
+  margin-bottom: 0;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.mena-rfp-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  background: #f8f9fc;
+  border-bottom: 2px solid #e3e6f0;
+  vertical-align: bottom;
+  padding: 0.5rem 0.35rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  color: #5a5c69;
+}
+
+.mena-rfp-col-fn {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  min-width: 14rem;
+  max-width: 22rem;
+  width: 16rem;
+  background: #fff;
+  border-right: 2px solid #e3e6f0;
+  padding: 0.45rem 0.65rem;
+  vertical-align: middle;
+  text-align: left;
+  font-weight: 600;
+}
+
+.mena-rfp-table thead .mena-rfp-col-fn {
+  z-index: 4;
+  background: #f8f9fc;
+}
+
+.mena-rfp-col-perm {
+  width: 3.25rem;
+  min-width: 3.25rem;
+  max-width: 3.75rem;
+  padding: 0.35rem 0.2rem;
+  vertical-align: middle;
+}
+
+.mena-rfp-perm-head {
+  display: inline-block;
+  max-width: 3rem;
+  line-height: 1.15;
+  word-break: break-word;
+  hyphens: auto;
+}
+
+.mena-rfp-fn-title {
+  display: block;
+  font-size: 0.8125rem;
+  line-height: 1.25;
+  font-weight: 600;
+  color: #3a3b45;
+}
+
+.mena-rfp-fn-module {
+  display: block;
+  margin-top: 0.15rem;
+  font-size: 0.7rem;
+  font-weight: 400;
+  color: #858796;
+  line-height: 1.2;
+}
+
+.mena-rfp-table tbody tr:nth-child(even) .mena-rfp-col-fn {
+  background: #fcfcfd;
+}
+
+.mena-rfp-table tbody tr:nth-child(even) td.mena-rfp-col-perm {
+  background: #fafbfc;
+}
+
+.mena-rfp-check {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 1.75rem;
+  cursor: pointer;
+}
+
+.mena-rfp-check .form-check-input {
+  position: static;
+  margin: 0;
+  float: none;
+  width: 1.1rem;
+  height: 1.1rem;
+  cursor: pointer;
+}
+
+.mena-rfp-cell--pending {
+  opacity: 0.5;
+}
+
+.mena-rfp-cell--pending .form-check-input {
+  cursor: wait;
+}

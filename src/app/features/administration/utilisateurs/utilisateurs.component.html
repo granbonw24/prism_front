@@ -1,4 +1,10 @@
 <div class="container-fluid px-2 px-sm-3">
+  <app-mena-context-dashboard
+    module="ADMIN"
+    subModule="utilisateurs"
+    [alwaysVisible]="true"
+  />
+
   <div class="card border-0 shadow-sm">
     <div class="card-header py-3 bg-white border-bottom-0">
       <div class="d-flex align-items-center justify-content-between">
@@ -44,19 +50,16 @@
                 </div>
               </div>
               <div class="form-group col-md-4 col-lg-3 mb-2 mb-lg-0">
-                <label class="small font-weight-bold text-muted mb-1 d-block" for="users-filter-role">Rôle</label>
-                <select
-                  id="users-filter-role"
-                  class="form-control form-control-sm"
+                <label class="small font-weight-bold text-muted mb-1 d-block">Rôle</label>
+                <app-mena-searchable-select
                   [(ngModel)]="listFilterRoleId"
                   (ngModelChange)="applyListFilters()"
+                  [options]="roleSelectOptions"
+                  nullLabel="Tous les rôles"
+                  placeholder="Rechercher…"
+                  inputClass="form-control form-control-sm"
                   [disabled]="saving"
-                >
-                  <option [ngValue]="null">Tous les rôles</option>
-                  <option *ngFor="let r of roles; trackBy: trackRoleById" [ngValue]="r.id">
-                    {{ r.libelleRole ?? r.codeRole ?? r.id }}
-                  </option>
-                </select>
+                />
               </div>
               <div class="form-group col-md-4 col-lg-3 mb-2 mb-lg-0">
                 <label class="small font-weight-bold text-muted mb-1 d-block" for="users-filter-actif">État</label>
@@ -242,28 +245,17 @@
           </div>
         </div>
 
-        <div class="mt-2">
-          <div class="small text-muted mb-2">Rôle</div>
-          <div class="form-row align-items-end">
-            <div class="form-group col-md-6 mb-2">
-              <label class="small text-muted">Filtrer</label>
-              <input class="form-control form-control-sm" [(ngModel)]="roleFilterCreate" [disabled]="saving" placeholder="Rechercher un rôle…" />
-            </div>
-            <div class="form-group col-md-6 mb-2 text-muted small">
-              Un utilisateur ne peut avoir qu’un seul rôle.
-            </div>
-          </div>
-          <select
-            class="form-control"
-            [ngModel]="createSelectedRoleId"
-            (ngModelChange)="createSelectedRoleId = $event"
+        <div class="form-group mt-2 mb-0">
+          <label class="small text-muted">Rôle</label>
+          <app-mena-searchable-select
+            [(ngModel)]="createSelectedRoleId"
+            [options]="roleSelectOptions"
+            nullLabel="— Sélectionner un rôle —"
+            placeholder="Rechercher…"
+            inputClass="form-control"
             [disabled]="saving"
-          >
-            <option [ngValue]="null">-- Sélectionner un rôle --</option>
-            <option *ngFor="let r of filteredRoles(roleFilterCreate); trackBy: trackRoleById" [ngValue]="r.id">
-              {{ r.libelleRole ?? r.codeRole ?? r.id }}
-            </option>
-          </select>
+          />
+          <small class="form-text text-muted">Un utilisateur ne peut avoir qu’un seul rôle.</small>
         </div>
 
         <div class="mt-3">
@@ -277,17 +269,13 @@
           <div class="form-row">
             <div class="form-group col-md-6" *ngFor="let scope of scopeConfigs">
               <label class="small text-muted">{{ scope.label }}</label>
-              <select
-                class="form-control"
+              <app-mena-searchable-select
                 [ngModel]="createForm[scope.key]"
                 (ngModelChange)="onScopeChanged(createForm, scope.key, $event)"
+                [options]="menaScopeOptions(scope.key, createForm)"
+                nullLabel="— Non rattaché —"
                 [disabled]="saving"
-              >
-                <option [ngValue]="null">— Non rattaché —</option>
-                <option *ngFor="let option of filteredScopeOptions(scope.key, createForm); trackBy: trackScopeById" [ngValue]="option.id">
-                  {{ optionLabel(option) }}
-                </option>
-              </select>
+              />
             </div>
           </div>
           <div class="text-danger small" *ngIf="!scopeIsValid(createSelectedRoleId, createForm)">
@@ -345,16 +333,16 @@
               <td>{{ scopeLabel(d.region) }}</td>
             </tr>
             <tr>
+              <th>Département</th>
+              <td>{{ scopeLabel(d.departement) }}</td>
+            </tr>
+            <tr>
               <th>DRENA</th>
               <td>{{ scopeLabel(d.drena) }}</td>
             </tr>
             <tr>
               <th>IEPP</th>
               <td>{{ scopeLabel(d.iep) }}</td>
-            </tr>
-            <tr>
-              <th>Département</th>
-              <td>{{ scopeLabel(d.departement) }}</td>
             </tr>
             <tr>
               <th>Sous-préfecture</th>
@@ -416,24 +404,17 @@
           </div>
         </div>
 
-        <div class="mt-2">
-          <div class="small text-muted mb-2">Rôle</div>
-          <div class="form-row align-items-end">
-            <div class="form-group col-md-6 mb-2">
-              <label class="small text-muted">Filtrer</label>
-              <input class="form-control form-control-sm" [(ngModel)]="roleFilterEdit" [disabled]="saving" placeholder="Rechercher un rôle…" />
-            </div>
-            <div class="form-group col-md-6 mb-2 text-muted small">
-              Un utilisateur ne peut avoir qu’un seul rôle.
-            </div>
-          </div>
+        <div class="form-group mt-2 mb-0">
+          <label class="small text-muted">Rôle</label>
           <app-mena-searchable-select
-            class="form-control"
             [(ngModel)]="editSelectedRoleId"
-            [options]="menaRoleOptions(roleFilterEdit)"
-            nullLabel="-- Sélectionner un rôle --"
+            [options]="roleSelectOptions"
+            nullLabel="— Sélectionner un rôle —"
+            placeholder="Rechercher…"
+            inputClass="form-control"
             [disabled]="saving"
           />
+          <small class="form-text text-muted">Un utilisateur ne peut avoir qu’un seul rôle.</small>
         </div>
 
         <div class="mt-3">
@@ -448,7 +429,6 @@
             <div class="form-group col-md-6" *ngFor="let scope of scopeConfigs">
               <label class="small text-muted">{{ scope.label }}</label>
               <app-mena-searchable-select
-                class="form-control"
                 [ngModel]="editForm[scope.key]"
                 (ngModelChange)="onScopeChanged(editForm, scope.key, $event)"
                 [options]="menaScopeOptions(scope.key, editForm)"
@@ -473,4 +453,3 @@
   </div>
 </div>
 <div *ngIf="editUserId != null" class="modal-backdrop fade show"></div>
-

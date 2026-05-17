@@ -46,7 +46,16 @@
   </div>
 
   <!-- Mini tableau de bord (carte actif/inactif seulement si colonne booléenne pertinente) -->
-  <div class="row mena-mini-dash mb-4">
+  <app-mena-context-dashboard
+    *ngIf="contextDashboardModule"
+    [module]="contextDashboardModule"
+    [centreType]="contextCentreTypeForDash()"
+    [subModule]="contextDashboardSubModule"
+    [apiPath]="apiPath"
+    [alwaysVisible]="contextDashboardAlwaysVisible"
+  />
+
+  <div class="row mena-mini-dash mb-4" *ngIf="!contextDashboardModule">
     <div
       class="mb-3 mb-lg-0"
       [ngClass]="hasEtatStats ? 'col-sm-6 col-lg-4' : 'col-sm-6 col-lg-6'"
@@ -133,6 +142,21 @@
     {{ errorMessage }}
   </div>
 
+  <app-mena-workflow-queue-toolbar
+    *ngIf="hasWorkflow && !loading && !errorMessage"
+    [rows]="rows"
+    [session]="auth.currentSession"
+    [activeTab]="workflowQueueTab"
+    (activeTabChange)="onWorkflowQueueTabChange($event)"
+    [filterCentreId]="workflowFilterCentreId"
+    (filterCentreIdChange)="workflowFilterCentreId = $event; resetListPage()"
+    [filterConseiller]="workflowFilterConseiller"
+    (filterConseillerChange)="workflowFilterConseiller = $event; resetListPage()"
+    [centreOptions]="workflowCentreFilterOptions"
+    [conseillerOptions]="workflowConseillerFilterOptions"
+    [disabled]="loading"
+  />
+
   <div *ngIf="!loading && !errorMessage" class="card shadow-sm mb-4 mena-card">
     <div
       class="card-header py-3 d-flex flex-wrap align-items-center gap-2 mena-list-card-header"
@@ -187,7 +211,7 @@
               <th>#</th>
               <th *ngIf="hasWorkflow">Validation</th>
               <th *ngFor="let col of columns">{{ columnHeaderLabel(col) }}</th>
-              <th *ngIf="canUseRowActions" class="text-right mena-col-actions">Actions</th>
+              <th *ngIf="showActionsColumn" class="text-right mena-col-actions">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -205,8 +229,15 @@
               >
                 {{ formatCell(row[col], col) }}
               </td>
-              <td *ngIf="canUseRowActions" class="text-right text-nowrap mena-col-actions">
+              <td *ngIf="showActionsColumn" class="text-right text-nowrap mena-col-actions">
                 <div class="mena-row-actions">
+                  <app-mena-row-action
+                    *ngIf="resolveRowId(row) != null"
+                    variant="detail"
+                    title="Détails"
+                    ariaLabel="Détails"
+                    (clicked)="openDetails(row)"
+                  />
                   <app-mena-row-action
                     *ngIf="hasCreateForm && canUpdateRecord && resolveRowId(row) != null"
                     variant="edit"
@@ -323,6 +354,15 @@
     </div>
   </div>
 </div>
+
+<app-mena-record-detail-modal
+  [open]="detailModalOpen"
+  [title]="detailModalTitle"
+  [subtitle]="detailSubtitle"
+  [loading]="detailLoading"
+  [fields]="detailFields"
+  (closed)="closeDetails()"
+/>
 
 <!-- Modal création / édition -->
 <div

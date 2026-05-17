@@ -24,7 +24,6 @@ type RoleId = number | null;
 })
 export class RolesActeursComponent {
   loading = false;
-  saving = false;
   errorMessage: string | null = null;
 
   roles: AppRole[] = [];
@@ -35,6 +34,8 @@ export class RolesActeursComponent {
   selectedRoleId: RoleId = null;
 
   private currentAllowed = new Set<string>();
+  /** Cases en cours d’enregistrement (une seule à la fois par cellule). */
+  private pendingCells = new Set<string>();
 
   constructor(private readonly admin: AdministrationService) {}
 
@@ -76,52 +77,90 @@ export class RolesActeursComponent {
   }
 
   isChecked(fnId: number, permId: number): boolean {
-    return this.currentAllowed.has(`${fnId}:${permId}`);
+    return this.currentAllowed.has(this.cellKey(fnId, permId));
   }
 
-  async toggle(
-    fnId: number,
-    permId: number,
-    ev: Event,
-  ): Promise<void> {
+  isPending(fnId: number, permId: number): boolean {
+    return this.pendingCells.has(this.cellKey(fnId, permId));
+  }
+
+  trackFonctionnalite(_index: number, f: Fonctionnalite): number {
+    return f.id;
+  }
+
+  trackPermission(_index: number, p: Permission): number {
+    return p.id;
+  }
+
+  async toggle(fnId: number, permId: number, ev: Event): Promise<void> {
     if (this.selectedRoleId == null) return;
+
+    const key = this.cellKey(fnId, permId);
+    if (this.pendingCells.has(key)) return;
+
     const target = ev.target as HTMLInputElement | null;
     const checked = target?.checked ?? false;
-    this.saving = true;
-    this.errorMessage = null;
-    try {
-      const existing = this.allMappings.find(
-        (m) =>
-          m?.role?.id === this.selectedRoleId &&
-          m?.fonctionnalite?.id === fnId &&
-          m?.permission?.id === permId,
-      );
+    const wasChecked = this.currentAllowed.has(key);
 
+    if (checked === wasChecked) return;
+
+    this.applyChecked(key, checked);
+    this.pendingCells.add(key);
+    this.errorMessage = null;
+
+    const existing = this.findMapping(fnId, permId);
+
+    try {
       if (checked) {
         if (!existing) {
-          await firstValueFrom(
+          const created = await firstValueFrom(
             this.admin.addRoleFonctionnalitePermission({
               role: { id: this.selectedRoleId },
               fonctionnalite: { id: fnId },
               permission: { id: permId },
             }),
           );
+          this.allMappings = [...this.allMappings, created];
         }
-      } else {
-        if (existing?.id != null) {
-          await firstValueFrom(
-            this.admin.removeRoleFonctionnalitePermission(existing.id),
-          );
-        }
+      } else if (existing?.id != null) {
+        await firstValueFrom(
+          this.admin.removeRoleFonctionnalitePermission(existing.id),
+        );
+        this.allMappings = this.allMappings.filter((m) => m.id !== existing.id);
       }
-
-      // Recharger pour refléter l'état exact côté serveur
-      await this.reload();
     } catch (e) {
+      this.applyChecked(key, wasChecked);
+      if (target) {
+        target.checked = wasChecked;
+      }
       this.errorMessage = this.formatError(e);
     } finally {
-      this.saving = false;
+      this.pendingCells.delete(key);
     }
+  }
+
+  private cellKey(fnId: number, permId: number): string {
+    return `${fnId}:${permId}`;
+  }
+
+  private applyChecked(key: string, checked: boolean): void {
+    if (checked) {
+      this.currentAllowed.add(key);
+    } else {
+      this.currentAllowed.delete(key);
+    }
+  }
+
+  private findMapping(
+    fnId: number,
+    permId: number,
+  ): RoleFonctionnalitePermission | undefined {
+    return this.allMappings.find(
+      (m) =>
+        m?.role?.id === this.selectedRoleId &&
+        m?.fonctionnalite?.id === fnId &&
+        m?.permission?.id === permId,
+    );
   }
 
   private rebuildAllowedSet(): void {
@@ -166,6 +205,17 @@ export class RolesActeursComponent {
     const code = (p.codePermission ?? '').trim();
     if (lib && code) return `${lib} · ${code}`;
     return lib || code || String(p.id);
+  }
+
+  /** Libellé court pour l’en-tête de colonne (évite l’étirement horizontal). */
+  permissionHeaderShort(p: Permission): string {
+    const code = (p.codePermission ?? '').trim();
+    if (code) {
+      return code.length > 14 ? `${code.slice(0, 13)}…` : code;
+    }
+    const lib = (p.libellePermission ?? '').trim();
+    if (!lib) return String(p.id);
+    return lib.length > 14 ? `${lib.slice(0, 13)}…` : lib;
   }
 
   fonctionnaliteRowLabel(f: Fonctionnalite): string {

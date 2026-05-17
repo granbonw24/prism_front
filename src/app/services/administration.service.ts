@@ -21,6 +21,7 @@ import {
   Permission,
   PersonnelAdmin,
   PersonnelAdminDashboard,
+  PersonnelContextDashboard,
   RoleFonctionnalitePermission,
 } from '@models/administration';
 
@@ -200,6 +201,22 @@ export class AdministrationService {
     return this.http.get<PersonnelAdminDashboard>(
       `${this.apiBaseUrl}/api/admin/personnel/dashboard`,
       { params: { centreId } },
+    );
+  }
+
+  getPersonnelContextDashboard(params: {
+    centreId?: number | null;
+    centreType?: string | null;
+  }): Observable<PersonnelContextDashboard> {
+    let httpParams = new HttpParams();
+    if (params.centreId != null) {
+      httpParams = httpParams.set('centreId', String(params.centreId));
+    } else if (params.centreType != null && params.centreType.trim() !== '') {
+      httpParams = httpParams.set('centreType', params.centreType.trim());
+    }
+    return this.http.get<PersonnelContextDashboard>(
+      `${this.apiBaseUrl}/api/admin/personnel/dashboard`,
+      { params: httpParams },
     );
   }
 

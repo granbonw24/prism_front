@@ -74,6 +74,21 @@
     </div>
   </div>
 
+  <app-mena-workflow-queue-toolbar
+    *ngIf="showWorkflowQueueTabs && !loading"
+    [rows]="rows"
+    [session]="auth.currentSession"
+    [activeTab]="workflowQueueTab"
+    (activeTabChange)="onWorkflowQueueTabChange($event)"
+    [filterCentreId]="filterAlphaId"
+    (filterCentreIdChange)="onWorkflowCentreFilterChange($event)"
+    [filterConseiller]="workflowFilterConseiller"
+    (filterConseillerChange)="workflowFilterConseiller = $event"
+    [centreOptions]="workflowCentreFilterOptions"
+    [conseillerOptions]="workflowConseillerFilterOptions"
+    [disabled]="loading"
+  />
+
   <div class="card border-0 shadow-sm">
     <div class="card-header bg-white border-bottom-0 py-3">
       <h6 class="m-0 font-weight-bold text-primary">Liste des suivis de visite</h6>

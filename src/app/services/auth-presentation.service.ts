@@ -28,6 +28,9 @@ export class AuthPresentationService {
   }
 
   scopeSummary(session: AuthSession | null | undefined): string {
+    if (session?.nationalView || (session?.scopeLabel && session.scopeMode === 'NATIONAL')) {
+      return session.scopeLabel?.trim() || 'Vue nationale';
+    }
     const scope = this.mainScope(session);
     return scope ? `${scope.label} ${this.referenceLabel(scope.ref, scope.id)}` : '';
   }

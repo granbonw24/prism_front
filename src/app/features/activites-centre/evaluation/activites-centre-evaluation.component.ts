@@ -7,6 +7,15 @@ import { Component, Inject, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { forkJoin } from 'rxjs';
 import { AuthService } from '@services/auth.service';
+import { MenaWorkflowQueueToolbarComponent } from '@shared/mena-workflow-queue-toolbar/mena-workflow-queue-toolbar.component';
+import {
+  collectConseillerFilterOptions,
+  readWorkflowQueueTab,
+  resolveRowConseillerLogin,
+  rowMatchesWorkflowTab,
+  type WorkflowQueueTab,
+} from '@core/workflow/workflow-queue.util';
+
 import {
   menaActivitesRefOptions,
   sortActivitesRefs,
@@ -19,6 +28,7 @@ import {
   toMenaSelectOptionsFromPairs,
 } from '@shared/mena-searchable-select/mena-select-options.util';
 import { MenaToolbarButtonComponent } from '@shared/mena-toolbar-button/mena-toolbar-button.component';
+import { MenaContextDashboardComponent } from '@shared/mena-context-dashboard/mena-context-dashboard.component';
 
 type Ref = {
   id?: number | null;
@@ -84,7 +94,9 @@ type EvaluationForm = {
     FormsModule,
     MenaRowActionButtonComponent,
     MenaSearchableSelectComponent,
+    MenaWorkflowQueueToolbarComponent,
     MenaToolbarButtonComponent,
+    MenaContextDashboardComponent,
   ],
   templateUrl: './activites-centre-evaluation.component.html',
   styleUrl: './activites-centre-evaluation.component.css',
@@ -113,9 +125,25 @@ export class ActivitesCentreEvaluationComponent implements OnInit {
 
   constructor(
     private readonly http: HttpClient,
-    private readonly auth: AuthService,
+    readonly auth: AuthService,
     @Inject(API_BASE_URL) private readonly apiBaseUrl: string,
   ) {}
+
+  get workflowConseillerFilterOptions() {
+    return collectConseillerFilterOptions(this.rows as Record<string, unknown>[]);
+  }
+
+  get workflowCentreFilterOptions(): Array<{ value: number | ''; label: string }> {
+    return [
+      { value: '', label: 'Tous les centres' },
+      ...this.alphas
+        .map((a) => ({
+          value: this.alphaOptionId(a) ?? ('' as const),
+          label: this.alphaOptionLabel(a),
+        }))
+        .filter((o) => o.value !== ''),
+    ];
+  }
 
   ngOnInit(): void {
     this.reload();

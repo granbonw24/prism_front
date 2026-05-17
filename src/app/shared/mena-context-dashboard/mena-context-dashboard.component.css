@@ -1,0 +1,8 @@
+.mena-context-dashboard .card-header {
+  border-bottom: 1px solid var(--mena-card-border, #e8e4df);
+}
+
+.mena-context-dashboard .mena-mini-dash > [class*='col-'] {
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+}

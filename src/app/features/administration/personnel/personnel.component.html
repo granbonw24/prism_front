@@ -13,10 +13,24 @@
     {{ errorMessage }}
   </div>
 
-  <div class="card border-0 shadow-sm mb-3">
-    <div class="card-body">
+  <div class="card border-0 shadow-sm mb-3 mena-personnel-filters-card">
+    <div class="card-body pb-2">
+      <h6 class="small font-weight-bold text-primary mb-3">Sélection du centre</h6>
       <div class="form-row align-items-end">
-        <div class="form-group col-md-6">
+        <div class="form-group col-md-4 col-lg-3">
+          <label class="small text-muted" for="centreTypeSelect">Type de centre</label>
+          <app-mena-searchable-select
+            id="centreTypeSelect"
+            [(ngModel)]="centreTypeFilter"
+            (ngModelChange)="onCentreTypeChange()"
+            [options]="menaCentreTypeOptions()"
+            [searchable]="false"
+            [allowNull]="false"
+            nullLabel="Tous les types"
+            [disabled]="loading || saving"
+          />
+        </div>
+        <div class="form-group col-md-8 col-lg-6">
           <label class="small text-muted" for="centreSelect">Centre</label>
           <app-mena-searchable-select
             id="centreSelect"
@@ -24,18 +38,20 @@
             (ngModelChange)="onCentreChange()"
             [options]="menaCentreOptions()"
             nullLabel="-- Sélectionner un centre --"
-            [disabled]="loading || saving"
-            [loading]="refsLoading"
+            [disabled]="loading || saving || centresLoading"
+            [loading]="refsLoading || centresLoading"
           />
-        </div>
-
-        <div class="form-group col-md-6 text-right" *ngIf="dashboard && centreId != null">
-          <div class="small text-muted">Personnel correspondant aux filtres</div>
-          <div class="h4 mb-0">{{ dashboard.total }}</div>
         </div>
       </div>
     </div>
   </div>
+
+  <app-mena-context-dashboard
+    module="PERSONNEL"
+    [centreType]="personnelCentreTypeForDash"
+    [centreId]="centreId"
+    [alwaysVisible]="true"
+  />
 
   <div class="card border-0 shadow-sm mb-4" *ngIf="centreId != null">
     <div id="createPersonnelCard"></div>
@@ -268,6 +284,13 @@
                 <ng-container *ngIf="editingId !== r.id; else editActions">
                   <div class="mena-row-actions justify-content-center">
                     <app-mena-row-action
+                      variant="detail"
+                      title="Détails"
+                      ariaLabel="Détails"
+                      [disabled]="saving"
+                      (clicked)="openDetails(r)"
+                    />
+                    <app-mena-row-action
                       variant="edit"
                       title="Modifier"
                       ariaLabel="Modifier"
@@ -340,3 +363,10 @@
   </div>
 </div>
 
+<app-mena-record-detail-modal
+  [open]="detailModalOpen"
+  title="Détails du personnel"
+  [subtitle]="detailSubtitle"
+  [fields]="detailFields"
+  (closed)="closeDetails()"
+/>

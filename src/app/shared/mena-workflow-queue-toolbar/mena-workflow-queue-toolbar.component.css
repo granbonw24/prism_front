@@ -1,0 +1,22 @@
+.mena-workflow-tabs .nav-link {
+  border-radius: 8px 8px 0 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--mena-muted, #6b6560);
+  padding: 0.45rem 0.75rem;
+}
+
+.mena-workflow-tabs .nav-link.active {
+  color: var(--mena-orange-800, #b54e10);
+  border-color: rgba(214, 111, 30, 0.25);
+  background: #fff;
+}
+
+.mena-workflow-tab-count {
+  font-size: 0.7rem;
+  vertical-align: middle;
+}
+
+.mena-workflow-filters {
+  padding: 0 0.15rem 0.5rem;
+}

@@ -31,6 +31,9 @@ export interface LoginResponse {
   sousPrefecture?: AuthReference | null;
   commune?: AuthReference | null;
   localite?: AuthReference | null;
+  nationalView?: boolean;
+  scopeMode?: string;
+  scopeLabel?: string;
 }
 
 export interface AuthMeResponse {
@@ -53,6 +56,9 @@ export interface AuthMeResponse {
   sousPrefecture?: AuthReference | null;
   commune?: AuthReference | null;
   localite?: AuthReference | null;
+  nationalView?: boolean;
+  scopeMode?: string;
+  scopeLabel?: string;
 }
 
 export interface AuthSession {
@@ -75,4 +81,8 @@ export interface AuthSession {
   sousPrefecture?: AuthReference | null;
   commune?: AuthReference | null;
   localite?: AuthReference | null;
+  /** Vue sur tout le territoire (pas de circonscription IEP/DRENA opérationnelle). */
+  nationalView?: boolean;
+  scopeMode?: string;
+  scopeLabel?: string;
 }
