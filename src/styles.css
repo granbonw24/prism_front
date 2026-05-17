@@ -23,9 +23,16 @@
   --mena-radius: 10px;
 }
 
+.mena-required-mark {
+  color: var(--mena-orange-700);
+  font-weight: 700;
+}
+
 html,
 body {
   font-family: "Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
   color: var(--mena-ink);
   /* Blanc cassé très légèrement orangé */
   background-color: var(--mena-surface);

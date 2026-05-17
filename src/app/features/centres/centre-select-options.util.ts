@@ -49,11 +49,7 @@ export function menaNatureSelectOptions(items: readonly NatureOption[]): MenaSel
 }
 
 export function menaAutoriteSelectOptions(items: readonly AutoriteOption[]): MenaSelectOption<number>[] {
-  return toMenaSelectOptions(items, (a) => a.id, (a) => {
-    const code = a.codeAutorisation?.trim() || `AUT#${a.id}`;
-    const libelle = a.libelleAutoriteAutorisation?.trim() || '—';
-    return `${code} — ${libelle}`;
-  });
+  return toMenaSelectOptions(items, (a) => a.id, (a) => a.libelleAutoriteAutorisation?.trim() || '—');
 }
 
 export function menaPeriodiciteSelectOptions(items: readonly PeriodiciteOption[]): MenaSelectOption<number>[] {

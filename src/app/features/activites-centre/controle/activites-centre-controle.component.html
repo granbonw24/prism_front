@@ -27,8 +27,7 @@
         <div class="form-group col-md-3 col-sm-12 mb-2 mb-md-0">
           <label class="small text-muted mb-1">Centre Alpha</label>
           <app-mena-searchable-select
-            class="form-control form-control-sm"
-            [(ngModel)]="filterAlphaId"
+              [(ngModel)]="filterAlphaId"
             [options]="menaAlphaFilterOptions()"
             [allowNull]="false"
             inputClass="form-control form-control-sm"
@@ -37,8 +36,7 @@
         <div class="form-group col-md-3 col-sm-12 mb-2 mb-md-0">
           <label class="small text-muted mb-1">Période d’activité</label>
           <app-mena-searchable-select
-            class="form-control form-control-sm"
-            [(ngModel)]="filterPeriodeId"
+              [(ngModel)]="filterPeriodeId"
             [options]="menaPeriodeFilterOptions()"
             [allowNull]="false"
             inputClass="form-control form-control-sm"
@@ -206,8 +204,7 @@
             <div class="form-group col-md-5">
               <label>Manuel</label>
               <app-mena-searchable-select
-                  class="form-control form-control-sm"
-                  [(ngModel)]="kit.idManuel"
+              [(ngModel)]="kit.idManuel"
                   [options]="menaManuelOptions()"
                   inputClass="form-control form-control-sm"
                   [disabled]="saving"

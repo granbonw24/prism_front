@@ -12,6 +12,7 @@ import {
 import { ActivatedRoute } from '@angular/router';
 import { Subscription } from 'rxjs';
 import type { ReferentielFormField } from '@core/config/referentiel-form.types';
+import { filterVisibleListColumns } from '@core/config/list-column-visibility';
 import { resolveColumnHeaderLabel } from '@core/config/referentiel-column-labels';
 import { API_BASE_URL } from '@core/tokens/api-base-url.token';
 import { formatHttpError } from '@core/utils/http-error.util';
@@ -1220,14 +1221,16 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
       'resourcePath',
       'recordId',
     ]);
-    const businessVisibleKeys = visibleKeys.filter((k) => !workflowKeys.has(k));
+    const businessVisibleKeys = filterVisibleListColumns(
+      visibleKeys.filter((k) => !workflowKeys.has(k)),
+    );
     businessVisibleKeys.sort();
     this.filterableKeys = businessVisibleKeys;
 
     const preferred = this.inputListColumnKeys ?? this.routeListColumnKeys;
     if (preferred != null && preferred.length > 0) {
-      this.columns = preferred.filter(
-        (k) => k in first && !hiddenIds.has(k) && !workflowKeys.has(k),
+      this.columns = filterVisibleListColumns(
+        preferred.filter((k) => k in first && !hiddenIds.has(k) && !workflowKeys.has(k)),
       );
       return;
     }

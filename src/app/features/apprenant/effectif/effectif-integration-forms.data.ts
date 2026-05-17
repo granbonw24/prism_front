@@ -15,7 +15,7 @@ function num(key: string, label: string): ReferentielFormField {
 /** Deuxième FK CEC (`cecIdCentre` côté JPA) — même liste `/api/cec`, libellé distinct. */
 const FK_CEC_ID_CENTRE: ReferentielFormField = {
   key: 'cecIdCentre',
-  label: 'Centre CEC (liaison)',
+  label: 'École de rattachement',
   type: 'select',
   required: true,
   optionsApiPath: '/api/cec',

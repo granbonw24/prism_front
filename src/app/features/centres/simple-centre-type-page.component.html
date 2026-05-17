@@ -28,7 +28,7 @@
 
   <div *ngIf="isCreatePage" class="card border-0 shadow-sm mb-4 mena-long-form-card">
     <div class="card-header py-3 bg-white border-bottom-0">
-      <h6 class="m-0 font-weight-bold text-primary">Enregistrer</h6>
+      <h6 class="m-0 font-weight-bold text-primary">Enregistrement de centre</h6>
     </div>
     <div class="card-body pt-2 mena-wizard-form-panel">
       <div class="mena-wizard-steps">
@@ -116,7 +116,7 @@
           </div>
           <div class="form-group col-md-4">
             <label class="small text-muted">Contact</label>
-            <input class="form-control" [(ngModel)]="model.promoteur.personnePhysique!.contact" [disabled]="saving" />
+            <input class="form-control" [(ngModel)]="model.promoteur.personnePhysique!.contact" maxlength="10" [disabled]="saving" />
           </div>
         </div>
         <div class="form-row" *ngIf="promoteurMode === 'new' && model.promoteur.typePromoteur === 'PHYSIQUE'">
@@ -158,7 +158,7 @@
           </div>
           <div class="form-group col-md-3">
             <label class="small text-muted">Contact</label>
-            <input class="form-control" [(ngModel)]="model.promoteur.personneMorale!.contact" [disabled]="saving" />
+            <input class="form-control" [(ngModel)]="model.promoteur.personneMorale!.contact" maxlength="10" [disabled]="saving" />
           </div>
           <div class="form-group col-md-3">
             <label class="small text-muted">Boîte postale</label>
@@ -243,7 +243,7 @@
 
         <div class="form-row">
           <div class="form-group col-md-12">
-            <label class="small text-muted">Autorité autorisation</label>
+            <label class="small text-muted">Tutelle<span class="mena-required-mark" aria-hidden="true"> *</span></label>
             <app-mena-searchable-select
               [(ngModel)]="model.centre.autoriteAutorisationId"
               [options]="menaAutoriteOptions()"
@@ -296,7 +296,7 @@
 
         <div class="form-row">
           <div class="form-group col-md-6">
-            <label class="small text-muted">Nom milieu implantation</label>
+            <label class="small text-muted">Zone d’implantation</label>
             <input class="form-control bg-light" [value]="selectedCreateMilieuImplantationLabel()" readonly />
             <div class="small text-muted mt-1">Déduit automatiquement de la localité sélectionnée.</div>
           </div>
@@ -313,10 +313,10 @@
               [disabled]="true"
               readonly
             />
-            <div class="small text-muted mt-1">Calculé automatiquement (hommes + femmes).</div>
+            <div class="small text-muted mt-1">Calculé automatiquement (garçons + filles).</div>
           </div>
           <div class="form-group col-md-4">
-            <label class="small text-muted">Hommes / garçons</label>
+            <label class="small text-muted">Garçons</label>
             <input
               type="number"
               min="0"
@@ -327,7 +327,7 @@
             />
           </div>
           <div class="form-group col-md-4">
-            <label class="small text-muted">Femmes / filles</label>
+            <label class="small text-muted">Filles</label>
             <input
               type="number"
               min="0"
@@ -364,7 +364,7 @@
       <div *ngIf="stepIndex === 2">
         <div class="form-row">
           <div class="form-group col-md-12">
-            <label class="small text-muted">Libellé</label>
+            <label class="small text-muted">{{ centreLibelleFieldLabel() }}<span class="mena-required-mark" aria-hidden="true"> *</span></label>
             <input class="form-control" [(ngModel)]="model.libelle" [disabled]="saving" />
           </div>
         </div>
@@ -464,7 +464,7 @@
                 <ng-container *ngIf="recapWizardExistingPromoteurDetails() as p; else noExistingPromoteurDetails">
                   <dl class="mena-centre-fiche-dl">
                     <dt>Code</dt><dd>{{ p.details?.codePromoteur || p.code || '—' }}</dd>
-                    <dt>Libellé</dt><dd>{{ p.details?.libellePromoteur || p.libelle || '—' }}</dd>
+                    <dt>Promoteur</dt><dd>{{ p.details?.libellePromoteur || p.libelle || '—' }}</dd>
                     <dt>Type</dt><dd>{{ p.details?.typePromoteur || '—' }}</dd>
                   </dl>
                   <ng-container *ngIf="p.details?.personnePhysique as pp">
@@ -596,23 +596,23 @@
     <div class="card-body pt-3">
       <div class="mb-3 p-2 bg-light rounded small border">
         <div class="mb-3">
-          <div class="font-weight-bold text-secondary mb-1">Recherche rapide</div>
+          <div class="font-weight-bold text-secondary mb-1">Recherche multicritère</div>
           <!-- <p class="text-muted mb-2" style="font-size: 0.85rem">
             Recherche <strong>codes / libellés</strong> via le paramètre <code>q</code>.
           </p> -->
           <div class="form-group col-md-12 px-0 mb-0">
-            <label class="mb-0 text-muted">Texte libre</label>
+            <label class="mb-0 text-muted">Libellé, localité, promoteur, localisation…</label>
             <input
               class="form-control form-control-sm"
               [(ngModel)]="searchQ"
-              placeholder="Code centre, libellé type, texte…"
+              (ngModelChange)="onListSearchChange()"
+              placeholder="Saisir un ou plusieurs critères…"
             />
           </div>
         </div>
 
         <div class="d-flex flex-wrap align-items-center mt-2">
-          <button type="button" class="btn btn-sm btn-primary" (click)="applyListFilters()">Filtrer</button>
-          <button type="button" class="btn btn-sm btn-outline-secondary ml-1" (click)="resetListFilters()">Réinitialiser</button>
+          <button type="button" class="btn btn-sm btn-outline-secondary" (click)="resetListFilters()">Réinitialiser</button>
           <span class="text-muted small ml-3" *ngIf="!loading">{{ totalElements }} résultat(s)</span>
         </div>
       </div>
@@ -622,7 +622,6 @@
           <thead class="thead-light">
             <tr>
               <th>Centre</th>
-              <th>Libellé</th>
               <th>Promoteur</th>
               <th>Localité</th>
               <th>IEP</th>
@@ -636,8 +635,7 @@
           </thead>
           <tbody>
             <tr *ngFor="let r of rows">
-              <td class="font-weight-bold">{{ r.codeCentre ?? r.idCentre }}</td>
-              <td>{{ r.libelle ?? '—' }}</td>
+              <td class="font-weight-bold">{{ r.libelle ?? '—' }}</td>
               <td>{{ promoteurSummary(r) }}</td>
               <td>{{ localiteLabel(r.idLocalite ?? null) }}</td>
               <td>{{ iepLabel(r.idIep ?? null) }}</td>
@@ -673,7 +671,7 @@
               </td>
             </tr>
             <tr *ngIf="rows.length === 0">
-              <td colspan="11" class="text-center text-muted py-4">Aucun enregistrement.</td>
+              <td colspan="10" class="text-center text-muted py-4">Aucun enregistrement.</td>
             </tr>
           </tbody>
         </table>
@@ -854,11 +852,7 @@
                 <td>{{ detailNatureLabel(d) }}</td>
               </tr>
               <tr>
-                <th>Périodicité</th>
-                <td>{{ detailPeriodiciteLabel(d) }}</td>
-              </tr>
-              <tr>
-                <th>Autorité autorisation</th>
+                <th>Tutelle</th>
                 <td>{{ detailAutoriteLabel(d) }}</td>
               </tr>
               <tr class="mena-detail-section-divider">
@@ -875,7 +869,7 @@
                 </td>
               </tr>
               <tr>
-                <th>Eau</th>
+                <th>Point d'eau</th>
                 <td>
                   <span *ngIf="d.aDeLeau === true" class="mena-bool-pill mena-bool-pill--yes">Oui</span>
                   <span *ngIf="d.aDeLeau === false" class="mena-bool-pill mena-bool-pill--no">Non</span>
@@ -904,11 +898,11 @@
                 <td>{{ d.totalApprenants ?? '—' }}</td>
               </tr>
               <tr>
-                <th>Hommes / garçons</th>
+                <th>Garçons</th>
                 <td>{{ d.totalHommes ?? '—' }}</td>
               </tr>
               <tr>
-                <th>Femmes / filles</th>
+                <th>Filles</th>
                 <td>{{ d.totalFemmes ?? '—' }}</td>
               </tr>
               <tr>
@@ -1070,19 +1064,11 @@
                 [disabled]="saving"
               />
             </div>
-            <div class="form-group col-md-3">
-              <label class="small text-muted">Périodicité</label>
-              <app-mena-searchable-select
-                [(ngModel)]="editForm.idPeriodicite"
-                [options]="menaPeriodiciteOptions()"
-                [disabled]="saving"
-              />
-            </div>
           </div>
 
           <div class="form-row">
             <div class="form-group col-md-6">
-              <label class="small text-muted">Autorité autorisation</label>
+              <label class="small text-muted">Tutelle<span class="mena-required-mark" aria-hidden="true"> *</span></label>
               <app-mena-searchable-select
                 [(ngModel)]="editForm.idAutoriteAutorisation"
                 [options]="menaAutoriteOptions()"
@@ -1155,7 +1141,7 @@
               <div class="small text-muted mt-1">Calculé automatiquement.</div>
             </div>
             <div class="form-group col-md-4">
-              <label class="small text-muted">Hommes / garçons</label>
+              <label class="small text-muted">Garçons</label>
               <input
                 type="number"
                 min="0"
@@ -1166,7 +1152,7 @@
               />
             </div>
             <div class="form-group col-md-4">
-              <label class="small text-muted">Femmes / filles</label>
+              <label class="small text-muted">Filles</label>
               <input
                 type="number"
                 min="0"

@@ -33,8 +33,7 @@
         <div class="form-group col-md-3 col-sm-6 mb-2 mb-md-0">
           <label class="small text-muted mb-1">Centre Alpha</label>
           <app-mena-searchable-select
-            class="form-control form-control-sm"
-            [(ngModel)]="filterIdCentre"
+              [(ngModel)]="filterIdCentre"
             [options]="menaAlphaFilterOptions()"
             [allowNull]="false"
             inputClass="form-control form-control-sm"
@@ -44,8 +43,7 @@
         <div class="form-group col-md-2 col-sm-6 mb-2 mb-md-0">
           <label class="small text-muted mb-1">Nature document</label>
           <app-mena-searchable-select
-            class="form-control form-control-sm"
-            [(ngModel)]="filterIdNatureDocument"
+              [(ngModel)]="filterIdNatureDocument"
             [options]="menaNatureFilterOptions()"
             [allowNull]="false"
             inputClass="form-control form-control-sm"
@@ -55,8 +53,7 @@
         <div class="form-group col-md-2 col-sm-6 mb-2 mb-md-0">
           <label class="small text-muted mb-1">Type document</label>
           <app-mena-searchable-select
-            class="form-control form-control-sm"
-            [(ngModel)]="filterIdTypeDocument"
+              [(ngModel)]="filterIdTypeDocument"
             [options]="menaTypeFilterOptions()"
             [allowNull]="false"
             inputClass="form-control form-control-sm"
@@ -192,7 +189,6 @@
           <div class="form-group col-md-6">
             <label class="small text-muted">Centre Alpha *</label>
             <app-mena-searchable-select
-              class="form-control form-control-sm"
               [(ngModel)]="createForm.idCentre"
               [options]="menaAlphaFormOptions()"
               inputClass="form-control form-control-sm"
@@ -202,7 +198,6 @@
           <div class="form-group col-md-3">
             <label class="small text-muted">Nature *</label>
             <app-mena-searchable-select
-              class="form-control form-control-sm"
               [(ngModel)]="createForm.idNatureDocument"
               [options]="menaNatureFormOptions()"
               inputClass="form-control form-control-sm"
@@ -212,7 +207,6 @@
           <div class="form-group col-md-3">
             <label class="small text-muted">Type *</label>
             <app-mena-searchable-select
-              class="form-control form-control-sm"
               [(ngModel)]="createForm.idTypeDocument"
               [options]="menaTypeFormOptions()"
               inputClass="form-control form-control-sm"
@@ -294,7 +288,6 @@
           <div class="form-group col-md-6">
             <label class="small text-muted">Centre Alpha *</label>
             <app-mena-searchable-select
-              class="form-control form-control-sm"
               [(ngModel)]="editForm.idCentre"
               [options]="menaAlphaFormOptions()"
               inputClass="form-control form-control-sm"
@@ -304,7 +297,6 @@
           <div class="form-group col-md-3">
             <label class="small text-muted">Nature *</label>
             <app-mena-searchable-select
-              class="form-control form-control-sm"
               [(ngModel)]="editForm.idNatureDocument"
               [options]="menaNatureFormOptions()"
               inputClass="form-control form-control-sm"
@@ -314,7 +306,6 @@
           <div class="form-group col-md-3">
             <label class="small text-muted">Type *</label>
             <app-mena-searchable-select
-              class="form-control form-control-sm"
               [(ngModel)]="editForm.idTypeDocument"
               [options]="menaTypeFormOptions()"
               inputClass="form-control form-control-sm"

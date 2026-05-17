@@ -111,8 +111,9 @@ export class SimpleCentreTypePageComponent implements OnInit {
   totalElements = 0;
   totalPages = 0;
 
-  /** Recherche rapide → paramètre API `q`. */
+  /** Recherche multicritère (paramètre API `q`). */
   searchQ = '';
+  private listSearchDebounceHandle: ReturnType<typeof setTimeout> | null = null;
 
   /** Filtres liste ; `libelle` est mappé vers libelleCec / libellleCp / libelleSie selon `apiPath`. */
   simpleListFilter: Record<string, string> = {
@@ -861,16 +862,23 @@ export class SimpleCentreTypePageComponent implements OnInit {
 
   niveauTitle(): string {
     const p = this.apiPath ?? '';
-    if (p.includes('/cp')) return 'Niveau CP';
-    if (p.includes('/cec')) return 'Niveau CEC';
+    if (p.includes('/cp')) return 'Niveau classe passerelle';
+    if (p.includes('/cec')) return "Niveau centre d'éducation communautaire";
     return 'Niveau SIE';
   }
 
   salleTitle(): string {
     const p = this.apiPath ?? '';
-    if (p.includes('/cp')) return 'Salles CP';
-    if (p.includes('/cec')) return 'Salles CEC';
-    return 'Salles SIE';
+    if (p.includes('/cp')) return 'Nombre de classes passerelle';
+    if (p.includes('/cec')) return 'Nombre de salles';
+    return 'Nombre de salles';
+  }
+
+  centreLibelleFieldLabel(): string {
+    const p = this.apiPath ?? '';
+    if (p.includes('/cp')) return 'Nom de la classe passerelle';
+    if (p.includes('/cec')) return "Nom du centre d'éducation communautaire";
+    return 'Nom du centre SIE';
   }
 
   addNiveau(): void {
@@ -1150,6 +1158,17 @@ export class SimpleCentreTypePageComponent implements OnInit {
     return 'libelleSie';
   }
 
+  onListSearchChange(): void {
+    if (this.listSearchDebounceHandle != null) {
+      clearTimeout(this.listSearchDebounceHandle);
+    }
+    this.listSearchDebounceHandle = setTimeout(() => {
+      this.listSearchDebounceHandle = null;
+      this.pageIndex = 0;
+      this.loadAll();
+    }, 350);
+  }
+
   private buildSimpleListParams(): HttpParams {
     let p = new HttpParams()
       .set('page', String(this.pageIndex))
@@ -1158,13 +1177,6 @@ export class SimpleCentreTypePageComponent implements OnInit {
     const q = String(this.searchQ ?? '').trim();
     if (q !== '') {
       p = p.set('q', q);
-    }
-    const libKey = this.libelleQueryParam();
-    for (const [key, val] of Object.entries(this.simpleListFilter)) {
-      const s = String(val ?? '').trim();
-      if (s === '') continue;
-      const apiKey = key === 'libelle' ? libKey : key;
-      p = p.set(apiKey, s);
     }
     return p;
   }

@@ -46,10 +46,9 @@
           />
         </div>
         <div class="form-group col-md-3 col-sm-12 mb-2 mb-md-0">
-          <label class="small text-muted mb-1">Centre Alpha</label>
+          <label class="small text-muted mb-1">Centre d'Alphabétisation</label>
           <app-mena-searchable-select
-            class="form-control form-control-sm"
-            [(ngModel)]="filterAlphaId"
+              [(ngModel)]="filterAlphaId"
             [options]="menaAlphaFilterOptions()"
             [allowNull]="false"
             inputClass="form-control form-control-sm"
@@ -59,8 +58,7 @@
         <div class="form-group col-md-3 col-sm-12 mb-2 mb-md-0">
           <label class="small text-muted mb-1">Période d’activité</label>
           <app-mena-searchable-select
-            class="form-control form-control-sm"
-            [(ngModel)]="filterPeriodeId"
+              [(ngModel)]="filterPeriodeId"
             [options]="menaPeriodeFilterOptions()"
             [allowNull]="false"
             inputClass="form-control form-control-sm"
@@ -88,7 +86,7 @@
             <tr>
               <th style="width: 4rem">ID</th>
               <th>Niveau de validation</th>
-              <th>Centre Alpha</th>
+              <th>Centre d'Alphabétisation</th>
               <th>Période d’activité</th>
               <th *ngFor="let field of suiviFields">{{ field.label }}</th>
               <th *ngIf="showMaitriseColumns">Lecture</th>
@@ -205,9 +203,8 @@
       <div class="modal-body">
         <div class="form-row">
           <div class="form-group col-md-6">
-            <label class="small text-muted">Centre Alpha *</label>
+            <label class="small text-muted">Centre d'Alphabétisation *</label>
             <app-mena-searchable-select
-              class="form-control form-control-sm"
               [(ngModel)]="form.idAlpha"
               [options]="menaAlphaFormOptions()"
               inputClass="form-control form-control-sm"
@@ -217,7 +214,6 @@
           <div class="form-group col-md-6">
             <label class="small text-muted">Période d’activité *</label>
             <app-mena-searchable-select
-              class="form-control form-control-sm"
               [(ngModel)]="form.idPeriodeActivite"
               [options]="menaPeriodeFormOptions()"
               inputClass="form-control form-control-sm"

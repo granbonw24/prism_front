@@ -8,8 +8,8 @@ export const centresFeatureRoutes: Routes = [
     component: AlphaCentresComponent,
     data: {
       mode: 'create',
-      title: 'Nouveau centre Alpha',
-      createTitle: 'Nouveau centre Alpha',
+      title: "Centres d'Alphabétisation",
+      createTitle: "Enregistrement d'un centre d'Alphabétisation",
       subtitle: 'Assistant d’enregistrement en 4 étapes',
       listPath: '/centres/alpha',
       createPath: '/centres/alpha/nouveau',
@@ -21,7 +21,7 @@ export const centresFeatureRoutes: Routes = [
     component: AlphaCentresComponent,
     data: {
       mode: 'list',
-      title: 'Centres Alpha',
+      title: "Centres d'Alphabétisation",
       createPath: '/centres/alpha/nouveau',
       listPath: '/centres/alpha',
     },
@@ -31,8 +31,8 @@ export const centresFeatureRoutes: Routes = [
     component: SimpleCentreTypePageComponent,
     data: {
       mode: 'create',
-      title: 'Centres CEC',
-      createTitle: 'Nouveau centre CEC',
+      title: "Centres d'Éducation Communautaire",
+      createTitle: "Enregistrement d'un centre d'Éducation Communautaire",
       subtitle: 'Assistant d’enregistrement en 4 étapes',
       apiPath: '/api/cec',
       listPath: '/centres/cec',
@@ -44,7 +44,7 @@ export const centresFeatureRoutes: Routes = [
     component: SimpleCentreTypePageComponent,
     data: {
       mode: 'list',
-      title: 'Centres CEC',
+      title: "Centres d'Éducation Communautaire",
       apiPath: '/api/cec',
       createPath: '/centres/cec/nouveau',
       listPath: '/centres/cec',
@@ -55,8 +55,8 @@ export const centresFeatureRoutes: Routes = [
     component: SimpleCentreTypePageComponent,
     data: {
       mode: 'create',
-      title: 'Centres CP',
-      createTitle: 'Nouveau centre CP',
+      title: 'Classes Passerelle',
+      createTitle: "Enregistrement d'une classe passerelle",
       subtitle: 'Assistant d’enregistrement en 4 étapes',
       apiPath: '/api/cp',
       listPath: '/centres/cp',
@@ -68,7 +68,7 @@ export const centresFeatureRoutes: Routes = [
     component: SimpleCentreTypePageComponent,
     data: {
       mode: 'list',
-      title: 'Centres CP',
+      title: 'Classes Passerelle',
       apiPath: '/api/cp',
       createPath: '/centres/cp/nouveau',
       listPath: '/centres/cp',
@@ -80,7 +80,7 @@ export const centresFeatureRoutes: Routes = [
     data: {
       mode: 'create',
       title: 'Centres SIE',
-      createTitle: 'Nouveau centre SIE',
+      createTitle: "Enregistrement d'un centre SIE",
       subtitle: 'Assistant d’enregistrement en 4 étapes',
       apiPath: '/api/sie',
       listPath: '/centres/sie',

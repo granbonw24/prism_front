@@ -1,15 +1,30 @@
 .mena-searchable-select {
   position: relative;
+  display: block;
   width: 100%;
+}
+
+/* Évite le double cadre si un parent applique encore .form-control sur le composant */
+:host.form-control,
+:host.form-control-sm {
+  height: auto;
+  padding: 0;
+  border: none;
+  background: transparent;
+  box-shadow: none;
 }
 
 .mena-searchable-select__control {
   position: relative;
   display: flex;
   align-items: stretch;
+  width: 100%;
 }
 
 .mena-searchable-select__control input {
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
   padding-right: 4.25rem;
 }
 

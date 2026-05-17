@@ -380,7 +380,7 @@
                   [attr.for]="'cf-' + field.key"
                   class="small font-weight-bold text-secondary mena-field-label mb-1 d-block text-truncate"
                   [title]="field.label"
-                  >{{ field.label }}</label
+                  >{{ field.label }}<span *ngIf="field.required" class="mena-required-mark" aria-hidden="true"> *</span></label
                 >
                 <input
                   *ngIf="field.type === 'text'"
