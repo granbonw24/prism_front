@@ -3,9 +3,22 @@ import { Component, OnDestroy, OnInit } from '@angular/core';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { filter } from 'rxjs/operators';
 import { BRAND_CONFIG } from '@core/config/brand.config';
+import {
+  ACTIVITES_CENTRE_MENU_PERMISSIONS,
+  MENU_FEATURES,
+  PARAMETRAGE_GROUP_FEATURE,
+} from '@core/config/menu-rbac.config';
 import type { ReferentielMenuGroup } from '@core/config/referentiel-menu.groups';
 import { groupReferentielsForMenu } from '@core/config/referentiel-menu.groups';
 import { REFERENTIEL_ROUTE_DATA } from '@core/config/referentiel-routes.data';
+import type { MenuFeatureCode } from '@core/config/menu-rbac.config';
+import {
+  ADMIN_MENU_FEATURES,
+  APPRENANT_MENU_FEATURES,
+  CENTRES_MENU_FEATURES,
+  canViewAnyMenuFeature,
+  canViewMenuFeature,
+} from '@core/rbac/menu-rbac.util';
 import { AuthService } from '@services/auth.service';
 
 @Component({
@@ -25,21 +38,6 @@ export class MenuComponent implements OnInit, OnDestroy {
   private readonly menuExpanded = new Set<string>();
   /** Sections repliées explicitement par l’utilisateur (même si l’URL correspond). */
   private readonly menuCollapsed = new Set<string>();
-
-  private readonly activitesCentrePermissions = [
-    'ACTIVITES_CENTRE_PARTENARIAT:LIRE',
-    'ACTIVITES_CENTRE_PERFORMANCE:LIRE',
-    'ACTIVITES_CENTRE_CONTROLE:LIRE',
-    'ACTIVITES_CENTRE_EVALUATION:LIRE',
-    'ACTIVITES_CENTRE_INFOS:LIRE',
-    'POINTS_VISITES:LIRE',
-    'POINTS_VISITES:CREER',
-    'SUIVI_CONSEILLER:LIRE',
-    'VALIDATION_VISITES_CONSEILLER:VALIDER',
-    'SUIVI_SUPERVISEUR:LIRE',
-    'SUIVI_IEPP:LIRE',
-    'SUIVI_CENTRALE:LIRE',
-  ];
 
   constructor(
     private readonly router: Router,
@@ -122,7 +120,7 @@ export class MenuComponent implements OnInit, OnDestroy {
       { id: 'admin-gestion', prefixes: ['/administration/utilisateurs'] },
       { id: 'admin-securite', prefixes: ['/administration/acteurs', '/administration/role-permissions'] },
       { id: 'parametrage', prefixes: this.parametragePrefixes() },
-      ...this.referentielGroups.map((g) => ({
+      ...this.referentielGroupsAll.map((g) => ({
         id: this.groupCollapseId('ref', g.title),
         prefixes: this.refGroupPrefixes(g),
       })),
@@ -198,29 +196,92 @@ export class MenuComponent implements OnInit, OnDestroy {
     return this.allMenuSections().find((s) => s.id === sectionId)?.prefixes ?? [];
   }
 
+  canViewDashboard(): boolean {
+    return canViewMenuFeature(this.auth, MENU_FEATURES.DASHBOARD);
+  }
+
+  canViewCentres(): boolean {
+    return canViewAnyMenuFeature(this.auth, [...CENTRES_MENU_FEATURES]);
+  }
+
+  canViewCentre(feature: MenuFeatureCode | string): boolean {
+    return canViewMenuFeature(this.auth, feature as MenuFeatureCode);
+  }
+
+  canViewApprenantItem(feature: MenuFeatureCode | string): boolean {
+    return canViewMenuFeature(this.auth, feature as MenuFeatureCode);
+  }
+
+  canViewPersonnel(): boolean {
+    return canViewMenuFeature(this.auth, MENU_FEATURES.PERSONNEL);
+  }
+
+  canViewPromoteur(): boolean {
+    return canViewMenuFeature(this.auth, MENU_FEATURES.PROMOTEUR);
+  }
+
+  canViewApprenant(): boolean {
+    return canViewAnyMenuFeature(this.auth, [...APPRENANT_MENU_FEATURES]);
+  }
+
+  canViewParametrage(): boolean {
+    return this.visibleReferentielGroups.length > 0;
+  }
+
+  canViewParametrageGroup(group: ReferentielMenuGroup): boolean {
+    const menuGroup = group.items[0]?.menuGroup;
+    if (!menuGroup) {
+      return false;
+    }
+    return canViewMenuFeature(this.auth, PARAMETRAGE_GROUP_FEATURE[menuGroup]);
+  }
+
+  canViewAdministration(): boolean {
+    return canViewAnyMenuFeature(this.auth, [...ADMIN_MENU_FEATURES]);
+  }
+
+  canViewAdminUtilisateurs(): boolean {
+    return canViewMenuFeature(this.auth, MENU_FEATURES.ADMIN_UTILISATEURS);
+  }
+
+  canViewAdminSecurite(): boolean {
+    return (
+      canViewMenuFeature(this.auth, MENU_FEATURES.ADMIN_ACTEURS) ||
+      canViewMenuFeature(this.auth, MENU_FEATURES.ADMIN_ROLE_PERMISSIONS)
+    );
+  }
+
+  canViewAdminActeurs(): boolean {
+    return canViewMenuFeature(this.auth, MENU_FEATURES.ADMIN_ACTEURS);
+  }
+
+  canViewAdminRolePermissions(): boolean {
+    return canViewMenuFeature(this.auth, MENU_FEATURES.ADMIN_ROLE_PERMISSIONS);
+  }
+
   canViewActivitesCentre(): boolean {
-    return this.auth.hasAnyPermission(this.activitesCentrePermissions);
+    return this.auth.hasAnyPermission([...ACTIVITES_CENTRE_MENU_PERMISSIONS]);
   }
 
   canViewSuiviConseiller(): boolean {
     return (
-      this.auth.hasPermission('SUIVI_CONSEILLER:LIRE') ||
-      this.auth.hasPermission('POINTS_VISITES:LIRE') ||
-      this.auth.hasPermission('POINTS_VISITES:CREER') ||
-      this.auth.hasPermission('VALIDATION_VISITES_CONSEILLER:VALIDER')
+      canViewMenuFeature(this.auth, MENU_FEATURES.SUIVI_CONSEILLER) ||
+      canViewMenuFeature(this.auth, MENU_FEATURES.POINTS_VISITES) ||
+      this.auth.hasPermission(`${MENU_FEATURES.POINTS_VISITES}:CREER`) ||
+      this.auth.hasPermission(`${MENU_FEATURES.VALIDATION_VISITES_CONSEILLER}:VALIDER`)
     );
   }
 
   canViewSuiviSuperviseur(): boolean {
-    return this.auth.hasPermission('SUIVI_SUPERVISEUR:LIRE');
+    return canViewMenuFeature(this.auth, MENU_FEATURES.SUIVI_SUPERVISEUR);
   }
 
   canViewSuiviIepp(): boolean {
-    return this.auth.hasPermission('SUIVI_IEPP:LIRE');
+    return canViewMenuFeature(this.auth, MENU_FEATURES.SUIVI_IEPP);
   }
 
   canViewSuiviCentrale(): boolean {
-    return this.auth.hasPermission('SUIVI_CENTRALE:LIRE');
+    return canViewMenuFeature(this.auth, MENU_FEATURES.SUIVI_CENTRALE);
   }
 
   canViewActivitesCentreVisite(): boolean {
@@ -233,23 +294,27 @@ export class MenuComponent implements OnInit, OnDestroy {
   }
 
   canViewActivitesCentrePartenariat(): boolean {
-    return this.auth.hasPermission('ACTIVITES_CENTRE_PARTENARIAT:LIRE');
+    return canViewMenuFeature(this.auth, MENU_FEATURES.ACTIVITES_CENTRE_PARTENARIAT);
   }
 
   canViewActivitesCentrePerformance(): boolean {
-    return this.auth.hasPermission('ACTIVITES_CENTRE_PERFORMANCE:LIRE');
+    return canViewMenuFeature(this.auth, MENU_FEATURES.ACTIVITES_CENTRE_PERFORMANCE);
   }
 
   canViewActivitesCentreControle(): boolean {
-    return this.auth.hasPermission('ACTIVITES_CENTRE_CONTROLE:LIRE');
+    return canViewMenuFeature(this.auth, MENU_FEATURES.ACTIVITES_CENTRE_CONTROLE);
   }
 
   canViewActivitesCentreEvaluation(): boolean {
-    return this.auth.hasPermission('ACTIVITES_CENTRE_EVALUATION:LIRE');
+    return canViewMenuFeature(this.auth, MENU_FEATURES.ACTIVITES_CENTRE_EVALUATION);
   }
 
   canViewActivitesCentreInfos(): boolean {
-    return this.auth.hasPermission('ACTIVITES_CENTRE_INFOS:LIRE');
+    return canViewMenuFeature(this.auth, MENU_FEATURES.ACTIVITES_CENTRE_INFOS);
+  }
+
+  get visibleReferentielGroups(): ReferentielMenuGroup[] {
+    return this.referentielGroupsAll.filter((g) => this.canViewParametrageGroup(g));
   }
 
   /** Ouverture sidebar sans dépendre du JS Bootstrap (Angular + classes `.show`). */
@@ -316,7 +381,7 @@ export class MenuComponent implements OnInit, OnDestroy {
 
   /** Liens référentiels : alignés sur `app.routes` et les `apiPath` du backend. */
   readonly referentielRoutes = REFERENTIEL_ROUTE_DATA;
-  readonly referentielGroups = groupReferentielsForMenu(REFERENTIEL_ROUTE_DATA);
+  readonly referentielGroupsAll = groupReferentielsForMenu(REFERENTIEL_ROUTE_DATA);
   readonly brandMarkSrc = BRAND_CONFIG.markSrc;
   readonly brandAlt = BRAND_CONFIG.alt;
 

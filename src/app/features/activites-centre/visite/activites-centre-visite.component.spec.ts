@@ -255,7 +255,7 @@ describe('ActivitesCentreVisiteComponent', () => {
     http.verify();
   });
 
-  it('envoie les évaluations de maîtrise au backend sous forme BONNE/MOYENNE/MAUVAISE', () => {
+  it('envoie les évaluations de maîtrise au backend sous forme BONNE/MOYENNE/INSUFFISANT', () => {
     fixture.detectChanges();
 
     for (const req of http.match(() => true)) {
@@ -275,14 +275,14 @@ describe('ActivitesCentreVisiteComponent', () => {
     component.form.idPeriodeActivite = 1;
     component.form.maitriseSeanceLecture = 'BONNE';
     component.form.maitriseSeanceEcriture = 'MOYENNE';
-    component.form.maitriseSeanceCalcul = 'MAUVAISE';
+    component.form.maitriseSeanceCalcul = 'INSUFFISANT';
     component.save();
 
     const post = http.expectOne('http://api.test/api/visite');
     expect(post.request.method).toBe('POST');
     expect(post.request.body.maitriseSeanceLecture).toBe('BONNE');
     expect(post.request.body.maitriseSeanceEcriture).toBe('MOYENNE');
-    expect(post.request.body.maitriseSeanceCalcul).toBe('MAUVAISE');
+    expect(post.request.body.maitriseSeanceCalcul).toBe('INSUFFISANT');
     expect(post.request.body.idPeriodeActivite).toBe(1);
     post.flush({ id: 2 });
 

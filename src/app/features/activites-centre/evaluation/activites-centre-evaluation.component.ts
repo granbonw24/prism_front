@@ -48,7 +48,7 @@ type AlphaOption = {
 type EvaluationRow = {
   id?: number | null;
   alpha?: Ref | null;
-  periodeEvaluation?: Ref | null;
+  periodeActivite?: Ref | null;
   niveauEvaluation?: Ref | null;
   themeEvaluation?: Ref | null;
   tauxEvaluation?: Ref | null;
@@ -80,7 +80,7 @@ type ThemeTauxForm = {
 
 type EvaluationForm = {
   idAlpha: number | null;
-  idPeriodeEvaluation: number | null;
+  idPeriodeActivite: number | null;
   idNiveauEvaluation: number | null;
   typeEvaluation: TypeEvaluation | null;
   themesTaux: ThemeTauxForm[];
@@ -168,7 +168,7 @@ export class ActivitesCentreEvaluationComponent implements OnInit {
       [
         row.id,
         this.refLabel(row.alpha),
-        this.refLabel(row.periodeEvaluation),
+        this.refLabel(row.periodeActivite),
         this.refLabel(row.niveauEvaluation),
         this.typeLabel(row.typeEvaluation),
         this.themesTauxLabel(row),
@@ -200,7 +200,7 @@ export class ActivitesCentreEvaluationComponent implements OnInit {
       alphas: this.http.get<unknown>(`${this.apiBaseUrl}/api/alpha`, {
         params: { page: '0', size: '2000' },
       }),
-      periodes: this.http.get<unknown>(`${this.apiBaseUrl}/api/periodes-evaluation`),
+      periodes: this.http.get<unknown>(`${this.apiBaseUrl}/api/PeriodeActivites`),
       niveaux: this.http.get<unknown>(`${this.apiBaseUrl}/api/niveaux-evaluation`),
       themes: this.http.get<unknown>(`${this.apiBaseUrl}/api/themes-evaluation`),
     }).subscribe({
@@ -235,7 +235,7 @@ export class ActivitesCentreEvaluationComponent implements OnInit {
     this.editingId = row.id ?? null;
     this.form = {
       idAlpha: row.alpha?.id ?? null,
-      idPeriodeEvaluation: row.periodeEvaluation?.id ?? null,
+      idPeriodeActivite: row.periodeActivite?.id ?? null,
       idNiveauEvaluation: row.niveauEvaluation?.id ?? null,
       typeEvaluation: this.asTypeEvaluation(row.typeEvaluation),
       themesTaux:
@@ -504,7 +504,7 @@ export class ActivitesCentreEvaluationComponent implements OnInit {
   private emptyForm(): EvaluationForm {
     return {
       idAlpha: null,
-      idPeriodeEvaluation: null,
+      idPeriodeActivite: null,
       idNiveauEvaluation: null,
       typeEvaluation: null,
       themesTaux: [],

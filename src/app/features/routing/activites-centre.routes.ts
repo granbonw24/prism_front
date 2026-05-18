@@ -1,5 +1,7 @@
 import { Routes } from '@angular/router';
+import { MENU_FEATURES } from '@core/config/menu-rbac.config';
 import type { ReferentielFormField } from '@core/config/referentiel-form.types';
+import { withMenuPermission } from '@core/routing/route-permissions';
 import { ActivitesCentreControleComponent } from '@features/activites-centre/controle/activites-centre-controle.component';
 import { DossierCentreComponent } from '@features/activites-centre/dossier-centre/dossier-centre.component';
 import { ActivitesCentreEvaluationComponent } from '@features/activites-centre/evaluation/activites-centre-evaluation.component';
@@ -34,14 +36,18 @@ const alphaField = F('idAlpha', 'Centre Alpha', 'select', {
 });
 
 export const activitesCentreFeatureRoutes: Routes = [
-  {
-    path: 'activites-centre/dossier-centre',
-    component: DossierCentreComponent,
-    data: {
-      title: 'ACTIVITES CENTRE — Dossier centre',
+  withMenuPermission(
+    {
+      path: 'activites-centre/dossier-centre',
+      component: DossierCentreComponent,
+      data: {
+        title: 'ACTIVITES CENTRE — Dossier centre',
+      },
     },
-  },
-  {
+    MENU_FEATURES.ACTIVITES_CENTRE_PARTENARIAT,
+  ),
+  withMenuPermission(
+    {
     path: 'activites-centre/partenariat',
     component: ReferentielListPageComponent,
     data: {
@@ -74,7 +80,10 @@ export const activitesCentreFeatureRoutes: Routes = [
       ],
     },
   },
-  {
+    MENU_FEATURES.ACTIVITES_CENTRE_PARTENARIAT,
+  ),
+  withMenuPermission(
+    {
     path: 'activites-centre/performance',
     component: ReferentielListPageComponent,
     data: {
@@ -111,27 +120,38 @@ export const activitesCentreFeatureRoutes: Routes = [
       ],
     },
   },
-  {
-    path: 'activites-centre/controle',
-    component: ActivitesCentreControleComponent,
-    data: {
-      title: 'ACTIVITES CENTRE — Contrôle',
+    MENU_FEATURES.ACTIVITES_CENTRE_PERFORMANCE,
+  ),
+  withMenuPermission(
+    {
+      path: 'activites-centre/controle',
+      component: ActivitesCentreControleComponent,
+      data: {
+        title: 'ACTIVITES CENTRE — Contrôle',
+      },
     },
-  },
-  {
-    path: 'activites-centre/evaluation-periodique',
-    component: ActivitesCentreEvaluationComponent,
-    data: {
-      title: 'ACTIVITES CENTRE — Évaluation périodique',
+    MENU_FEATURES.ACTIVITES_CENTRE_CONTROLE,
+  ),
+  withMenuPermission(
+    {
+      path: 'activites-centre/evaluation-periodique',
+      component: ActivitesCentreEvaluationComponent,
+      data: {
+        title: 'ACTIVITES CENTRE — Évaluation périodique',
+      },
     },
-  },
-  {
-    path: 'activites-centre/informations-centres',
-    component: AlphaCentresComponent,
-    data: {
-      title: 'ACTIVITES CENTRE — Informations centres',
-      subtitle: 'Vue synthétique des centres Alpha, avec détail complet et actions.',
-      createInitiallyOpen: false,
+    MENU_FEATURES.ACTIVITES_CENTRE_EVALUATION,
+  ),
+  withMenuPermission(
+    {
+      path: 'activites-centre/informations-centres',
+      component: AlphaCentresComponent,
+      data: {
+        title: 'ACTIVITES CENTRE — Informations centres',
+        subtitle: 'Vue synthétique des centres Alpha, avec détail complet et actions.',
+        createInitiallyOpen: false,
+      },
     },
-  },
+    MENU_FEATURES.ACTIVITES_CENTRE_INFOS,
+  ),
 ];

@@ -850,6 +850,9 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
       if (seen.has(key) || key.startsWith('_') || key === 'hibernateLazyInitializer') {
         return;
       }
+      if (this.shouldSkipDetailKey(key, row)) {
+        return;
+      }
       seen.add(key);
       fields.push({
         label: label ?? this.columnHeaderLabel(key),
@@ -864,6 +867,25 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
       push(k);
     }
     return fields;
+  }
+
+  /** Évite le doublon id brut + objet référentiel enrichi (ex. performance : idPeriodeActivite + periodeActivite). */
+  private shouldSkipDetailKey(key: string, row: Record<string, unknown>): boolean {
+    const refByIdKey: Record<string, string> = {
+      idPeriodeActivite: 'periodeActivite',
+      idAlpha: 'alpha',
+      idNiveauAlpha: 'niveauAlpha',
+      idNiveauControle: 'niveauControle',
+      idNiveauEvaluation: 'niveauEvaluation',
+      idThemeEvaluation: 'themeEvaluation',
+      idTauxEvaluation: 'tauxEvaluation',
+    };
+    const refKey = refByIdKey[key];
+    if (!refKey) {
+      return false;
+    }
+    const ref = row[refKey];
+    return ref != null && typeof ref === 'object';
   }
 
   openEditModal(row: Record<string, unknown>): void {

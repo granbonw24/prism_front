@@ -55,7 +55,7 @@ type MaitriseField = {
   label: string;
 };
 
-type MaitriseResponse = 'BONNE' | 'MOYENNE' | 'MAUVAISE';
+type MaitriseResponse = 'BONNE' | 'MOYENNE' | 'INSUFFISANT';
 type VisiteFormMode = 'points' | 'suivi';
 type CentralSource = 'Coordonnateur' | 'IEPP' | 'Superviseur';
 type CentralRow = VisiteRow & { centralSource?: CentralSource };
@@ -70,7 +70,7 @@ const POINT_VISITE_FIELDS: MaitriseField[] = [
 const MAITRISE_OPTIONS: Array<{ value: MaitriseResponse; label: string; hint: string }> = [
   { value: 'BONNE', label: 'Bonne', hint: 'Maîtrise satisfaisante' },
   { value: 'MOYENNE', label: 'Moyenne', hint: 'Maîtrise à consolider' },
-  { value: 'MAUVAISE', label: 'Mauvaise', hint: 'Accompagnement requis' },
+  { value: 'INSUFFISANT', label: 'Insuffisant', hint: 'Accompagnement requis' },
 ];
 
 const SUIVI_FIELDS_BY_MODE: Record<VisiteSuiviMode, VisiteField[]> = {
@@ -1154,20 +1154,20 @@ export class ActivitesCentreVisiteComponent implements OnInit {
   }
 
   private normalizeMaitriseResponse(value: unknown): MaitriseResponse | null {
-    if (value === 'BONNE' || value === 'MOYENNE' || value === 'MAUVAISE') {
+    if (value === 'BONNE' || value === 'MOYENNE' || value === 'INSUFFISANT') {
       return value;
     }
     const normalized = String(value ?? '').trim().toUpperCase();
     if (normalized === 'OUI') return 'BONNE';
-    if (normalized === 'NON') return 'MAUVAISE';
-    return normalized === 'BONNE' || normalized === 'MOYENNE' || normalized === 'MAUVAISE' ? normalized : null;
+    if (normalized === 'NON' || normalized === 'MAUVAISE') return 'INSUFFISANT';
+    return normalized === 'BONNE' || normalized === 'MOYENNE' || normalized === 'INSUFFISANT' ? normalized : null;
   }
 
   private maitriseDisplayValue(value: unknown): string {
     const normalized = this.normalizeMaitriseResponse(value);
     if (normalized === 'BONNE') return 'Bonne';
     if (normalized === 'MOYENNE') return 'Moyenne';
-    if (normalized === 'MAUVAISE') return 'Mauvaise';
+    if (normalized === 'INSUFFISANT') return 'Insuffisant';
     return value ? String(value) : '—';
   }
 

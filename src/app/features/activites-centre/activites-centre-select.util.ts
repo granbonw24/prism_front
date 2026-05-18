@@ -11,12 +11,40 @@ export type ActivitesRef = {
   [key: string]: unknown;
 };
 
+const CODE_KEYS = [
+  'code',
+  'codeNiveauAlpha',
+  'codePeriodeActivite',
+  'codePeriodeEvaluation',
+  'codeNiveauEvaluation',
+  'codeNiveauControle',
+] as const;
+
+const LIBELLE_KEYS = [
+  'libelle',
+  'libelleNiveauAlpha',
+  'libellePeriodeActivite',
+  'libellePeriodeEvaluation',
+  'libelleNiveauEvaluation',
+  'libelleNiveauControle',
+] as const;
+
+function pickString(ref: ActivitesRef, keys: readonly string[]): string {
+  for (const key of keys) {
+    const value = ref[key];
+    if (typeof value === 'string' && value.trim()) {
+      return value.trim();
+    }
+  }
+  return '';
+}
+
 export function activitesRefLabel(ref: ActivitesRef | null | undefined): string {
   if (!ref) {
     return '—';
   }
-  const libelle = typeof ref.libelle === 'string' ? ref.libelle.trim() : '';
-  const code = typeof ref.code === 'string' ? ref.code.trim() : '';
+  const libelle = pickString(ref, LIBELLE_KEYS);
+  const code = pickString(ref, CODE_KEYS);
   if (code && libelle) {
     return `${code} — ${libelle}`;
   }

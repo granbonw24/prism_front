@@ -576,9 +576,9 @@
       <div class="mb-3 p-2 bg-light rounded small border">
         <div class="mb-3">
           <div class="font-weight-bold text-secondary mb-1">Recherche rapide</div>
-          <p class="text-muted mb-2" style="font-size: 0.85rem">
+          <!-- <p class="text-muted mb-2" style="font-size: 0.85rem">
             Recherche sur <strong>codes et libellés</strong> (et autres champs texte) via le paramètre <code>q</code>.
-          </p>
+          </p> -->
           <div class="form-group col-md-12 px-0 mb-0">
             <label class="mb-0 text-muted">Texte libre (code, libellé, localisation…)</label>
             <input
@@ -1107,19 +1107,7 @@
             </div>
           </div>
 
-          <div class="form-row">
-            <div class="form-group col-md-4">
-              <label class="small text-muted">Total apprenants</label>
-              <input
-                type="number"
-                min="0"
-                class="form-control bg-light text-muted"
-                [ngModel]="editForm.totalApprenants"
-                [disabled]="true"
-                readonly
-              />
-              <div class="small text-muted mt-1">Calculé automatiquement.</div>
-            </div>
+          <div class="form-row">            
             <div class="form-group col-md-4">
               <label class="small text-muted">Garçons</label>
               <input
@@ -1141,6 +1129,18 @@
                 (ngModelChange)="onEditGenreCountsChange()"
                 [disabled]="saving"
               />
+            </div>
+            <div class="form-group col-md-4">
+              <label class="small text-muted">Total apprenants</label>
+              <input
+                type="number"
+                min="0"
+                class="form-control bg-light text-muted"
+                [ngModel]="editForm.totalApprenants"
+                [disabled]="true"
+                readonly
+              />
+              <!-- <div class="small text-muted mt-1">Calculé automatiquement.</div> -->
             </div>
           </div>
 

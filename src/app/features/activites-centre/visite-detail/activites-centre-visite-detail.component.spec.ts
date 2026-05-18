@@ -37,7 +37,7 @@ describe('ActivitesCentreVisiteDetailComponent', () => {
       alpha: { id: 13, code: 'ALP000003', libelle: 'Alpha Full Morale' },
       maitriseSeanceLecture: 'BONNE',
       maitriseSeanceEcriture: 'MOYENNE',
-      maitriseSeanceCalcul: 'MAUVAISE',
+      maitriseSeanceCalcul: 'INSUFFISANT',
       maitriseSeanceCvc: 'BONNE',
       nombreVisiteRealiseParConseiller: 1,
       nombreBulletinEffectueParConseiller: 1,

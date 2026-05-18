@@ -9,11 +9,12 @@ import { Router } from '@angular/router';
 import { BRAND_CONFIG } from '@core/config/brand.config';
 import { finalize } from 'rxjs';
 import { AuthService } from '@services/auth.service';
+import { MenaPasswordFieldComponent } from '@shared/mena-password-field/mena-password-field.component';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, MenaPasswordFieldComponent],
   templateUrl: './login.component.html',
   styleUrl: './login.component.css',
 })

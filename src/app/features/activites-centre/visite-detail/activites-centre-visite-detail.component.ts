@@ -75,9 +75,9 @@ export class ActivitesCentreVisiteDetailComponent implements OnInit {
     const raw = this.row?.[key];
     if (raw === 'BONNE') return 'Bonne';
     if (raw === 'MOYENNE') return 'Moyenne';
-    if (raw === 'MAUVAISE') return 'Mauvaise';
+    if (raw === 'INSUFFISANT' || raw === 'MAUVAISE') return 'Insuffisant';
     if (raw === 'OUI') return 'Bonne';
-    if (raw === 'NON') return 'Mauvaise';
+    if (raw === 'NON') return 'Insuffisant';
     return raw ?? '—';
   }
 

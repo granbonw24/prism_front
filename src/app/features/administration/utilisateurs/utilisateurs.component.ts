@@ -11,6 +11,7 @@ import {
   AppUserAdminUpsertRequest,
 } from '@models/administration';
 import { AdministrationService, type AppUsersListQuery } from '@services/administration.service';
+import { MenaPasswordFieldComponent } from '@shared/mena-password-field/mena-password-field.component';
 import { MenaSearchableSelectComponent } from '@shared/mena-searchable-select/mena-searchable-select.component';
 import { MenaContextDashboardComponent } from '@shared/mena-context-dashboard/mena-context-dashboard.component';
 import {
@@ -41,7 +42,13 @@ const SCOPE_DESCENDANTS: Record<ScopeKey, ScopeKey[]> = {
 @Component({
   selector: 'app-utilisateurs',
   standalone: true,
-  imports: [CommonModule, FormsModule, MenaSearchableSelectComponent, MenaContextDashboardComponent],
+  imports: [
+    CommonModule,
+    FormsModule,
+    MenaPasswordFieldComponent,
+    MenaSearchableSelectComponent,
+    MenaContextDashboardComponent,
+  ],
   templateUrl: './utilisateurs.component.html',
   styleUrl: './utilisateurs.component.css',
 })

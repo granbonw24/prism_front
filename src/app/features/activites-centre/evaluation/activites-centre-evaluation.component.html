@@ -43,7 +43,7 @@
               <th>ID</th>
               <th>Validation</th>
               <th>Centre Alpha</th>
-              <th>Période</th>
+              <th>Période d’activité</th>
               <th>Niveau</th>
               <th>Type d’évaluation</th>
               <th>Thèmes</th>
@@ -57,7 +57,7 @@
                 <span class="badge" [ngClass]="validationClass(row)">{{ validationLabel(row) }}</span>
               </td>
               <td>{{ refLabel(row.alpha) }}</td>
-              <td>{{ refLabel(row.periodeEvaluation) }}</td>
+              <td>{{ refLabel(row.periodeActivite) }}</td>
               <td>{{ refLabel(row.niveauEvaluation) }}</td>
               <td>{{ typeLabel(row.typeEvaluation) }}</td>
               <td>{{ themesTauxLabel(row) }}</td>
@@ -132,9 +132,9 @@
             />
           </div>
           <div class="form-group col-md-6">
-            <label>Période</label>
+            <label>Période d’activité</label>
             <app-mena-searchable-select
-              [(ngModel)]="form.idPeriodeEvaluation"
+              [(ngModel)]="form.idPeriodeActivite"
               [options]="menaPeriodeFormOptions()"
               [disabled]="saving"
             />
@@ -202,8 +202,8 @@
         <dl class="row mb-3">
           <dt class="col-sm-4">Centre</dt>
           <dd class="col-sm-8">{{ refLabel(detailRow.alpha) }}</dd>
-          <dt class="col-sm-4">Période</dt>
-          <dd class="col-sm-8">{{ refLabel(detailRow.periodeEvaluation) }}</dd>
+          <dt class="col-sm-4">Période d’activité</dt>
+          <dd class="col-sm-8">{{ refLabel(detailRow.periodeActivite) }}</dd>
           <dt class="col-sm-4">Niveau</dt>
           <dd class="col-sm-8">{{ refLabel(detailRow.niveauEvaluation) }}</dd>
           <dt class="col-sm-4">Type</dt>

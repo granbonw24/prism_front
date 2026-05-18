@@ -23,7 +23,12 @@
       <hr class="sidebar-divider my-0">
 
       <!-- Nav Item - Dashboard -->
-      <li class="nav-item" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
+      <li
+        class="nav-item"
+        *ngIf="canViewDashboard()"
+        routerLinkActive="active"
+        [routerLinkActiveOptions]="{ exact: true }"
+      >
         <a class="nav-link" routerLink="/">
           <i class="fas fa-fw fa-tachometer-alt"></i>
           <span>Tableau de bord</span></a>
@@ -38,7 +43,7 @@
       </div> -->
 
       <!-- Nav Item - Pages Collapse Menu -->
-      <li class="nav-item">
+      <li class="nav-item" *ngIf="canViewCentres()">
         <a
           class="nav-link mena-submenu-toggle"
           [class.collapsed]="!isMenuSectionOpen('centres', ['/centres'])"
@@ -58,23 +63,51 @@
         >
           <div class="bg-white py-2 collapse-inner rounded">
             <!-- <h6 class="collapse-header">alpha</h6> -->
-            <a class="collapse-item" routerLink="/centres/alpha" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Alpha</a>
-            <a class="collapse-item" routerLink="/centres/cec" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">CEC</a>
-            <a class="collapse-item" routerLink="/centres/cp" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">CP</a>
-            <a class="collapse-item" routerLink="/centres/sie" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">SIE</a>
+            <a
+              *ngIf="canViewCentre('CENTRES_ALPHA')"
+              class="collapse-item"
+              routerLink="/centres/alpha"
+              routerLinkActive="active"
+              [routerLinkActiveOptions]="{ exact: true }"
+              >Alpha</a
+            >
+            <a
+              *ngIf="canViewCentre('CENTRES_CEC')"
+              class="collapse-item"
+              routerLink="/centres/cec"
+              routerLinkActive="active"
+              [routerLinkActiveOptions]="{ exact: true }"
+              >CEC</a
+            >
+            <a
+              *ngIf="canViewCentre('CENTRES_CP')"
+              class="collapse-item"
+              routerLink="/centres/cp"
+              routerLinkActive="active"
+              [routerLinkActiveOptions]="{ exact: true }"
+              >CP</a
+            >
+            <a
+              *ngIf="canViewCentre('CENTRES_SIE')"
+              class="collapse-item"
+              routerLink="/centres/sie"
+              routerLinkActive="active"
+              [routerLinkActiveOptions]="{ exact: true }"
+              >SIE</a
+            >
 
           </div>
         </div>
       </li>
 
-      <li class="nav-item">
+      <li class="nav-item" *ngIf="canViewPersonnel()">
         <a class="nav-link" routerLink="/personnel" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
           <i class="fas fa-fw fa-users"></i>
           <span>PERSONNEL</span>
         </a>
       </li>
 
-      <li class="nav-item">
+      <li class="nav-item" *ngIf="canViewPromoteur()">
         <a class="nav-link" routerLink="/promoteurs" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
           <i class="fas fa-fw fa-chart-area"></i>
           <span>PROMOTEUR</span></a>
@@ -83,7 +116,7 @@
 
      
 
-      <li class="nav-item">
+      <li class="nav-item" *ngIf="canViewApprenant()">
         <a
           class="nav-link mena-submenu-toggle"
           [class.collapsed]="!isMenuSectionOpen('apprenant', ['/apprenant'])"
@@ -103,16 +136,65 @@
         >
           <div class="bg-white py-2 collapse-inner rounded">
             <!-- <h6 class="collapse-header">Custom Utilities:</h6> -->
-            <a class="collapse-item" routerLink="/apprenant/effectif" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Effectif apprenant</a>
-            <a class="collapse-item" routerLink="/apprenant/abandon" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Effectif abandon</a>
-            <a class="collapse-item" routerLink="/apprenant/passage" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Effectif passage (Alpha)</a>
-            <a class="collapse-item" routerLink="/apprenant/handicap" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Effectif handicap</a>
+            <a
+              *ngIf="canViewApprenantItem('APPRENANT_EFFECTIF')"
+              class="collapse-item"
+              routerLink="/apprenant/effectif"
+              routerLinkActive="active"
+              [routerLinkActiveOptions]="{ exact: true }"
+              >Effectif apprenant</a
+            >
+            <a
+              *ngIf="canViewApprenantItem('APPRENANT_ABANDON')"
+              class="collapse-item"
+              routerLink="/apprenant/abandon"
+              routerLinkActive="active"
+              [routerLinkActiveOptions]="{ exact: true }"
+              >Effectif abandon</a
+            >
+            <a
+              *ngIf="canViewApprenantItem('APPRENANT_PASSAGE')"
+              class="collapse-item"
+              routerLink="/apprenant/passage"
+              routerLinkActive="active"
+              [routerLinkActiveOptions]="{ exact: true }"
+              >Effectif passage (Alpha)</a
+            >
+            <a
+              *ngIf="canViewApprenantItem('APPRENANT_HANDICAP')"
+              class="collapse-item"
+              routerLink="/apprenant/handicap"
+              routerLinkActive="active"
+              [routerLinkActiveOptions]="{ exact: true }"
+              >Effectif handicap</a
+            >
             <!-- <a class="collapse-item" routerLink="/apprenant/competences" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Effectif competence aquise </a> -->
             <!-- <a class="collapse-item" routerLink="/apprenant/promus" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Effectif promu (SIE, CEC)</a> -->
             <!-- <a class="collapse-item" routerLink="/apprenant/reverse-formel-sie" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Effectif reversé formel (SIE)</a> -->
-            <a class="collapse-item" routerLink="/apprenant/admis-cepe" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Effectif admis CEPE (CEC, CP)</a>
-            <a class="collapse-item" routerLink="/apprenant/integres-formel-cp" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Effectif intégré formel (CP)</a>
-            <a class="collapse-item" routerLink="/apprenant/admis-test-integration-cp" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Effectif admis test intégration (CP)</a>
+            <a
+              *ngIf="canViewApprenantItem('APPRENANT_ADMIS_CEPE')"
+              class="collapse-item"
+              routerLink="/apprenant/admis-cepe"
+              routerLinkActive="active"
+              [routerLinkActiveOptions]="{ exact: true }"
+              >Effectif admis CEPE (CEC, CP)</a
+            >
+            <a
+              *ngIf="canViewApprenantItem('APPRENANT_INTEGRES_FORMEL_CP')"
+              class="collapse-item"
+              routerLink="/apprenant/integres-formel-cp"
+              routerLinkActive="active"
+              [routerLinkActiveOptions]="{ exact: true }"
+              >Effectif intégré formel (CP)</a
+            >
+            <a
+              *ngIf="canViewApprenantItem('APPRENANT_ADMIS_TEST_INTEGRATION_CP')"
+              class="collapse-item"
+              routerLink="/apprenant/admis-test-integration-cp"
+              routerLinkActive="active"
+              [routerLinkActiveOptions]="{ exact: true }"
+              >Effectif admis test intégration (CP)</a
+            >
 
           </div>
         </div>
@@ -253,7 +335,7 @@
       <!-- Divider -->
       <hr class="sidebar-divider d-none d-md-block">
 
-      <li class="nav-item">
+      <li class="nav-item" *ngIf="canViewAdministration()">
         <a
           id="headingAdministration"
           class="nav-link mena-submenu-toggle"
@@ -273,13 +355,19 @@
           aria-labelledby="headingAdministration"
         >
           <div class="bg-white py-2 collapse-inner rounded">
-            <a class="collapse-item" routerLink="/administration/utilisateurs" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }"
+            <a
+              *ngIf="canViewAdminUtilisateurs()"
+              class="collapse-item"
+              routerLink="/administration/utilisateurs"
+              routerLinkActive="active"
+              [routerLinkActiveOptions]="{ exact: true }"
               >Utilisateurs</a
             >
 
-            <div class="dropdown-divider"></div>
+            <div class="dropdown-divider" *ngIf="canViewAdminUtilisateurs() && canViewAdminSecurite()"></div>
 
             <a
+              *ngIf="canViewAdminSecurite()"
               class="collapse-item mena-submenu-toggle"
               [class.collapsed]="!isMenuSectionOpen('admin-securite', ['/administration/acteurs', '/administration/role-permissions'])"
               href="#"
@@ -293,10 +381,16 @@
               class="collapse"
               [class.show]="isMenuSectionOpen('admin-securite', ['/administration/acteurs', '/administration/role-permissions'])"
             >
-              <a class="collapse-item pl-4" routerLink="/administration/acteurs" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }"
+              <a
+                *ngIf="canViewAdminActeurs()"
+                class="collapse-item pl-4"
+                routerLink="/administration/acteurs"
+                routerLinkActive="active"
+                [routerLinkActiveOptions]="{ exact: true }"
                 >Acteurs (rôles)</a
               >
               <a
+                *ngIf="canViewAdminRolePermissions()"
                 class="collapse-item pl-4"
                 routerLink="/administration/role-permissions"
                 routerLinkActive="active"
@@ -308,7 +402,7 @@
         </div>
       </li>
 
-      <li class="nav-item">
+      <li class="nav-item" *ngIf="canViewParametrage()">
         <a
           class="nav-link mena-submenu-toggle"
           [class.collapsed]="!isParametrageOpen()"
@@ -327,7 +421,7 @@
           aria-labelledby="headingUtilities"
         >
           <div class="bg-white py-2 collapse-inner rounded">
-            <ng-container *ngFor="let g of referentielGroups">
+            <ng-container *ngFor="let g of visibleReferentielGroups">
               <a
                 class="collapse-item mena-submenu-toggle"
                 [class.collapsed]="!isRefGroupOpen(g)"
