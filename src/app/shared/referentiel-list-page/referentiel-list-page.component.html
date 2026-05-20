@@ -20,6 +20,7 @@
           [options]="menaContextOptions()"
           [allowNull]="false"
           inputClass="form-control form-control-sm"
+          [loading]="loading"
         />
       </div>
     </div>
@@ -137,7 +138,7 @@
     </button>
   </div>
 
-  <div *ngIf="loading" class="text-muted mb-3">Chargement…</div>
+  <app-mena-loading *ngIf="loading" class="mb-3" message="Chargement des données…" />
   <div *ngIf="errorMessage" class="alert alert-warning border-0 shadow-sm">
     {{ errorMessage }}
   </div>
@@ -408,6 +409,7 @@
               [options]="menaContextOptions()"
               [allowNull]="false"
               inputClass="form-control form-control-sm"
+              [loading]="loading"
             />
           </div>
           <div *ngIf="formError" class="alert alert-danger small">
@@ -453,6 +455,8 @@
                   [options]="menaFieldOptions(field)"
                   nullLabel="-- Sélectionner --"
                   inputClass="form-control form-control-sm"
+                  [loading]="isFieldOptionsLoading(field)"
+                  [disabled]="formSubmitting || isFieldOptionsLoading(field)"
                 />
                 <div *ngIf="field.type === 'checkbox'" class="custom-control custom-checkbox mt-1">
                   <input

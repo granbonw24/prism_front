@@ -9,6 +9,7 @@ import {
   sortActivitesRefs,
 } from '@features/activites-centre/activites-centre-select.util';
 import { MenaRowActionButtonComponent } from '@shared/mena-row-action-button/mena-row-action-button.component';
+import { MenaLoadingComponent } from '@shared/mena-loading/mena-loading.component';
 import { MenaSearchableSelectComponent } from '@shared/mena-searchable-select/mena-searchable-select.component';
 import { sortByLabel, toMenaSelectOptions } from '@shared/mena-searchable-select/mena-select-options.util';
 import { forkJoin } from 'rxjs';
@@ -142,6 +143,7 @@ type WorkflowDecisionAction = 'rejeter' | 'retourner';
   selector: 'app-activites-centre-visite',
   standalone: true,
   imports: [
+    MenaLoadingComponent,
     CommonModule,
     FormsModule,
     RouterLink,
@@ -696,7 +698,7 @@ export class ActivitesCentreVisiteComponent implements OnInit {
   }
 
   periodeOptionLabel(p: VisiteRef): string {
-    return [p.code, p.libelle].filter(Boolean).join(' — ') || `Période #${p.id ?? '—'}`;
+    return p.libelle?.trim() || `Période #${p.id ?? '—'}`;
   }
 
   alphaOptionValue(alpha: AlphaOption): number | null {
@@ -704,9 +706,8 @@ export class ActivitesCentreVisiteComponent implements OnInit {
   }
 
   alphaOptionLabel(alpha: AlphaOption): string {
-    const code = alpha.codeAlpha ?? alpha.codeCentre ?? null;
-    const libelle = alpha.libelleAlpha ?? alpha.libelle ?? null;
-    return [code, libelle].filter(Boolean).join(' — ') || `Alpha #${this.alphaOptionValue(alpha) ?? '—'}`;
+    const libelle = alpha.libelleAlpha?.trim() || alpha.libelle?.trim();
+    return libelle || `Alpha #${this.alphaOptionValue(alpha) ?? '—'}`;
   }
 
   menaAlphaFilterOptions() {

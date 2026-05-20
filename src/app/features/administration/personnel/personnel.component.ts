@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { unwrapListBody } from '@core/http/unwrap-spring-page';
 import { forkJoin } from 'rxjs';
 import { PersonnelAdmin } from '@models/administration';
@@ -11,13 +12,14 @@ import { API_BASE_URL } from '@core/tokens/api-base-url.token';
 import { MenaRowActionButtonComponent } from '@shared/mena-row-action-button/mena-row-action-button.component';
 import { MenaSearchableSelectComponent } from '@shared/mena-searchable-select/mena-searchable-select.component';
 import {
-  refEntityLabel,
+  refEntityLabelForSelect,
   sortByLabel,
   toMenaSelectOptions,
   toMenaSelectOptionsFromPairs,
 } from '@shared/mena-searchable-select/mena-select-options.util';
 import { MenaToolbarButtonComponent } from '@shared/mena-toolbar-button/mena-toolbar-button.component';
 import { MenaContextDashboardComponent } from '@shared/mena-context-dashboard/mena-context-dashboard.component';
+import { MenaLoadingComponent } from '@shared/mena-loading/mena-loading.component';
 import {
   MenaRecordDetailField,
   MenaRecordDetailModalComponent,
@@ -39,16 +41,18 @@ type PersonnelCentreOption = {
   imports: [
     CommonModule,
     FormsModule,
+    RouterLink,
     MenaRowActionButtonComponent,
     MenaSearchableSelectComponent,
     MenaToolbarButtonComponent,
     MenaContextDashboardComponent,
     MenaRecordDetailModalComponent,
+    MenaLoadingComponent,
   ],
   templateUrl: './personnel.component.html',
   styleUrl: './personnel.component.css',
 })
-export class PersonnelComponent {
+export class PersonnelComponent implements OnInit {
   /** Filtre 1 : type de centre, puis centre. */
   centreTypeFilter: CentreTypeFilter = '';
 
@@ -99,11 +103,6 @@ export class PersonnelComponent {
   saving = false;
   errorMessage: string | null = null;
 
-  creating: any = this.emptyCreating();
-
-  editingId: number | null = null;
-  edit: any = null;
-
   detailModalOpen = false;
   detailFields: MenaRecordDetailField[] = [];
   detailSubtitle = '';
@@ -111,9 +110,25 @@ export class PersonnelComponent {
   constructor(
     private readonly admin: AdministrationService,
     private readonly http: HttpClient,
+    private readonly router: Router,
+    private readonly route: ActivatedRoute,
     @Inject(API_BASE_URL) private readonly apiBaseUrl: string,
   ) {
     this.loadRefs();
+  }
+
+  ngOnInit(): void {
+    const centreQ = this.route.snapshot.queryParamMap.get('centreId');
+    const typeQ = this.route.snapshot.queryParamMap.get('centreType') as CentreTypeFilter | null;
+    if (typeQ && ['ALPHA', 'CEC', 'CP', 'SIE', ''].includes(typeQ)) {
+      this.centreTypeFilter = typeQ;
+    }
+    if (centreQ != null && centreQ !== '') {
+      const id = Number(centreQ);
+      if (Number.isFinite(id)) {
+        this.centreId = id;
+      }
+    }
   }
 
   get loading(): boolean {
@@ -207,6 +222,9 @@ export class PersonnelComponent {
         });
         this.centres = sortByLabel(merged, (c) => this.centreLabel(c));
         this.centresLoading = false;
+        if (this.centreId != null) {
+          this.reload();
+        }
       },
       error: (e) => {
         this.centres = [];
@@ -249,7 +267,6 @@ export class PersonnelComponent {
       this.resetListFilters(false);
       return;
     }
-    this.creating.idCentreId = this.centreId;
     this.pageIndex = 0;
     this.resetListFilters(false);
     this.reload();
@@ -340,42 +357,17 @@ export class PersonnelComponent {
     return this.totalPages > 0 ? this.totalPages : 1;
   }
 
-  canCreate(): boolean {
-    const r = this.creating;
-    const certified = r.certifierPersonnel === true;
-    return (
-      !this.saving &&
-      !this.refsLoading &&
-      r.idCentreId != null &&
-      r.idFonctionId != null &&
-      r.idCiviliteId != null &&
-      r.idNiveauPersonnelId != null &&
-      r.idStatutPersonnelId != null &&
-      r.idDiplomeId != null &&
-      String(r.nomPersonnel ?? '').trim().length > 0 &&
-      String(r.prenomsPersonnel ?? '').trim().length > 0 &&
-      String(r.contactPersonnel ?? '').trim().length > 0 &&
-      (!certified || r.idStructureFormationCertificationId != null)
-    );
+  goToCreate(): void {
+    if (this.centreId == null) return;
+    void this.router.navigate(['/personnel/nouveau'], {
+      queryParams: { centreId: this.centreId, centreType: this.centreTypeFilter || undefined },
+    });
   }
 
-  create(): void {
-    if (!this.canCreate()) return;
-    this.saving = true;
-    this.errorMessage = null;
-    this.admin.createPersonnel(this.creating).subscribe({
-      next: () => {
-        this.saving = false;
-        this.creating = this.emptyCreating();
-        if (this.centreId != null) {
-          this.creating.idCentreId = this.centreId;
-        }
-        this.reload();
-      },
-      error: (e) => {
-        this.errorMessage = this.formatError(e);
-        this.saving = false;
-      },
+  goToEdit(row: PersonnelAdmin): void {
+    void this.router.navigate(['/personnel', row.id, 'modifier'], {
+      queryParams: { centreId: row.centreId ?? this.centreId ?? undefined, centreType: this.centreTypeFilter || undefined },
+      state: { row },
     });
   }
 
@@ -435,59 +427,6 @@ export class PersonnelComponent {
     return hit ? labelFn(hit) : `#${id}`;
   }
 
-  startEdit(row: PersonnelAdmin): void {
-    if (this.saving) return;
-    this.editingId = row.id;
-    this.edit = { ...row };
-    // API expects request field names like idCentreId
-    this.edit.idCentreId = row.centreId;
-    this.edit.idFonctionId = row.fonctionId;
-    this.edit.idCiviliteId = row.civiliteId;
-    this.edit.idNiveauPersonnelId = row.niveauPersonnelId;
-    this.edit.idStatutPersonnelId = row.statutPersonnelId;
-    this.edit.idDiplomeId = row.diplomeId;
-    this.edit.idStructureFormationCertificationId =
-      row.structureFormationCertificationId;
-  }
-
-  cancelEdit(): void {
-    if (this.saving) return;
-    this.editingId = null;
-    this.edit = null;
-  }
-
-  canSaveEdit(): boolean {
-    if (this.saving || this.editingId == null || !this.edit) return false;
-    const r = this.edit;
-    return (
-      r.idCentreId != null &&
-      r.idFonctionId != null &&
-      r.idCiviliteId != null &&
-      r.idNiveauPersonnelId != null &&
-      r.idStatutPersonnelId != null &&
-      String(r.nomPersonnel ?? '').trim().length > 0 &&
-      String(r.prenomsPersonnel ?? '').trim().length > 0
-    );
-  }
-
-  saveEdit(): void {
-    if (!this.canSaveEdit()) return;
-    const id = this.editingId!;
-    this.saving = true;
-    this.errorMessage = null;
-    this.admin.updatePersonnel(id, this.edit).subscribe({
-      next: () => {
-        this.saving = false;
-        this.cancelEdit();
-        this.reload();
-      },
-      error: (e) => {
-        this.errorMessage = this.formatError(e);
-        this.saving = false;
-      },
-    });
-  }
-
   deleteRow(row: PersonnelAdmin): void {
     if (this.saving) return;
     if (!confirm(`Supprimer ${row.nomPersonnel ?? ''} ${row.prenomsPersonnel ?? ''} ?`)) return;
@@ -507,27 +446,23 @@ export class PersonnelComponent {
 
   centreLabel(c: PersonnelCentreOption): string {
     const libelle = c.libelle?.trim() || c.localisationCentre?.trim();
-    const code = c.codeCentre?.trim();
-    if (libelle && code) {
-      return `${libelle} (${code})`;
-    }
-    return libelle || code || `Centre #${c.id ?? '?'}`;
+    return libelle || `Centre #${c.id ?? '?'}`;
   }
 
   fonctionLabel(f: Record<string, unknown>): string {
-    return refEntityLabel(f, ['libelleFonction'], ['codeFonction']);
+    return refEntityLabelForSelect(f, ['libelleFonction']);
   }
 
   civiliteLabel(c: Record<string, unknown>): string {
-    return refEntityLabel(c, ['libelleCivilite'], ['codeCivilite']);
+    return refEntityLabelForSelect(c, ['libelleCivilite']);
   }
 
   niveauLabel(n: Record<string, unknown>): string {
-    return refEntityLabel(n, ['libelleNiveauPersonnel'], ['codeNiveauPersonnel']);
+    return refEntityLabelForSelect(n, ['libelleNiveauPersonnel']);
   }
 
   statutLabel(s: Record<string, unknown>): string {
-    return refEntityLabel(s, ['libelleStatutPersonnel'], ['codeStatutPersonnel']);
+    return refEntityLabelForSelect(s, ['libelleStatutPersonnel']);
   }
 
   menaCentreTypeOptions() {
@@ -580,11 +515,11 @@ export class PersonnelComponent {
   }
 
   diplomeLabel(d: Record<string, unknown>): string {
-    return refEntityLabel(d, ['libelleDiplome'], ['codeDiplome']);
+    return refEntityLabelForSelect(d, ['libelleDiplome']);
   }
 
   structureFormationLabel(s: Record<string, unknown>): string {
-    return refEntityLabel(s, ['libelleStructureCertification'], ['codeStructureCertification']);
+    return refEntityLabelForSelect(s, ['libelleStructureCertification']);
   }
 
   centreKindFromCode(code: string | null | undefined): 'ALPHA' | 'CEC' | 'CP' | 'SIE' | 'AUTRE' {
@@ -594,49 +529,6 @@ export class PersonnelComponent {
     if (c.includes('SIE')) return 'SIE';
     if (c.includes('CP')) return 'CP';
     return 'AUTRE';
-  }
-
-  showDenominationField(): boolean {
-    return this.selectedCentreKind === 'CEC' || this.selectedCentreKind === 'AUTRE';
-  }
-
-  showProgrammeField(): boolean {
-    return this.selectedCentreKind === 'CP';
-  }
-
-  showRepresentantLegalField(): boolean {
-    return this.selectedCentreKind === 'SIE';
-  }
-
-  onCertificationChange(value: boolean | string | null): void {
-    const certified = value === true || value === 'true';
-    this.creating.certifierPersonnel = certified;
-    if (!certified) {
-      this.creating.idStructureFormationCertificationId = null;
-    }
-  }
-
-  private emptyCreating(): any {
-    return {
-      idCentreId: null,
-      idFonctionId: null,
-      idCiviliteId: null,
-      idNiveauPersonnelId: null,
-      idStatutPersonnelId: null,
-      idDiplomeId: null,
-      idStructureFormationCertificationId: null,
-      certifierPersonnel: null,
-      nomPersonnel: '',
-      prenomsPersonnel: '',
-      dateNaissance: '',
-      contactPersonnel: '',
-      emailPersonnel: '',
-      anneExpePersonnel: null,
-      sexePersonnel: '',
-      denominationPersonnel: '',
-      nomDuPrgramme: '',
-      nomRepresentantLegalSturcture: '',
-    };
   }
 
   private formatError(e: unknown): string {

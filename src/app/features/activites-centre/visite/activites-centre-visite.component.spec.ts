@@ -9,7 +9,7 @@ function flushPendingVisiteLoads(http: HttpTestingController, suiviPath: string,
   for (const req of http.match(() => true)) {
     const url = req.request.url;
     if (url.endsWith(suiviPath)) {
-      req.flush(suiviBody);
+      req.flush(suiviBody as object);
     } else if (url.endsWith('/api/visite')) {
       req.flush([]);
     } else if (url.endsWith('/api/suivi-iepp')) {

@@ -1,3 +1,4 @@
+import { MenaLoadingComponent } from '@shared/mena-loading/mena-loading.component';
 import { CommonModule } from '@angular/common';
 import { Component, Input, OnChanges, SimpleChanges } from '@angular/core';
 import { isNationalView } from '@core/circonscription/circonscription.util';
@@ -8,7 +9,8 @@ import { ContextDashboardService } from '@services/context-dashboard.service';
 @Component({
   selector: 'app-mena-context-dashboard',
   standalone: true,
-  imports: [CommonModule],
+  imports: [
+    MenaLoadingComponent,CommonModule],
   templateUrl: './mena-context-dashboard.component.html',
   styleUrl: './mena-context-dashboard.component.css',
 })

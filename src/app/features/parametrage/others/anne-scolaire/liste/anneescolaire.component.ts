@@ -2,15 +2,27 @@ import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, OnInit } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { MENU_FEATURES } from '@core/config/menu-rbac.config';
+import { canViewMenuFeature } from '@core/rbac/menu-rbac.util';
 import type { Anneescolaire } from '@models/anneescolaire';
 import { AnneescolaireService } from '@services/anneescolaire.service';
+import { AuthService } from '@services/auth.service';
 import { ConfirmDeleteComponent } from '@shared/confirm-delete/confirm-delete.component';
+import { MenaLoadingComponent } from '@shared/mena-loading/mena-loading.component';
 import { MenaRowActionButtonComponent } from '@shared/mena-row-action-button/mena-row-action-button.component';
+import { MenaToolbarButtonComponent } from '@shared/mena-toolbar-button/mena-toolbar-button.component';
 
 @Component({
   selector: 'app-anneescolaire',
   standalone: true,
-  imports: [CommonModule, RouterLink, ConfirmDeleteComponent, MenaRowActionButtonComponent],
+  imports: [
+    CommonModule,
+    RouterLink,
+    ConfirmDeleteComponent,
+    MenaRowActionButtonComponent,
+    MenaToolbarButtonComponent,
+    MenaLoadingComponent,
+  ],
   templateUrl: './anneescolaire.component.html',
   styleUrl: './anneescolaire.component.css',
 })
@@ -23,7 +35,19 @@ export class AnneescolaireListeComponent implements OnInit {
   deleteSubmitting = false;
   deleteErrorMessage: string | null = null;
 
-  constructor(private readonly api: AnneescolaireService) {}
+  constructor(
+    private readonly api: AnneescolaireService,
+    private readonly auth: AuthService,
+  ) {}
+
+  /** Même règle que les référentiels du groupe « Autres » (`referentiel-list-page`). */
+  get canCreate(): boolean {
+    return canViewMenuFeature(this.auth, MENU_FEATURES.PARAMETRAGE_AUTRES, 'CREER');
+  }
+
+  get canModify(): boolean {
+    return canViewMenuFeature(this.auth, MENU_FEATURES.PARAMETRAGE_AUTRES, 'MODIFIER');
+  }
 
   get deleteTargetLabel(): string {
     const row = this.deleteTarget;

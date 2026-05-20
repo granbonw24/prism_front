@@ -39,6 +39,7 @@
             [allowNull]="false"
             inputClass="form-control form-control-sm"
             [disabled]="loading"
+            [loading]="loading"
           />
         </div>
         <div class="form-group col-md-2 col-sm-6 mb-2 mb-md-0">
@@ -50,6 +51,7 @@
             [allowNull]="false"
             inputClass="form-control form-control-sm"
             [disabled]="loading"
+            [loading]="loading"
           />
         </div>
         <div class="form-group col-md-2 col-sm-6 mb-2 mb-md-0">
@@ -61,6 +63,7 @@
             [allowNull]="false"
             inputClass="form-control form-control-sm"
             [disabled]="loading"
+            [loading]="loading"
           />
         </div>
         <div class="form-group col-md-2 col-sm-12 mb-0 d-flex flex-wrap gap-1">
@@ -83,7 +86,7 @@
       </div>
     </div>
     <div class="card-body pt-3">
-      <div *ngIf="loading" class="small text-muted">Chargement…</div>
+      <app-mena-loading *ngIf="loading" message="Chargement des visites…" [centered]="true" />
       <div *ngIf="!loading" class="table-responsive">
         <table class="table table-bordered align-middle mena-table table-sm">
           <thead class="thead-light">
@@ -196,7 +199,8 @@
               [(ngModel)]="createForm.idCentre"
               [options]="menaAlphaFormOptions()"
               inputClass="form-control form-control-sm"
-              [disabled]="saving"
+              [disabled]="saving || loading"
+              [loading]="loading"
             />
           </div>
           <div class="form-group col-md-3">
@@ -206,7 +210,8 @@
               [(ngModel)]="createForm.idNatureDocument"
               [options]="menaNatureFormOptions()"
               inputClass="form-control form-control-sm"
-              [disabled]="saving"
+              [disabled]="saving || loading"
+              [loading]="loading"
             />
           </div>
           <div class="form-group col-md-3">
@@ -216,7 +221,8 @@
               [(ngModel)]="createForm.idTypeDocument"
               [options]="menaTypeFormOptions()"
               inputClass="form-control form-control-sm"
-              [disabled]="saving"
+              [disabled]="saving || loading"
+              [loading]="loading"
             />
           </div>
         </div>
@@ -298,7 +304,8 @@
               [(ngModel)]="editForm.idCentre"
               [options]="menaAlphaFormOptions()"
               inputClass="form-control form-control-sm"
-              [disabled]="saving"
+              [disabled]="saving || loading"
+              [loading]="loading"
             />
           </div>
           <div class="form-group col-md-3">
@@ -308,7 +315,8 @@
               [(ngModel)]="editForm.idNatureDocument"
               [options]="menaNatureFormOptions()"
               inputClass="form-control form-control-sm"
-              [disabled]="saving"
+              [disabled]="saving || loading"
+              [loading]="loading"
             />
           </div>
           <div class="form-group col-md-3">
@@ -318,7 +326,8 @@
               [(ngModel)]="editForm.idTypeDocument"
               [options]="menaTypeFormOptions()"
               inputClass="form-control form-control-sm"
-              [disabled]="saving"
+              [disabled]="saving || loading"
+              [loading]="loading"
             />
           </div>
         </div>

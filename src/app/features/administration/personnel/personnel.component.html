@@ -27,7 +27,8 @@
             [searchable]="false"
             [allowNull]="false"
             nullLabel="Tous les types"
-            [disabled]="loading || saving"
+            [disabled]="loading || saving || centresLoading"
+            [loading]="centresLoading"
           />
         </div>
         <div class="form-group col-md-8 col-lg-6">
@@ -53,109 +54,10 @@
     [alwaysVisible]="true"
   />
 
-  <div class="card border-0 shadow-sm mb-4" *ngIf="centreId != null">
-    <div id="createPersonnelCard"></div>
-    <div class="card-header py-3 bg-white border-bottom-0 d-flex flex-wrap justify-content-between align-items-center gap-2">
-      <h6 class="m-0 font-weight-bold text-primary">Créer un personnel</h6>
-      <span *ngIf="centreId != null" class="small text-muted">Type : {{ selectedCentreKind }}</span>
-    </div>
-    <div class="card-body pt-2">
-      <div *ngIf="refsLoading" class="small text-muted mb-2">Chargement des listes…</div>
-      <div class="form-row">
-        <div class="form-group col-md-2">
-          <label class="small text-muted">Civilité <span class="mena-required-mark">*</span></label>
-          <app-mena-searchable-select [(ngModel)]="creating.idCiviliteId" [options]="menaCiviliteOptions()" nullLabel="Sélectionner…" [disabled]="saving" [loading]="refsLoading" />
-        </div>
-        <div class="form-group col-md-3">
-          <label class="small text-muted">Nom <span class="mena-required-mark">*</span></label>
-          <input class="form-control" [(ngModel)]="creating.nomPersonnel" [disabled]="saving" />
-        </div>
-        <div class="form-group col-md-4">
-          <label class="small text-muted">Prénoms <span class="mena-required-mark">*</span></label>
-          <input class="form-control" [(ngModel)]="creating.prenomsPersonnel" [disabled]="saving" />
-        </div>
-        <div class="form-group col-md-3">
-          <label class="small text-muted">Date de naissance</label>
-          <input type="date" class="form-control" [(ngModel)]="creating.dateNaissance" [disabled]="saving" />
-        </div>
-      </div>
-      <div class="form-row">
-        <div class="form-group col-md-3">
-          <label class="small text-muted">Contact <span class="mena-required-mark">*</span></label>
-          <input class="form-control" [(ngModel)]="creating.contactPersonnel" maxlength="20" [disabled]="saving" />
-        </div>
-        <div class="form-group col-md-3">
-          <label class="small text-muted">Email</label>
-          <input type="email" class="form-control" [(ngModel)]="creating.emailPersonnel" [disabled]="saving" />
-        </div>
-        <div class="form-group col-md-3">
-          <label class="small text-muted">Niveau d'étude <span class="mena-required-mark">*</span></label>
-          <app-mena-searchable-select [(ngModel)]="creating.idNiveauPersonnelId" [options]="menaNiveauOptions()" nullLabel="Sélectionner…" [disabled]="saving" [loading]="refsLoading" />
-        </div>
-        <div class="form-group col-md-3">
-          <label class="small text-muted">Diplôme <span class="mena-required-mark">*</span></label>
-          <app-mena-searchable-select [(ngModel)]="creating.idDiplomeId" [options]="menaDiplomeOptions()" nullLabel="Sélectionner…" [disabled]="saving" [loading]="refsLoading" />
-        </div>
-      </div>
-      <div class="form-row">
-        <div class="form-group col-md-3">
-          <label class="small text-muted">Fonction <span class="mena-required-mark">*</span></label>
-          <app-mena-searchable-select [(ngModel)]="creating.idFonctionId" [options]="menaFonctionOptions()" nullLabel="Sélectionner…" [disabled]="saving" [loading]="refsLoading" />
-        </div>
-        <div class="form-group col-md-3">
-          <label class="small text-muted">Statut <span class="mena-required-mark">*</span></label>
-          <app-mena-searchable-select [(ngModel)]="creating.idStatutPersonnelId" [options]="menaStatutOptions()" nullLabel="Sélectionner…" [disabled]="saving" [loading]="refsLoading" />
-        </div>
-        <div class="form-group col-md-3">
-          <label class="small text-muted">Nombre années d'expérience</label>
-          <input type="number" min="0" class="form-control" [(ngModel)]="creating.anneExpePersonnel" [disabled]="saving" />
-        </div>
-        <div class="form-group col-md-3">
-          <label class="small text-muted">Sexe</label>
-          <select class="form-control" [(ngModel)]="creating.sexePersonnel" [disabled]="saving">
-            <option value="">--</option>
-            <option value="M">M</option>
-            <option value="F">F</option>
-          </select>
-        </div>
-      </div>
-      <div class="form-row" *ngIf="showDenominationField() || showProgrammeField() || showRepresentantLegalField()">
-        <div class="form-group col-md-4" *ngIf="showDenominationField()">
-          <label class="small text-muted">Dénomination (centre)</label>
-          <input class="form-control" [(ngModel)]="creating.denominationPersonnel" [disabled]="saving" />
-        </div>
-        <div class="form-group col-md-4" *ngIf="showProgrammeField()">
-          <label class="small text-muted">Nom du programme</label>
-          <input class="form-control" [(ngModel)]="creating.nomDuPrgramme" [disabled]="saving" />
-        </div>
-        <div class="form-group col-md-4" *ngIf="showRepresentantLegalField()">
-          <label class="small text-muted">Représentant légal de la structure</label>
-          <input class="form-control" [(ngModel)]="creating.nomRepresentantLegalSturcture" [disabled]="saving" />
-        </div>
-      </div>
-      <fieldset class="border rounded px-3 py-2 mb-3">
-        <legend class="small text-muted w-auto px-1 mb-0">Formation certifiée en alphabétisation et éducation non formelle</legend>
-        <div class="form-row align-items-center mt-2">
-          <div class="col-auto">
-            <label class="mb-0 mr-3"><input type="radio" name="certifierPersonnel" [ngModel]="creating.certifierPersonnel" (ngModelChange)="onCertificationChange($event)" [value]="true" [disabled]="saving" /> Oui</label>
-            <label class="mb-0"><input type="radio" name="certifierPersonnel" [ngModel]="creating.certifierPersonnel" (ngModelChange)="onCertificationChange($event)" [value]="false" [disabled]="saving" /> Non</label>
-          </div>
-          <div class="col-md-6" *ngIf="creating.certifierPersonnel === true">
-            <label class="small text-muted">Structure de formation</label>
-            <app-mena-searchable-select [(ngModel)]="creating.idStructureFormationCertificationId" [options]="menaStructureFormationOptions()" nullLabel="Sélectionner…" [disabled]="saving" [loading]="refsLoading" />
-          </div>
-        </div>
-      </fieldset>
-      <button class="btn btn-primary" (click)="create()" [disabled]="!canCreate()">
-        <span *ngIf="saving">Enregistrement…</span>
-        <span *ngIf="!saving">Créer le personnel</span>
-      </button>
-    </div>
-  </div>
-
   <div class="card border-0 shadow-sm" *ngIf="centreId != null">
-    <div class="card-header py-3 bg-white border-bottom-0">
+    <div class="card-header py-3 bg-white border-bottom-0 d-flex flex-wrap justify-content-between align-items-center gap-2">
       <h6 class="m-0 font-weight-bold text-primary">Liste du personnel</h6>
+      <app-mena-toolbar-btn variant="add" label="Ajouter un personnel" [disabled]="centreId == null || saving" (clicked)="goToCreate()" />
     </div>
     <div class="card-body border-bottom bg-light py-3">
       <div class="small font-weight-bold text-muted mb-2">Filtres de recherche</div>
@@ -169,6 +71,7 @@
             nullLabel="Toutes"
             inputClass="form-control form-control-sm"
             [disabled]="loading || saving"
+            [loading]="refsLoading"
           />
         </div>
         <div class="form-group col-6 col-md-2 mb-2 mb-md-0">
@@ -180,6 +83,7 @@
             nullLabel="Tous"
             inputClass="form-control form-control-sm"
             [disabled]="loading || saving"
+            [loading]="refsLoading"
           />
         </div>
         <div class="form-group col-6 col-md-2 mb-2 mb-md-0">
@@ -191,6 +95,7 @@
             nullLabel="Tous"
             inputClass="form-control form-control-sm"
             [disabled]="loading || saving"
+            [loading]="refsLoading"
           />
         </div>
         <div class="form-group col-6 col-md-2 mb-2 mb-md-0">
@@ -202,6 +107,7 @@
             nullLabel="Toutes"
             inputClass="form-control form-control-sm"
             [disabled]="loading || saving"
+            [loading]="refsLoading"
           />
         </div>
         <div class="form-group col-6 col-md-2 mb-2 mb-md-0">
@@ -245,7 +151,7 @@
       </div>
     </div>
     <div class="card-body pt-3">
-      <div *ngIf="listLoading" class="small text-muted">Chargement…</div>
+      <app-mena-loading *ngIf="listLoading" message="Chargement du personnel…" [centered]="true" />
       <div *ngIf="!listLoading">
       <div class="table-responsive">
         <table class="table table-bordered align-middle">
@@ -259,61 +165,21 @@
           </thead>
           <tbody>
             <tr *ngFor="let r of rows">
-              <td>
-                <div *ngIf="editingId !== r.id" class="font-weight-bold">
-                  {{ (r.nomPersonnel ?? '') + ' ' + (r.prenomsPersonnel ?? '') }}
-                </div>
-                <div *ngIf="editingId === r.id" class="form-row">
-                  <div class="col">
-                    <input class="form-control form-control-sm" [(ngModel)]="edit.nomPersonnel" [disabled]="saving" placeholder="Nom" />
-                  </div>
-                  <div class="col">
-                    <input class="form-control form-control-sm" [(ngModel)]="edit.prenomsPersonnel" [disabled]="saving" placeholder="Prénoms" />
-                  </div>
-                </div>
+              <td class="font-weight-bold">
+                {{ (r.nomPersonnel ?? '') + ' ' + (r.prenomsPersonnel ?? '') }}
               </td>
               <td>
-                <span *ngIf="editingId !== r.id">{{ r.contactPersonnel ?? '—' }}</span>
-                <input *ngIf="editingId === r.id" class="form-control form-control-sm" [(ngModel)]="edit.contactPersonnel" [disabled]="saving" />
+                {{ r.contactPersonnel ?? '—' }}
               </td>
               <td>
-                <span *ngIf="editingId !== r.id">{{ r.emailPersonnel ?? '—' }}</span>
-                <input *ngIf="editingId === r.id" class="form-control form-control-sm" [(ngModel)]="edit.emailPersonnel" [disabled]="saving" />
+                {{ r.emailPersonnel ?? '—' }}
               </td>
               <td class="text-center">
-                <ng-container *ngIf="editingId !== r.id; else editActions">
-                  <div class="mena-row-actions justify-content-center">
-                    <app-mena-row-action
-                      variant="detail"
-                      title="Détails"
-                      ariaLabel="Détails"
-                      [disabled]="saving"
-                      (clicked)="openDetails(r)"
-                    />
-                    <app-mena-row-action
-                      variant="edit"
-                      title="Modifier"
-                      ariaLabel="Modifier"
-                      [disabled]="saving"
-                      (clicked)="startEdit(r)"
-                    />
-                    <app-mena-row-action
-                      variant="delete"
-                      title="Supprimer"
-                      ariaLabel="Supprimer"
-                      [disabled]="saving"
-                      (clicked)="deleteRow(r)"
-                    />
-                  </div>
-                </ng-container>
-                <ng-template #editActions>
-                  <button class="btn btn-sm btn-primary mr-1" (click)="saveEdit()" [disabled]="!canSaveEdit()">
-                    Enregistrer
-                  </button>
-                  <button class="btn btn-sm btn-outline-secondary" (click)="cancelEdit()" [disabled]="saving">
-                    Annuler
-                  </button>
-                </ng-template>
+                <div class="mena-row-actions justify-content-center">
+                  <app-mena-row-action variant="detail" title="Détails" ariaLabel="Détails" [disabled]="saving" (clicked)="openDetails(r)" />
+                  <app-mena-row-action variant="edit" title="Modifier" ariaLabel="Modifier" [disabled]="saving" (clicked)="goToEdit(r)" />
+                  <app-mena-row-action variant="delete" title="Supprimer" ariaLabel="Supprimer" [disabled]="saving" (clicked)="deleteRow(r)" />
+                </div>
               </td>
             </tr>
             <tr *ngIf="rows.length === 0">
@@ -370,3 +236,4 @@
   [fields]="detailFields"
   (closed)="closeDetails()"
 />
+

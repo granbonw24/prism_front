@@ -1,10 +1,13 @@
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
+import { MENU_FEATURES } from '@core/config/menu-rbac.config';
+import { canViewMenuFeature } from '@core/rbac/menu-rbac.util';
 import type { Anneescolaire } from '@models/anneescolaire';
 import { AnneescolaireService } from '@services/anneescolaire.service';
+import { AuthService } from '@services/auth.service';
 
 @Component({
   selector: 'app-anneescolaire-add',
@@ -13,7 +16,7 @@ import { AnneescolaireService } from '@services/anneescolaire.service';
   templateUrl: './add.component.html',
   styleUrl: './add.component.css',
 })
-export class AnneescolaireAddComponent {
+export class AnneescolaireAddComponent implements OnInit {
   saving = false;
   errorMessage: string | null = null;
 
@@ -26,7 +29,14 @@ export class AnneescolaireAddComponent {
   constructor(
     private readonly api: AnneescolaireService,
     private readonly router: Router,
+    private readonly auth: AuthService,
   ) {}
+
+  ngOnInit(): void {
+    if (!canViewMenuFeature(this.auth, MENU_FEATURES.PARAMETRAGE_AUTRES, 'CREER')) {
+      void this.router.navigate(['/anneescolaire'], { queryParams: { accessDenied: '1' } });
+    }
+  }
 
   submit(): void {
     if (!this.form.debutAnneeScolaire || !this.form.finAnneeScolaire) {

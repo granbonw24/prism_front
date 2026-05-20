@@ -53,6 +53,7 @@
             [allowNull]="false"
             inputClass="form-control form-control-sm"
             [disabled]="loading"
+            [loading]="loading"
           />
         </div>
         <div class="form-group col-md-3 col-sm-12 mb-2 mb-md-0">
@@ -63,6 +64,7 @@
             [allowNull]="false"
             inputClass="form-control form-control-sm"
             [disabled]="loading"
+            [loading]="loading"
           />
         </div>
         <div class="form-group col-md-2 col-sm-12 mb-0">
@@ -94,7 +96,7 @@
       <h6 class="m-0 font-weight-bold text-primary">Liste des suivis de visite</h6>
     </div>
     <div class="card-body pt-3">
-      <div *ngIf="loading" class="small text-muted py-3">Chargement…</div>
+      <app-mena-loading *ngIf="loading" message="Chargement des visites…" [centered]="true" />
       <div *ngIf="!loading" class="table-responsive">
         <table class="table table-bordered table-sm align-middle mena-table">
           <thead class="thead-light">

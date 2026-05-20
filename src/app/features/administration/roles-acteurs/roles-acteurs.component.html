@@ -1,4 +1,10 @@
 <div class="container-fluid px-2 px-sm-3 mena-rfp-page">
+  <app-mena-context-dashboard
+    module="ADMIN"
+    subModule="roles"
+    title="Acteurs et permissions"
+    [alwaysVisible]="true"
+  />
   <div class="card border-0 shadow-sm">
     <div class="card-header py-3 bg-white border-bottom-0">
       <h6 class="m-0 font-weight-bold text-primary">Rôle permission</h6>
@@ -11,7 +17,7 @@
       <div class="row mb-3">
         <div class="col-md-6 col-lg-5">
           <label class="small text-muted mb-1" for="roleSelect">Acteur (rôle)</label>
-          <app-mena-searchable-select
+          <app-mena-searchable-select [loading]="loading"
             id="roleSelect"
             [(ngModel)]="selectedRoleId"
             (ngModelChange)="onRoleChange()"
@@ -21,7 +27,7 @@
         </div>
       </div>
 
-      <div *ngIf="loading" class="text-muted">Chargement…</div>
+      <app-mena-loading *ngIf="loading" message="Chargement des rôles et acteurs…" [centered]="true" />
       <div *ngIf="!loading && errorMessage" class="alert alert-danger py-2 mb-3">
         {{ errorMessage }}
       </div>

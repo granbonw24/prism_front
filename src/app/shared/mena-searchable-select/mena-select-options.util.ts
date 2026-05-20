@@ -40,8 +40,64 @@ export function toMenaSelectOptionsFromPairs(
   }));
 }
 
+/** Libellé pour listes déroulantes : libellé métier uniquement (pas de code). */
+export function libelleOrId(
+  libelle: string | null | undefined,
+  id: number | string | null | undefined,
+  empty = '—',
+): string {
+  const l = libelle?.trim();
+  if (l) {
+    return l;
+  }
+  if (id != null && String(id).trim() !== '') {
+    return `#${id}`;
+  }
+  return empty;
+}
+
+function isCodeOrIdKey(key: string): boolean {
+  return key === 'id' || key === 'code' || /^code[A-Z_]/i.test(key);
+}
+
 /**
- * Libellé d’un référentiel API.
+ * Libellé d’un référentiel pour les selects (sans repli sur les champs code).
+ */
+export function refEntityLabelForSelect(
+  item: Record<string, unknown>,
+  libelleKeys: string[] = [],
+): string {
+  const libKeys = dedupeKeys(['libelle', ...libelleKeys]).filter((k) => !isCodeOrIdKey(k));
+
+  for (const key of libKeys) {
+    const label = stringField(item[key]);
+    if (label) {
+      return label;
+    }
+  }
+
+  for (const key of Object.keys(item)) {
+    if (!/^(libelle|nom|label)/i.test(key)) {
+      continue;
+    }
+    const label = stringField(item[key]);
+    if (label) {
+      return label;
+    }
+  }
+
+  const id = item['id'];
+  if (typeof id === 'number') {
+    return `#${id}`;
+  }
+  if (typeof id === 'string' && id.trim()) {
+    return `#${id.trim()}`;
+  }
+  return '—';
+}
+
+/**
+ * Libellé d’un référentiel API (affichage détail / tableaux : peut inclure le code).
  * Gère le format enrichi `{ id, code, libelle }` (ReferentielEnricher.toRef)
  * et les champs métier (`libelleCivilite`, `codeFonction`, etc.).
  */
@@ -60,6 +116,16 @@ export function refEntityLabel(
     }
   }
   for (const key of codKeys) {
+    const label = stringField(item[key]);
+    if (label) {
+      return label;
+    }
+  }
+
+  for (const key of Object.keys(item)) {
+    if (!/^(libelle|nom|label)/i.test(key)) {
+      continue;
+    }
     const label = stringField(item[key]);
     if (label) {
       return label;

@@ -1,4 +1,4 @@
-<div class="container-fluid">
+﻿<div class="container-fluid">
   <div class="d-sm-flex align-items-center justify-content-between mb-3">
     <div>
       <h1 class="h4 mb-0 text-gray-800">{{ isCreatePage ? createTitle : title }}</h1>
@@ -67,7 +67,7 @@
         <div class="form-row">
           <div class="form-group col-md-12" *ngIf="promoteurMode === 'existing'">
             <label class="small text-muted">Promoteur existant</label>
-            <app-mena-searchable-select
+            <app-mena-searchable-select [loading]="wizardPromoteurLoading || loading"
               [(ngModel)]="model.promoteur.id"
               (ngModelChange)="onWizardPromoteurIdChange($event)"
               [options]="menaPromoteurOptions()"
@@ -85,14 +85,13 @@
         <div class="form-row" *ngIf="promoteurMode === 'new' && model.promoteur.typePromoteur === 'PHYSIQUE'">
           <div class="form-group col-md-3">
             <label class="small text-muted">Civilité</label>
-            <select class="form-control" [(ngModel)]="model.promoteur.personnePhysique!.civilite" [disabled]="saving">
-              <option [ngValue]="''">—</option>
-              <option value="M.">M.</option>
-              <option value="Mme">Mme</option>
-              <option value="Mlle">Mlle</option>
-              <option value="Dr">Dr</option>
-              <option value="Autre">Autre</option>
-            </select>
+            <app-mena-searchable-select
+              [loading]="loading"
+              [(ngModel)]="model.promoteur.personnePhysique!.civilite"
+              [options]="menaCiviliteLibelleOptions()"
+              nullLabel="—"
+              [disabled]="saving"
+            />
           </div>
           <div class="form-group col-md-3">
             <label class="small text-muted">Sexe</label>
@@ -133,11 +132,23 @@
           </div>
           <div class="form-group col-md-4">
             <label class="small text-muted">Niveau d'études</label>
-            <input class="form-control" [(ngModel)]="model.promoteur.personnePhysique!.niveauEtudes" [disabled]="saving" />
+            <app-mena-searchable-select
+              [loading]="loading"
+              [(ngModel)]="model.promoteur.personnePhysique!.niveauEtudes"
+              [options]="menaNiveauPersonnelLibelleOptions()"
+              nullLabel="—"
+              [disabled]="saving"
+            />
           </div>
           <div class="form-group col-md-4">
             <label class="small text-muted">Fonction</label>
-            <input class="form-control" [(ngModel)]="model.promoteur.personnePhysique!.fonction" [disabled]="saving" />
+            <app-mena-searchable-select
+              [loading]="loading"
+              [(ngModel)]="model.promoteur.personnePhysique!.fonction"
+              [options]="menaFonctionLibelleOptions()"
+              nullLabel="—"
+              [disabled]="saving"
+            />
           </div>
         </div>
         <div class="form-row" *ngIf="promoteurMode === 'new' && model.promoteur.typePromoteur === 'MORALE'">
@@ -151,7 +162,7 @@
           </div>
           <div class="form-group col-md-4">
             <label class="small text-muted">Type personne morale</label>
-            <app-mena-searchable-select
+            <app-mena-searchable-select [loading]="loading"
               [(ngModel)]="model.promoteur.personneMorale!.idTypePersonneMorale"
               [options]="menaTypePersonneMoraleOptions()"
               [disabled]="saving"
@@ -183,7 +194,7 @@
         <div class="form-row">
           <div class="form-group col-md-3">
             <label class="small text-muted">Région administrative</label>
-            <app-mena-searchable-select
+            <app-mena-searchable-select [loading]="loading"
               [(ngModel)]="createRegionId"
               (ngModelChange)="onCreateRegionChange()"
               [options]="menaRefOptions(regions)"
@@ -192,7 +203,7 @@
           </div>
           <div class="form-group col-md-3">
             <label class="small text-muted">DRENA</label>
-            <app-mena-searchable-select
+            <app-mena-searchable-select [loading]="loading"
               [(ngModel)]="createDrenaId"
               (ngModelChange)="onCreateDrenaChange()"
               [options]="menaRefOptions(filteredCreateDrenas())"
@@ -201,7 +212,7 @@
           </div>
           <div class="form-group col-md-3">
             <label class="small text-muted">Département</label>
-            <app-mena-searchable-select
+            <app-mena-searchable-select [loading]="loading"
               [(ngModel)]="createDepartementId"
               (ngModelChange)="onCreateDepartementChange()"
               [options]="menaRefOptions(filteredCreateDepartements())"
@@ -210,7 +221,7 @@
           </div>
           <div class="form-group col-md-3">
             <label class="small text-muted">Commune</label>
-            <app-mena-searchable-select
+            <app-mena-searchable-select [loading]="loading"
               [(ngModel)]="createCommuneId"
               (ngModelChange)="onCreateCommuneChange()"
               [options]="menaRefOptions(filteredCreateCommunes())"
@@ -222,7 +233,7 @@
         <div class="form-row">
           <div class="form-group col-md-3">
             <label class="small text-muted">Localité</label>
-            <app-mena-searchable-select
+            <app-mena-searchable-select [loading]="loading"
               [(ngModel)]="model.centre.localiteId"
               (ngModelChange)="onCreateLocaliteChange()"
               [options]="menaLocaliteOptions(filteredCreateLocalites())"
@@ -231,7 +242,7 @@
           </div>
           <div class="form-group col-md-3">
             <label class="small text-muted">IEP</label>
-            <app-mena-searchable-select
+            <app-mena-searchable-select [loading]="loading"
               [(ngModel)]="model.centre.iepId"
               (ngModelChange)="onCreateIepChange()"
               [options]="menaIepOptions(filteredCreateIeps())"
@@ -240,7 +251,7 @@
           </div>
           <div class="form-group col-md-6">
             <label class="small text-muted">Nature centre</label>
-            <app-mena-searchable-select
+            <app-mena-searchable-select [loading]="loading"
               [(ngModel)]="model.centre.natureCentreId"
               [options]="menaNatureOptions()"
               [disabled]="saving"
@@ -251,7 +262,7 @@
         <div class="form-row">
           <div class="form-group col-md-12">
             <label class="small text-muted">Tutelle<span class="mena-required-mark" aria-hidden="true"> *</span></label>
-            <app-mena-searchable-select
+            <app-mena-searchable-select [loading]="loading"
               [(ngModel)]="model.centre.autoriteAutorisationId"
               [options]="menaAutoriteOptions()"
               [disabled]="saving"
@@ -412,7 +423,7 @@
           <div *ngFor="let n of model.niveaux ?? []; let i = index" class="form-row align-items-end">
             <div class="form-group col-md-3">
               <label class="small text-muted">Année scolaire</label>
-              <app-mena-searchable-select
+              <app-mena-searchable-select [loading]="loading"
                 [(ngModel)]="n.anneeScolaireId"
                 [options]="menaAnneeScolaireOptions()"
                 [disabled]="saving"
@@ -420,7 +431,7 @@
             </div>
             <div class="form-group col-md-4">
               <label class="small text-muted">{{ niveauTitle() }}</label>
-              <app-mena-searchable-select
+              <app-mena-searchable-select [loading]="loading"
                 [(ngModel)]="n.niveauId"
                 [options]="menaNiveauOptions()"
                 [disabled]="saving"
@@ -449,7 +460,7 @@
         <div *ngIf="!wizardSavedSuccess" class="alert alert-secondary py-2 small">
           Vérifie les informations ci-dessous puis clique sur <strong>Enregistrer</strong>.
         </div>
-        <div *ngIf="wizardPromoteurLoading" class="small text-muted mb-2">Chargement des informations promoteur…</div>
+        <app-mena-loading *ngIf="wizardPromoteurLoading" size="sm" [inline]="true" message="Chargement des informations promoteur…" class="mb-2" />
 
         <div id="centre-wizard-fiche-print" class="mena-centre-fiche-identite">
           <header class="mena-centre-fiche-identite__header">
@@ -478,15 +489,23 @@
                     <dl class="mena-centre-fiche-dl mena-centre-fiche-dl--stack">
                       <dt>Personne physique</dt>
                       <dd>
-                        <span *ngIf="pp.civilite">{{ pp.civilite }} · </span>{{ pp.nom?.trim() || '—' }} {{ pp.prenom?.trim() || '' }}
-                        <span *ngIf="pp.contact"> · {{ pp.contact }}</span>
+                        <span *ngIf="pp.civilite">{{ pp.civilite }} · </span>{{ displayOrDash(pp.nom) }} {{ displayOrDash(pp.prenom) }}
                       </dd>
+                      <dt>Contact</dt><dd>{{ displayOrDash(pp.contact) }}</dd>
+                      <dt>Sexe</dt><dd>{{ displayOrDash(pp.sexe) }}</dd>
+                      <dt>Date de naissance</dt><dd>{{ displayOrDash(pp.dateNaissance) }}</dd>
+                      <dt>Niveau d'études</dt><dd>{{ displayOrDash(pp.niveauEtudes) }}</dd>
+                      <dt>Fonction</dt><dd>{{ displayOrDash(pp.fonction) }}</dd>
                     </dl>
                   </ng-container>
                   <ng-container *ngIf="p.details?.personneMorale as pm">
                     <dl class="mena-centre-fiche-dl mena-centre-fiche-dl--stack">
                       <dt>Personne morale</dt>
-                      <dd>{{ pm.denomination?.trim() || '—' }} · {{ pm.nomRepresentant?.trim() || '—' }}</dd>
+                      <dd>{{ displayOrDash(pm.denomination) }}</dd>
+                      <dt>Programme</dt><dd>{{ displayOrDash(pm.nomProgramme) }}</dd>
+                      <dt>Représentant</dt><dd>{{ displayOrDash(pm.nomRepresentant) }}</dd>
+                      <dt>Contact</dt><dd>{{ displayOrDash(pm.contact) }}</dd>
+                      <dt>E-mail</dt><dd>{{ displayOrDash(pm.mail) }}</dd>
                     </dl>
                   </ng-container>
                 </ng-container>
@@ -499,6 +518,33 @@
                   <dt>Type</dt><dd>{{ model.promoteur.typePromoteur ?? '—' }}</dd>
                   <dt>Code promoteur</dt><dd class="text-muted">Auto-généré à l'enregistrement</dd>
                 </dl>
+                <ng-container *ngIf="model.promoteur.typePromoteur === 'PHYSIQUE' && model.promoteur.personnePhysique as pp">
+                  <dl class="mena-centre-fiche-dl mena-centre-fiche-dl--stack">
+                    <dt>Personne physique</dt>
+                    <dd>
+                      <span *ngIf="pp.civilite">{{ pp.civilite }} · </span>{{ displayOrDash(pp.nom) }} {{ displayOrDash(pp.prenom) }}
+                    </dd>
+                    <dt>Contact</dt><dd>{{ displayOrDash(pp.contact) }}</dd>
+                    <dt>Sexe</dt><dd>{{ displayOrDash(pp.sexe) }}</dd>
+                    <dt>Date de naissance</dt><dd>{{ displayOrDash(pp.dateNaissance) }}</dd>
+                    <dt>Ancienneté</dt><dd>{{ displayOrDash(pp.anciennete) }}</dd>
+                    <dt>Boîte postale</dt><dd>{{ displayOrDash(pp.boitePostale) }}</dd>
+                    <dt>Niveau d'études</dt><dd>{{ displayOrDash(pp.niveauEtudes) }}</dd>
+                    <dt>Fonction</dt><dd>{{ displayOrDash(pp.fonction) }}</dd>
+                  </dl>
+                </ng-container>
+                <ng-container *ngIf="model.promoteur.typePromoteur === 'MORALE' && model.promoteur.personneMorale as pm">
+                  <dl class="mena-centre-fiche-dl mena-centre-fiche-dl--stack">
+                    <dt>Personne morale</dt>
+                    <dd>{{ displayOrDash(pm.denomination) }}</dd>
+                    <dt>Programme</dt><dd>{{ displayOrDash(pm.nomProgramme) }}</dd>
+                    <dt>Type</dt><dd>{{ recapWizardTypePersonneMoraleLabel() }}</dd>
+                    <dt>Représentant</dt><dd>{{ displayOrDash(pm.nomRepresentant) }}</dd>
+                    <dt>Contact</dt><dd>{{ displayOrDash(pm.contact) }}</dd>
+                    <dt>Boîte postale</dt><dd>{{ displayOrDash(pm.boitePostale) }}</dd>
+                    <dt>E-mail</dt><dd>{{ displayOrDash(pm.mail) }}</dd>
+                  </dl>
+                </ng-container>
               </ng-container>
             </section>
 
@@ -618,12 +664,43 @@
           </div>
         </div>
 
+        <div class="font-weight-bold text-secondary mb-2 mt-3">Circonscription</div>
+        <div class="form-row">
+          <div class="form-group col-md-6 col-lg-4 mb-2">
+            <label class="mb-0 text-muted small">DRENA</label>
+            <app-mena-searchable-select
+              [(ngModel)]="listFilterDrenaId"
+              (ngModelChange)="onListDrenaFilterChange()"
+              [options]="menaRefOptions(drenas)"
+              nullLabel="Toutes les DRENA"
+              placeholder="Rechercher une DRENA…"
+              inputClass="form-control form-control-sm"
+              [disabled]="loading || lockListFilterDrena()"
+              [loading]="loading"
+            />
+          </div>
+          <div class="form-group col-md-6 col-lg-4 mb-2">
+            <label class="mb-0 text-muted small">IEPP</label>
+            <app-mena-searchable-select
+              [(ngModel)]="listFilterIepId"
+              (ngModelChange)="onListIepFilterChange()"
+              [options]="menaIepOptions(filteredListIeps())"
+              nullLabel="Tous les IEPP"
+              placeholder="Rechercher un IEPP…"
+              inputClass="form-control form-control-sm"
+              [disabled]="loading || lockListFilterIep()"
+              [loading]="loading"
+            />
+          </div>
+        </div>
+
         <div class="d-flex flex-wrap align-items-center mt-2">
-          <button type="button" class="btn btn-sm btn-outline-secondary" (click)="resetListFilters()">Réinitialiser</button>
+          <button type="button" class="btn btn-sm btn-primary" (click)="applyListFilters()">Filtrer</button>
+          <button type="button" class="btn btn-sm btn-outline-secondary ml-1" (click)="resetListFilters()">Réinitialiser</button>
           <span class="text-muted small ml-3" *ngIf="!loading">{{ totalElements }} résultat(s)</span>
         </div>
       </div>
-      <div *ngIf="loading" class="small text-muted">Chargement…</div>
+      <app-mena-loading *ngIf="loading" message="Chargement des centres…" [centered]="true" />
       <div *ngIf="!loading" class="table-responsive">
         <table class="table table-bordered align-middle">
           <thead class="thead-light">
@@ -740,7 +817,7 @@
         </button>
       </div>
       <div class="modal-body mena-modal-body-scroll">
-        <div *ngIf="detailsLoading" class="text-center text-muted py-5">Chargement du détail…</div>
+        <app-mena-loading *ngIf="detailsLoading" message="Chargement du détail…" [centered]="true" />
         <div *ngIf="!detailsLoading && detailsRow as d" class="mena-centre-detail-panel table-responsive">
           <table class="table table-sm table-bordered mb-0">
             <tbody>
@@ -974,7 +1051,7 @@
         </button>
       </div>
       <div class="modal-body mena-modal-body-scroll">
-        <div *ngIf="editLoading" class="text-center text-muted py-5">Chargement des données…</div>
+        <app-mena-loading *ngIf="editLoading" message="Chargement des données…" [centered]="true" />
         <div *ngIf="!editLoading" class="mena-centre-edit-form">
           <div class="form-row">
             <div class="form-group col-md-12">
@@ -986,7 +1063,7 @@
           <div class="form-row">
             <div class="form-group col-md-12">
               <label class="small text-muted">Promoteur</label>
-              <app-mena-searchable-select
+              <app-mena-searchable-select [loading]="loading"
                 [(ngModel)]="editForm.idPromoteur"
                 [options]="menaPromoteurOptions()"
                 [disabled]="saving"
@@ -1008,7 +1085,7 @@
           <div class="form-row">
             <div class="form-group col-md-3">
               <label class="small text-muted">Région administrative</label>
-              <app-mena-searchable-select
+              <app-mena-searchable-select [loading]="loading"
                 [(ngModel)]="editRegionId"
                 (ngModelChange)="onEditRegionChange()"
                 [options]="menaRefOptions(regions)"
@@ -1017,7 +1094,7 @@
             </div>
             <div class="form-group col-md-3">
               <label class="small text-muted">DRENA</label>
-              <app-mena-searchable-select
+              <app-mena-searchable-select [loading]="loading"
                 [(ngModel)]="editDrenaId"
                 (ngModelChange)="onEditDrenaChange()"
                 [options]="menaRefOptions(filteredEditDrenas())"
@@ -1026,7 +1103,7 @@
             </div>
             <div class="form-group col-md-3">
               <label class="small text-muted">IEP</label>
-              <app-mena-searchable-select
+              <app-mena-searchable-select [loading]="loading"
                 [(ngModel)]="editForm.idIep"
                 (ngModelChange)="onEditIepChange()"
                 [options]="menaIepOptions(filteredEditIeps())"
@@ -1035,7 +1112,7 @@
             </div>
             <div class="form-group col-md-3">
               <label class="small text-muted">Département</label>
-              <app-mena-searchable-select
+              <app-mena-searchable-select [loading]="loading"
                 [(ngModel)]="editDepartementId"
                 (ngModelChange)="onEditDepartementChange()"
                 [options]="menaRefOptions(filteredEditDepartements())"
@@ -1047,7 +1124,7 @@
           <div class="form-row">
             <div class="form-group col-md-3">
               <label class="small text-muted">Commune</label>
-              <app-mena-searchable-select
+              <app-mena-searchable-select [loading]="loading"
                 [(ngModel)]="editCommuneId"
                 (ngModelChange)="onEditCommuneChange()"
                 [options]="menaRefOptions(filteredEditCommunes())"
@@ -1056,7 +1133,7 @@
             </div>
             <div class="form-group col-md-3">
               <label class="small text-muted">Localité</label>
-              <app-mena-searchable-select
+              <app-mena-searchable-select [loading]="loading"
                 [(ngModel)]="editForm.idLocalite"
                 (ngModelChange)="onEditLocaliteChange()"
                 [options]="menaLocaliteOptions(filteredEditLocalites())"
@@ -1065,7 +1142,7 @@
             </div>
             <div class="form-group col-md-3">
               <label class="small text-muted">Nature</label>
-              <app-mena-searchable-select
+              <app-mena-searchable-select [loading]="loading"
                 [(ngModel)]="editForm.idNaturecentre"
                 [options]="menaNatureOptions()"
                 [disabled]="saving"
@@ -1076,7 +1153,7 @@
           <div class="form-row">
             <div class="form-group col-md-6">
               <label class="small text-muted">Tutelle<span class="mena-required-mark" aria-hidden="true"> *</span></label>
-              <app-mena-searchable-select
+              <app-mena-searchable-select [loading]="loading"
                 [(ngModel)]="editForm.idAutoriteAutorisation"
                 [options]="menaAutoriteOptions()"
                 [disabled]="saving"
@@ -1217,7 +1294,7 @@
             <div *ngFor="let n of editNiveaux; let i = index" class="form-row align-items-end">
               <div class="form-group col-md-3">
                 <label class="small text-muted">Année scolaire</label>
-                <app-mena-searchable-select
+                <app-mena-searchable-select [loading]="loading"
                   [(ngModel)]="n.anneeScolaireId"
                   [options]="menaAnneeScolaireOptions()"
                   [disabled]="saving"
@@ -1225,7 +1302,7 @@
               </div>
               <div class="form-group col-md-4">
                 <label class="small text-muted">{{ niveauTitle() }}</label>
-                <app-mena-searchable-select
+                <app-mena-searchable-select [loading]="loading"
                   [(ngModel)]="n.niveauId"
                   [options]="menaNiveauOptions()"
                   [disabled]="saving"

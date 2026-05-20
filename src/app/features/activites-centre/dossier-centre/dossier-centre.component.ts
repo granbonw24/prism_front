@@ -5,8 +5,15 @@ import { FormsModule } from '@angular/forms';
 import { unwrapListBody } from '@core/http/unwrap-spring-page';
 import { API_BASE_URL } from '@core/tokens/api-base-url.token';
 import { AuthService } from '@services/auth.service';
+import { MenaLoadingComponent } from '@shared/mena-loading/mena-loading.component';
 import { MenaSearchableSelectComponent } from '@shared/mena-searchable-select/mena-searchable-select.component';
 import { MenaContextDashboardComponent } from '@shared/mena-context-dashboard/mena-context-dashboard.component';
+import { DossierCentreLiaisonTabComponent } from './dossier-centre-liaison-tab.component';
+import {
+  liaisonConfigForSection,
+  visibleLiaisonSections,
+} from './dossier-centre-liaison.config';
+import type { DossierCentreLiaisonConfig } from './dossier-centre-liaison.config';
 import {
   sortByLabel,
   toMenaSelectOptions,
@@ -82,12 +89,19 @@ type DocumentForm = {
   bienrensigne: string;
 };
 
-type DossierSection = 'appuis' | 'documents';
+type DossierSection = 'appuis' | 'documents' | string;
 
 @Component({
   selector: 'app-dossier-centre',
   standalone: true,
-  imports: [CommonModule, FormsModule, MenaSearchableSelectComponent, MenaContextDashboardComponent],
+  imports: [
+    MenaLoadingComponent,
+    CommonModule,
+    FormsModule,
+    MenaSearchableSelectComponent,
+    MenaContextDashboardComponent,
+    DossierCentreLiaisonTabComponent,
+  ],
   template: `
     <div class="container-fluid">
       <div class="d-sm-flex align-items-center justify-content-between mb-3">
@@ -123,23 +137,25 @@ type DossierSection = 'appuis' | 'documents';
                 [options]="menaCentreTypeOptions()"
                 nullLabel="Sélectionner"
                 [searchable]="false"
+                [loading]="loading"
               />
             </div>
             <div class="form-group col-md-8 mb-0">
               <label class="small text-muted mb-1">Centre</label>
               <app-mena-searchable-select
                 [(ngModel)]="selectedCentreId"
-                (ngModelChange)="onCentreChange()"
+                (ngModelChange)="onCentreChange($event)"
                 [options]="menaCentreOptions()"
-                [nullLabel]="centresLoading ? 'Chargement...' : 'Sélectionner un centre'"
+                nullLabel="Sélectionner un centre"
                 [disabled]="!selectedCentreType || centresLoading"
+                [loading]="centresLoading"
               />
             </div>
           </div>
         </div>
       </div>
 
-      <div *ngIf="loading" class="small text-muted py-3">Chargement...</div>
+      <app-mena-loading *ngIf="loading" message="Chargement du dossier…" [centered]="true" />
 
       <div *ngIf="!loading && selectedCentreType == null" class="alert alert-info py-2">
         Sélectionner d’abord le type de centre.
@@ -151,10 +167,10 @@ type DossierSection = 'appuis' | 'documents';
 
       <div *ngIf="!loading && selectedCentreId != null" class="card border-0 shadow-sm mb-3">
         <div class="card-body py-2">
-          <div class="btn-group btn-group-sm" role="group" aria-label="Sections du dossier centre">
+          <div class="d-flex flex-wrap" style="gap: 0.35rem" role="group" aria-label="Sections du dossier centre">
             <button
               type="button"
-              class="btn"
+              class="btn btn-sm"
               [class.btn-primary]="activeSection === 'appuis'"
               [class.btn-outline-primary]="activeSection !== 'appuis'"
               (click)="activeSection = 'appuis'"
@@ -163,18 +179,33 @@ type DossierSection = 'appuis' | 'documents';
             </button>
             <button
               type="button"
-              class="btn"
+              class="btn btn-sm"
               [class.btn-primary]="activeSection === 'documents'"
               [class.btn-outline-primary]="activeSection !== 'documents'"
               (click)="activeSection = 'documents'"
             >
               Documents du centre
             </button>
+            <button
+              *ngFor="let tab of visibleLiaisonTabs"
+              type="button"
+              class="btn btn-sm"
+              [class.btn-primary]="activeSection === tab.section"
+              [class.btn-outline-primary]="activeSection !== tab.section"
+              (click)="activeSection = tab.section"
+            >
+              {{ tab.shortLabel }}
+            </button>
           </div>
         </div>
       </div>
 
-      <div *ngIf="!loading && selectedCentreId != null">
+      <ng-container *ngIf="!loading && selectedCentreId != null">
+        <app-dossier-centre-liaison-tab
+          *ngIf="activeLiaisonConfig as liaisonCfg"
+          [config]="liaisonCfg"
+          [centreId]="selectedCentreId"
+        />
         <div *ngIf="activeSection === 'appuis'" class="mb-3">
           <div class="card border-0 shadow-sm h-100">
             <div class="card-header bg-white">
@@ -190,6 +221,7 @@ type DossierSection = 'appuis' | 'documents';
                       [(ngModel)]="appuiForm.idPartenaire"
                       [options]="menaPartenaireOptions()"
                       nullLabel="Sélectionner"
+                      [loading]="loading"
                     />
                   </div>
                   <div class="form-group col-md-6">
@@ -198,6 +230,7 @@ type DossierSection = 'appuis' | 'documents';
                       [(ngModel)]="appuiForm.idCategorieAppui"
                       [options]="menaCategorieAppuiOptions()"
                       nullLabel="Sélectionner"
+                      [loading]="loading"
                     />
                   </div>
                 </div>
@@ -258,6 +291,7 @@ type DossierSection = 'appuis' | 'documents';
                       [(ngModel)]="documentForm.idNatureDocument"
                       [options]="menaNatureDocumentOptions()"
                       nullLabel="Sélectionner"
+                      [loading]="loading"
                     />
                   </div>
                   <div class="form-group col-md-6">
@@ -266,6 +300,7 @@ type DossierSection = 'appuis' | 'documents';
                       [(ngModel)]="documentForm.idTypeDocument"
                       [options]="menaTypeDocumentOptions()"
                       nullLabel="Sélectionner"
+                      [loading]="loading"
                     />
                   </div>
                 </div>
@@ -369,7 +404,7 @@ type DossierSection = 'appuis' | 'documents';
             </div>
           </div>
         </div>
-      </div>
+      </ng-container>
     </div>
   `,
 })
@@ -432,6 +467,14 @@ export class DossierCentreComponent implements OnInit {
   get documentsUpToDate(): boolean {
     const rows = this.filteredDocuments;
     return rows.length > 0 && rows.every((row) => this.isYes(row.existe) && this.isYes(row.ajour));
+  }
+
+  get visibleLiaisonTabs(): DossierCentreLiaisonConfig[] {
+    return visibleLiaisonSections(this.selectedCentreType);
+  }
+
+  get activeLiaisonConfig(): DossierCentreLiaisonConfig | undefined {
+    return liaisonConfigForSection(this.activeSection);
   }
 
   reload(): void {
@@ -502,7 +545,11 @@ export class DossierCentreComponent implements OnInit {
     });
   }
 
-  onCentreChange(): void {
+  onCentreChange(rawCentreId: number | string | null = this.selectedCentreId): void {
+    if (rawCentreId != null && rawCentreId !== '') {
+      const n = Number(rawCentreId);
+      this.selectedCentreId = Number.isFinite(n) ? Math.trunc(n) : null;
+    }
     this.appuiForm = this.emptyAppuiForm();
     this.cancelDocumentEdit();
     this.successMessage = null;

@@ -11,10 +11,21 @@
         <div>
           <h6 class="m-0 font-weight-bold text-primary">Administration — Utilisateurs</h6>
           <div class="small text-muted mt-1">
-            Ajouter / modifier / supprimer les utilisateurs et associer les rôles.
+            <ng-container *ngIf="canCreate || canModify || canDelete; else readOnlyHint">
+              Ajouter / modifier / supprimer les utilisateurs et associer les rôles.
+            </ng-container>
+            <ng-template #readOnlyHint>
+              Consultation des utilisateurs de votre circonscription.
+            </ng-template>
           </div>
         </div>
-        <button class="btn btn-sm btn-primary" type="button" (click)="openCreate()" [disabled]="loading || saving">
+        <button
+          *ngIf="canCreate"
+          class="btn btn-sm btn-primary"
+          type="button"
+          (click)="openCreate()"
+          [disabled]="loading || saving"
+        >
           <i class="fas fa-plus mr-1" aria-hidden="true"></i>
           Ajouter
         </button>
@@ -22,7 +33,7 @@
     </div>
 
     <div class="card-body pt-3">
-      <div *ngIf="loading" class="text-muted">Chargement…</div>
+      <app-mena-loading *ngIf="loading" message="Chargement des utilisateurs…" [centered]="true" />
       <div *ngIf="!loading && errorMessage" class="alert alert-danger">
         {{ errorMessage }}
       </div>
@@ -58,7 +69,8 @@
                   nullLabel="Tous les rôles"
                   placeholder="Rechercher…"
                   inputClass="form-control form-control-sm"
-                  [disabled]="saving"
+                  [disabled]="saving || loading"
+                  [loading]="loading"
                 />
               </div>
               <div class="form-group col-md-4 col-lg-3 mb-2 mb-lg-0">
@@ -126,6 +138,7 @@
                         <i class="fas fa-eye" aria-hidden="true"></i>
                       </button>
                       <button
+                        *ngIf="canModify"
                         class="btn btn-sm btn-outline-secondary mr-1"
                         type="button"
                         (click)="openEdit(u)"
@@ -136,6 +149,7 @@
                         <i class="fas fa-pen" aria-hidden="true"></i>
                       </button>
                       <button
+                        *ngIf="canDelete"
                         class="btn btn-sm btn-outline-danger"
                         type="button"
                         (click)="deleteUser(u)"
@@ -258,7 +272,8 @@
             nullLabel="— Sélectionner un rôle —"
             placeholder="Rechercher…"
             inputClass="form-control"
-            [disabled]="saving"
+            [disabled]="saving || loading"
+            [loading]="loading"
           />
           <small class="form-text text-muted">Un utilisateur ne peut avoir qu’un seul rôle.</small>
         </div>
@@ -279,7 +294,8 @@
                 (ngModelChange)="onScopeChanged(createForm, scope.key, $event)"
                 [options]="menaScopeOptions(scope.key, createForm)"
                 nullLabel="— Non rattaché —"
-                [disabled]="saving"
+                [disabled]="saving || loading"
+                [loading]="loading"
               />
             </div>
           </div>
@@ -290,7 +306,7 @@
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-outline-secondary" (click)="closeCreate()" [disabled]="saving">Annuler</button>
-        <button type="button" class="btn btn-primary" (click)="createUser()" [disabled]="!canCreate()">
+        <button type="button" class="btn btn-primary" (click)="createUser()" [disabled]="!createFormIsValid()">
           <span *ngIf="saving">Enregistrement…</span>
           <span *ngIf="!saving">Créer</span>
         </button>
@@ -416,7 +432,7 @@
 
         <div class="form-group mt-2 mb-0">
           <label class="small text-muted">Rôle</label>
-          <app-mena-searchable-select
+          <app-mena-searchable-select [loading]="loading"
             [(ngModel)]="editSelectedRoleId"
             [options]="roleSelectOptions"
             nullLabel="— Sélectionner un rôle —"
@@ -438,7 +454,7 @@
           <div class="form-row">
             <div class="form-group col-md-6" *ngFor="let scope of scopeConfigs">
               <label class="small text-muted">{{ scope.label }}</label>
-              <app-mena-searchable-select
+              <app-mena-searchable-select [loading]="loading"
                 [ngModel]="editForm[scope.key]"
                 (ngModelChange)="onScopeChanged(editForm, scope.key, $event)"
                 [options]="menaScopeOptions(scope.key, editForm)"

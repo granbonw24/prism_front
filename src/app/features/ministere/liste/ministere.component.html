@@ -2,7 +2,7 @@
   <h1 class="h3 mb-2 text-gray-800">Ministères</h1>
   <p class="mb-4">Données issues de l'API <code>/api/ministeres</code>.</p>
 
-  <div *ngIf="loading" class="text-muted">Chargement…</div>
+  <app-mena-loading *ngIf="loading" message="Chargement…" [centered]="true" />
   <div *ngIf="errorMessage" class="alert alert-warning">{{ errorMessage }}</div>
 
   <div class="card shadow mb-4" *ngIf="!loading && !errorMessage">

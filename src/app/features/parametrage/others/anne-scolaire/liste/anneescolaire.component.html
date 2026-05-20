@@ -11,10 +11,15 @@
   <div class="card shadow mb-4 border-0">
     <div class="card-header py-3 d-flex flex-wrap align-items-center justify-content-between gap-2 bg-white border-bottom-0">
       <h6 class="m-0 font-weight-bold text-primary">Liste des années</h6>
-      <app-mena-toolbar-btn variant="add" label="Ajouter année scolaire" [routerLink]="['add']" />
+      <app-mena-toolbar-btn
+        *ngIf="canCreate"
+        variant="add"
+        label="Ajouter année scolaire"
+        [routerLink]="['add']"
+      />
     </div>
     <div class="card-body">
-      <div *ngIf="loading" class="text-muted py-4 text-center">Chargement…</div>
+      <app-mena-loading *ngIf="loading" message="Chargement des années scolaires…" [centered]="true" />
       <div *ngIf="!loading" class="table-responsive">
         <table class="table table-bordered" width="100%" cellspacing="0">
           <thead>
@@ -41,7 +46,7 @@
                 <span *ngIf="!row.etatAnneeScolaire" class="badge badge-secondary">—</span>
               </td>
               <td class="text-nowrap mena-col-actions">
-                <div class="mena-row-actions flex-wrap justify-content-start">
+                <div *ngIf="canModify" class="mena-row-actions flex-wrap justify-content-start">
                   <app-mena-row-action
                     variant="edit"
                     [routerLink]="['edit', row.id]"

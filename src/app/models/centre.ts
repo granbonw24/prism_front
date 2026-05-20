@@ -372,8 +372,7 @@ export function refOptionLabel(o: RefOption): string {
 
 export function refOptionLibelle(o: RefOption): string {
   const l = o.libelle?.trim();
-  const c = o.code?.trim();
-  return l || c || `#${o.id}`;
+  return l || `#${o.id}`;
 }
 
 export function localiteOptionLabel(l: LocaliteOption): string {
@@ -382,10 +381,19 @@ export function localiteOptionLabel(l: LocaliteOption): string {
   return n || c || `#${l.id}`;
 }
 
+/** Libellé select (nom / libellé uniquement). */
+export function localiteSelectLabel(l: LocaliteOption): string {
+  return l.nomLocalite?.trim() || l.libelle?.trim() || `#${l.id}`;
+}
+
 export function iepOptionLabel(i: IepOption): string {
   const n = i.nomIep?.trim() || i.libelle?.trim();
   const c = i.codeIep?.trim() || i.code?.trim();
   return n || c || `#${i.id}`;
+}
+
+export function iepSelectLabel(i: IepOption): string {
+  return i.nomIep?.trim() || i.libelle?.trim() || `#${i.id}`;
 }
 
 export function natureOptionLabel(n: NatureOption): string {
@@ -394,14 +402,42 @@ export function natureOptionLabel(n: NatureOption): string {
   return l || c || `#${n.id}`;
 }
 
+export function natureSelectLabel(n: NatureOption): string {
+  return n.libelleNatureCentre?.trim() || n.libelle?.trim() || `#${n.id}`;
+}
+
 export function periodiciteOptionLabel(p: PeriodiciteOption): string {
   const l = p.libellePeriodicite?.trim() || p.libelle?.trim();
   const c = p.codePeriodicite?.trim() || p.code?.trim();
   return l || c || `#${p.id}`;
 }
 
+export function periodiciteSelectLabel(p: PeriodiciteOption): string {
+  return p.libellePeriodicite?.trim() || p.libelle?.trim() || `#${p.id}`;
+}
+
 export function autoriteOptionLabel(a: AutoriteOption): string {
   const l = a.libelleAutoriteAutorisation?.trim() || a.libelle?.trim();
   const c = a.codeAutorisation?.trim() || a.code?.trim();
+  if (c && l) {
+    return `${c} — ${l}`;
+  }
   return l || c || `#${a.id}`;
+}
+
+export function autoriteSelectLabel(a: AutoriteOption): string {
+  return a.libelleAutoriteAutorisation?.trim() || a.libelle?.trim() || `#${a.id}`;
+}
+
+/** Normalise une ligne API enrichie `{ id, code, libelle }` ou entité JPA complète. */
+export function autoriteOptionFromApi(value: Record<string, unknown>): AutoriteOption {
+  const libelle = String(value['libelleAutoriteAutorisation'] ?? value['libelle'] ?? '').trim();
+  const code = String(value['codeAutorisation'] ?? value['code'] ?? '').trim();
+  return {
+    id: Number(value['id'] ?? 0),
+    libelleAutoriteAutorisation: libelle || null,
+    codeAutorisation: code || null,
+    libelle: libelle || null,
+    code: code || null,
+  };
 }

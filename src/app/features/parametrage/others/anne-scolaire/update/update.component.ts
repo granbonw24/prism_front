@@ -3,13 +3,17 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { MENU_FEATURES } from '@core/config/menu-rbac.config';
+import { canViewMenuFeature } from '@core/rbac/menu-rbac.util';
 import type { Anneescolaire } from '@models/anneescolaire';
 import { AnneescolaireService } from '@services/anneescolaire.service';
+import { AuthService } from '@services/auth.service';
+import { MenaLoadingComponent } from '@shared/mena-loading/mena-loading.component';
 
 @Component({
   selector: 'app-anneescolaire-update',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [CommonModule, FormsModule, RouterLink, MenaLoadingComponent],
   templateUrl: './update.component.html',
   styleUrl: './update.component.css',
 })
@@ -24,9 +28,14 @@ export class AnneescolaireUpdateComponent implements OnInit {
     private readonly api: AnneescolaireService,
     private readonly route: ActivatedRoute,
     private readonly router: Router,
+    private readonly auth: AuthService,
   ) {}
 
   ngOnInit(): void {
+    if (!canViewMenuFeature(this.auth, MENU_FEATURES.PARAMETRAGE_AUTRES, 'MODIFIER')) {
+      void this.router.navigate(['/anneescolaire'], { queryParams: { accessDenied: '1' } });
+      return;
+    }
     const raw = this.route.snapshot.paramMap.get('id');
     const id = raw != null ? Number(raw) : NaN;
     if (!Number.isFinite(id)) {
@@ -37,7 +46,11 @@ export class AnneescolaireUpdateComponent implements OnInit {
     this.loading = true;
     this.api.findById(id).subscribe({
       next: (row) => {
-        this.form = { ...row };
+        this.form = {
+          ...row,
+          debutAnneeScolaire: this.toDateInput(row.debutAnneeScolaire),
+          finAnneeScolaire: this.toDateInput(row.finAnneeScolaire),
+        };
         this.loading = false;
       },
       error: (e) => {
@@ -72,6 +85,13 @@ export class AnneescolaireUpdateComponent implements OnInit {
         this.saving = false;
       },
     });
+  }
+
+  private toDateInput(value: string | null | undefined): string {
+    if (!value) {
+      return '';
+    }
+    return value.length >= 10 ? value.slice(0, 10) : value;
   }
 
   private formatError(e: unknown): string {

@@ -1,3 +1,4 @@
+import { MenaLoadingComponent } from '@shared/mena-loading/mena-loading.component';
 import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 
@@ -9,7 +10,8 @@ export interface MenaRecordDetailField {
 @Component({
   selector: 'app-mena-record-detail-modal',
   standalone: true,
-  imports: [CommonModule],
+  imports: [
+    MenaLoadingComponent,CommonModule],
   templateUrl: './mena-record-detail-modal.component.html',
   styleUrl: './mena-record-detail-modal.component.css',
 })

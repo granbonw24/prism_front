@@ -61,7 +61,7 @@ export class DashboardComponent implements OnInit {
     { title: 'Visites', path: '/activites-centre/visite/conseiller', icon: 'fas fa-clipboard-list', permissions: ['POINTS_VISITES:LIRE', 'SUIVI_CONSEILLER:LIRE'] },
     { title: 'Contrôles', path: '/activites-centre/controle', icon: 'fas fa-tasks', permissions: ['ACTIVITES_CENTRE_CONTROLE:LIRE'] },
     { title: 'Évaluations', path: '/activites-centre/evaluation-periodique', icon: 'fas fa-chart-line', permissions: ['ACTIVITES_CENTRE_EVALUATION:LIRE'] },
-    { title: 'Utilisateurs', path: '/administration/utilisateurs', icon: 'fas fa-user-cog', permissions: ['UTILISATEUR:LIRE'] },
+    { title: 'Utilisateurs', path: '/administration/utilisateurs', icon: 'fas fa-user-cog', permissions: ['ADMIN_UTILISATEURS:LIRE'] },
     { title: 'Acteurs', path: '/administration/acteurs', icon: 'fas fa-user-tag', permissions: ['ACTEUR:LIRE'] },
   ];
 

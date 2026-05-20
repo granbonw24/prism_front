@@ -53,7 +53,7 @@
       <h6 class="m-0 font-weight-bold text-primary">Rôles existants</h6>
     </div>
     <div class="card-body pt-3">
-      <div *ngIf="loading" class="small text-muted">Chargement des rôles…</div>
+      <app-mena-loading *ngIf="loading" message="Chargement des rôles…" [centered]="true" />
       <div *ngIf="!loading" class="table-responsive">
         <table class="table table-bordered align-middle">
           <thead class="thead-light">

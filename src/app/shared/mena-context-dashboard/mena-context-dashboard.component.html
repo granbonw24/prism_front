@@ -10,7 +10,7 @@
     </p>
   </div>
   <div class="card-body pt-0">
-    <div *ngIf="loading" class="small text-muted py-2">Chargement des indicateurs…</div>
+    <app-mena-loading *ngIf="loading" size="sm" [inline]="true" message="Chargement des indicateurs…" />
     <div class="row mena-mini-dash mb-0" *ngIf="!loading && dashboard as dash">
       <div
         *ngFor="let c of dash.cards; let i = index"

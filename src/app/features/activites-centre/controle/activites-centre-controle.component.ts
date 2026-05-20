@@ -22,6 +22,7 @@ import {
   sortActivitesRefs,
 } from '@features/activites-centre/activites-centre-select.util';
 import { MenaRowActionButtonComponent } from '@shared/mena-row-action-button/mena-row-action-button.component';
+import { MenaLoadingComponent } from '@shared/mena-loading/mena-loading.component';
 import { MenaSearchableSelectComponent } from '@shared/mena-searchable-select/mena-searchable-select.component';
 import { MenaContextDashboardComponent } from '@shared/mena-context-dashboard/mena-context-dashboard.component';
 import { sortByLabel, toMenaSelectOptions } from '@shared/mena-searchable-select/mena-select-options.util';
@@ -113,6 +114,7 @@ const DAYS: Array<{ value: string; label: string }> = [
   selector: 'app-activites-centre-controle',
   standalone: true,
   imports: [
+    MenaLoadingComponent,
     CommonModule,
     FormsModule,
     MenaRowActionButtonComponent,
@@ -407,7 +409,7 @@ export class ActivitesCentreControleComponent implements OnInit {
   }
 
   alphaOptionLabel(alpha: AlphaOption): string {
-    return [alpha.codeCentre ?? alpha.code, alpha.libelle].filter(Boolean).join(' — ') || `Centre ${this.alphaOptionValue(alpha)}`;
+    return alpha.libelle?.trim() || `Centre #${this.alphaOptionId(alpha) ?? '—'}`;
   }
 
   refLabel(ref: Ref | null | undefined): string {

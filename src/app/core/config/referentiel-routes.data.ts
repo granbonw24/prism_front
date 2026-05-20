@@ -143,7 +143,7 @@ export const REFERENTIEL_ROUTE_DATA: ReferentielRouteData[] = [
     menuGroup: 'others',
     apiPath: '/api/competence',
     createFields: [
-      F('libelleCompetence', 'Libellé', 'text', { required: true, maxLength: 20 }),
+      F('libelleCompetence', 'Libellé', 'text', { required: true, maxLength: 100 }),
     ],
   },
   {
@@ -156,12 +156,21 @@ export const REFERENTIEL_ROUTE_DATA: ReferentielRouteData[] = [
     ],
   },
   {
+    path: 'source-financement',
+    title: 'Sources de financement',
+    menuGroup: 'others',
+    apiPath: '/api/source-financement',
+    createFields: [
+      F('libelleSourceFinancement', 'Libellé', 'text', { required: true, maxLength: 50 }),
+    ],
+  },
+  {
     path: 'difficulte',
     title: 'Difficultés',
     menuGroup: 'others',
     apiPath: '/api/difficulte',
     createFields: [
-      F('libelleDifficulte', 'Libellé', 'text', { required: true, maxLength: 50 }),
+      F('libelleDifficulte', 'Libellé', 'text', { required: true, maxLength: 200 }),
     ],
   },
   {
@@ -171,6 +180,31 @@ export const REFERENTIEL_ROUTE_DATA: ReferentielRouteData[] = [
     apiPath: '/api/diplome',
     createFields: [
       F('libelleDiplome', 'Libellé', 'text', { required: true, maxLength: 100 }),
+    ],
+  },
+  {
+    path: 'niveau-personnel',
+    title: "Niveaux d'étude",
+    menuGroup: 'others',
+    apiPath: '/api/niveau-personnel',
+    createFields: [
+      F('libelleNiveauPersonnel', 'Libellé', 'text', { required: true, maxLength: 100 }),
+    ],
+    columnLabels: {
+      libelleNiveauPersonnel: "Niveau d'étude",
+      codeNiveauPersonnel: 'Code',
+    },
+  },
+  {
+    path: 'structure-formation-certification',
+    title: 'Structures formation / certification',
+    menuGroup: 'others',
+    apiPath: '/api/structure-formation-certification',
+    createFields: [
+      F('libelleStructureCertification', 'Libellé', 'text', {
+        required: true,
+        maxLength: 50,
+      }),
     ],
   },
   {
@@ -367,49 +401,6 @@ export const REFERENTIEL_ROUTE_DATA: ReferentielRouteData[] = [
     ],
   },
   {
-    path: 'langueapprentissage',
-    title: 'Langues d’apprentissage',
-    menuGroup: 'pedagogie',
-    apiPath: '/api/LangueApprentissages',
-    createFields: [
-      F('idCentre', 'Centre', 'select', {
-        required: true,
-        optionsApiPath: '/api/centres',
-        optionValueKey: 'id',
-        optionLabelKeys: ['codeCentre'],
-      }),
-      F('libelleLangue', 'Libellé langue', 'text', {
-        required: true,
-        maxLength: 100,
-      }),
-    ],
-  },
-  {
-    path: 'materielalpha',
-    title: 'Matériel alpha',
-    menuGroup: 'pedagogie',
-    apiPath: '/api/materielalpha',
-    permissionFeature: 'SAISIE_DONNEES',
-    workflowFeature: 'SAISIE_DONNEES',
-    createFields: [
-      F('idCentre', 'Centre alpha', 'select', {
-        required: true,
-        optionsApiPath: '/api/alpha',
-        optionValueKey: 'idCentre',
-        optionLabelKeys: ['codeType', 'libelle', 'codeCentre'],
-      }),
-      F('idMaterielPedagogique', 'Matériel pédagogique', 'select', {
-        required: true,
-        optionsApiPath: '/api/materielpedagogiques',
-        optionValueKey: 'id',
-        optionLabelKeys: ['libelleMaterielPedagogique'],
-      }),
-      F('libelleAutreMateriel', 'Libellé autre matériel', 'text', {
-        maxLength: 100,
-      }),
-    ],
-  },
-  {
     path: 'materielpedagogique',
     title: 'Matériel pédagogique',
     menuGroup: 'pedagogie',
@@ -417,9 +408,24 @@ export const REFERENTIEL_ROUTE_DATA: ReferentielRouteData[] = [
     createFields: [
       F('libelleMaterielPedagogique', 'Libellé', 'text', {
         required: true,
-        maxLength: 50,
+        maxLength: 200,
       }),
     ],
+  },
+  {
+    path: 'langue-apprentissage',
+    title: "Langues d'apprentissage",
+    menuGroup: 'pedagogie',
+    apiPath: '/api/LangueApprentissages/catalog',
+    createFields: [
+      F('libelleLangue', 'Libellé', 'text', {
+        required: true,
+        maxLength: 100,
+      }),
+    ],
+    columnLabels: {
+      libelleLangue: 'Langue',
+    },
   },
   {
     path: 'manuel',

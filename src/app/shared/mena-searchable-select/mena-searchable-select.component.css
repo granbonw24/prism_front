@@ -9,6 +9,20 @@
   font-style: italic;
 }
 
+.mena-searchable-select__spinner {
+  position: absolute;
+  top: 50%;
+  right: 1.65rem;
+  transform: translateY(-50%);
+  color: var(--mena-orange-700, #d66f1e);
+  font-size: 0.85rem;
+  pointer-events: none;
+}
+
+.mena-searchable-select--loading .mena-searchable-select__control input {
+  padding-right: 5.5rem;
+}
+
 /* Évite le double cadre si un parent applique encore .form-control sur le composant */
 :host.form-control,
 :host.form-control-sm {
@@ -98,6 +112,27 @@
   padding: 0.5rem 0.75rem;
   font-size: 0.85rem;
   color: var(--mena-ink-muted, #6b6560);
+}
+
+.mena-searchable-select__loading-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.55rem 0.75rem;
+  font-size: 0.85rem;
+  color: var(--mena-ink-muted, #6b6560);
+  font-style: italic;
+  cursor: default;
+  pointer-events: none;
+}
+
+.mena-searchable-select__loading-icon {
+  color: var(--mena-orange-700, #d66f1e);
+}
+
+.mena-searchable-select--loading .mena-searchable-select__toggle {
+  opacity: 0.45;
+  pointer-events: none;
 }
 
 .mena-searchable-select--disabled {

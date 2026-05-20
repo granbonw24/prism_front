@@ -11,7 +11,7 @@
         </button>
       </div>
       <div class="modal-body pt-0">
-        <div *ngIf="loading" class="text-center text-muted py-5">Chargement du détail…</div>
+        <app-mena-loading *ngIf="loading" message="Chargement du détail…" [centered]="true" />
         <div *ngIf="!loading && fields.length" class="table-responsive">
           <table class="table table-sm table-bordered mb-0 mena-detail-table">
             <tbody>

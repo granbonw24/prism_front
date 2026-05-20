@@ -11,15 +11,6 @@ export type ActivitesRef = {
   [key: string]: unknown;
 };
 
-const CODE_KEYS = [
-  'code',
-  'codeNiveauAlpha',
-  'codePeriodeActivite',
-  'codePeriodeEvaluation',
-  'codeNiveauEvaluation',
-  'codeNiveauControle',
-] as const;
-
 const LIBELLE_KEYS = [
   'libelle',
   'libelleNiveauAlpha',
@@ -44,11 +35,7 @@ export function activitesRefLabel(ref: ActivitesRef | null | undefined): string 
     return '—';
   }
   const libelle = pickString(ref, LIBELLE_KEYS);
-  const code = pickString(ref, CODE_KEYS);
-  if (code && libelle) {
-    return `${code} — ${libelle}`;
-  }
-  return libelle || code || (ref.id != null ? `#${ref.id}` : '—');
+  return libelle || (ref.id != null ? `#${ref.id}` : '—');
 }
 
 export function sortActivitesRefs<T extends ActivitesRef>(items: readonly T[]): T[] {

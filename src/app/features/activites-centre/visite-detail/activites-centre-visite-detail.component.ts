@@ -1,3 +1,4 @@
+import { MenaLoadingComponent } from '@shared/mena-loading/mena-loading.component';
 import { CommonModule } from '@angular/common';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Component, Inject, OnInit } from '@angular/core';
@@ -25,7 +26,8 @@ const DETAIL_FIELDS: DetailField[] = [
 @Component({
   selector: 'app-activites-centre-visite-detail',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [
+    MenaLoadingComponent,CommonModule, RouterLink],
   templateUrl: './activites-centre-visite-detail.component.html',
   styleUrl: './activites-centre-visite-detail.component.css',
 })

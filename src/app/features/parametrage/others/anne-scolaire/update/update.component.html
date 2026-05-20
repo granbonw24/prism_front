@@ -6,7 +6,7 @@
 
   <div *ngIf="errorMessage" class="alert alert-danger">{{ errorMessage }}</div>
 
-  <div *ngIf="loading" class="text-muted py-4">Chargement…</div>
+  <app-mena-loading *ngIf="loading" message="Chargement de l'année scolaire…" [centered]="true" />
 
   <div *ngIf="!loading" class="card shadow border-0" style="max-width: 32rem">
     <div class="card-body">

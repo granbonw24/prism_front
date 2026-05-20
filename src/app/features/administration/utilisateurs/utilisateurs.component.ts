@@ -10,10 +10,14 @@ import {
   AppUserAdmin,
   AppUserAdminUpsertRequest,
 } from '@models/administration';
+import { MENU_FEATURES } from '@core/config/menu-rbac.config';
+import { canViewMenuFeature } from '@core/rbac/menu-rbac.util';
 import { AdministrationService, type AppUsersListQuery } from '@services/administration.service';
+import { AuthService } from '@services/auth.service';
 import { MenaPasswordFieldComponent } from '@shared/mena-password-field/mena-password-field.component';
 import { MenaSearchableSelectComponent } from '@shared/mena-searchable-select/mena-searchable-select.component';
 import { MenaContextDashboardComponent } from '@shared/mena-context-dashboard/mena-context-dashboard.component';
+import { MenaLoadingComponent } from '@shared/mena-loading/mena-loading.component';
 import {
   MenaSelectOption,
   sortByLabel,
@@ -48,6 +52,7 @@ const SCOPE_DESCENDANTS: Record<ScopeKey, ScopeKey[]> = {
     MenaPasswordFieldComponent,
     MenaSearchableSelectComponent,
     MenaContextDashboardComponent,
+    MenaLoadingComponent,
   ],
   templateUrl: './utilisateurs.component.html',
   styleUrl: './utilisateurs.component.css',
@@ -128,7 +133,22 @@ export class UtilisateursComponent implements OnInit, OnDestroy {
   listFilterActif: 'all' | 'yes' | 'no' = 'all';
   private listSearchDebounceHandle: ReturnType<typeof setTimeout> | null = null;
 
-  constructor(private readonly admin: AdministrationService) {}
+  constructor(
+    private readonly admin: AdministrationService,
+    private readonly auth: AuthService,
+  ) {}
+
+  get canCreate(): boolean {
+    return canViewMenuFeature(this.auth, MENU_FEATURES.ADMIN_UTILISATEURS, 'CREER');
+  }
+
+  get canModify(): boolean {
+    return canViewMenuFeature(this.auth, MENU_FEATURES.ADMIN_UTILISATEURS, 'MODIFIER');
+  }
+
+  get canDelete(): boolean {
+    return canViewMenuFeature(this.auth, MENU_FEATURES.ADMIN_UTILISATEURS, 'SUPPRIMER');
+  }
 
   async ngOnInit(): Promise<void> {
     await this.reload();
@@ -160,7 +180,7 @@ export class UtilisateursComponent implements OnInit, OnDestroy {
     this.roleSelectOptions = toMenaSelectOptions(
       this.roles,
       (role) => role.id,
-      (role) => role.libelleRole ?? role.codeRole ?? String(role.id),
+      (role) => role.libelleRole?.trim() || `#${role.id}`,
     );
   }
 
@@ -308,6 +328,7 @@ export class UtilisateursComponent implements OnInit, OnDestroy {
   }
 
   openCreate(): void {
+    if (!this.canCreate) return;
     this.createOpen = true;
     this.createForm = {
       username: '',
@@ -330,7 +351,7 @@ export class UtilisateursComponent implements OnInit, OnDestroy {
     this.createOpen = false;
   }
 
-  canCreate(): boolean {
+  createFormIsValid(): boolean {
     return (
       !this.saving &&
       String(this.createForm.username ?? '').trim().length > 0 &&
@@ -341,7 +362,7 @@ export class UtilisateursComponent implements OnInit, OnDestroy {
   }
 
   async createUser(): Promise<void> {
-    if (!this.canCreate()) return;
+    if (!this.canCreate || !this.createFormIsValid()) return;
     this.saving = true;
     this.errorMessage = null;
     try {
@@ -374,6 +395,7 @@ export class UtilisateursComponent implements OnInit, OnDestroy {
   }
 
   openEdit(u: AppUserAdmin): void {
+    if (!this.canModify) return;
     this.editUserId = u.id;
     this.editForm = {
       username: u.username,
@@ -407,7 +429,7 @@ export class UtilisateursComponent implements OnInit, OnDestroy {
   }
 
   async saveEdit(): Promise<void> {
-    if (!this.canSaveEdit()) return;
+    if (!this.canModify || !this.canSaveEdit()) return;
     const id = this.editUserId!;
     this.saving = true;
     this.errorMessage = null;
@@ -432,7 +454,7 @@ export class UtilisateursComponent implements OnInit, OnDestroy {
   }
 
   async deleteUser(u: AppUserAdmin): Promise<void> {
-    if (this.saving) return;
+    if (!this.canDelete || this.saving) return;
     if (!confirm(`Supprimer l'utilisateur "${u.username}" ?`)) return;
     this.saving = true;
     this.errorMessage = null;
@@ -524,8 +546,13 @@ export class UtilisateursComponent implements OnInit, OnDestroy {
     return toMenaSelectOptions(
       this.filteredScopeOptions(key, form),
       (option) => option.id,
-      (option) => this.optionLabel(option),
+      (option) => this.optionSelectLabel(option),
     );
+  }
+
+  /** Libellé pour les listes déroulantes de circonscription (sans code). */
+  optionSelectLabel(option: AdminScopeOption): string {
+    return option.libelle?.trim() || `#${option.id}`;
   }
 
   onScopeChanged(

@@ -87,3 +87,8 @@ export function promoteurRecapHeadline(option: PromoteurOption | null): string {
   if (!option) return '—';
   return refOptionLabel(option);
 }
+
+export function displayOrDash(value: string | null | undefined): string {
+  const v = value?.trim();
+  return v ? v : '—';
+}

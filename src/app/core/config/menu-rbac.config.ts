@@ -91,6 +91,7 @@ export const ROUTE_MENU_FEATURE: Record<string, MenuFeatureCode> = {
   'activites-centre/visite/superviseur': MENU_FEATURES.SUIVI_SUPERVISEUR,
   'activites-centre/visite/iepp': MENU_FEATURES.SUIVI_IEPP,
   'activites-centre/visite/centrale': MENU_FEATURES.SUIVI_CENTRALE,
+  anneescolaire: MENU_FEATURES.PARAMETRAGE_AUTRES,
 };
 
 export const ACTIVITES_CENTRE_MENU_PERMISSIONS: readonly string[] = [

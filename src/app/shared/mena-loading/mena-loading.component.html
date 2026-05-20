@@ -1,0 +1,11 @@
+<div
+  class="mena-loading"
+  [class.mena-loading--inline]="inline"
+  [class.mena-loading--centered]="centered"
+  [class.mena-loading--sm]="size === 'sm'"
+  role="status"
+  aria-live="polite"
+>
+  <i class="fas fa-spinner fa-spin mena-loading__icon" aria-hidden="true"></i>
+  <span *ngIf="message" class="mena-loading__text">{{ message }}</span>
+</div>

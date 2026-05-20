@@ -10,7 +10,7 @@
   </div>
 
   <div *ngIf="errorMessage" class="alert alert-danger py-2">{{ errorMessage }}</div>
-  <div *ngIf="loading" class="small text-muted py-3">Chargement…</div>
+  <app-mena-loading *ngIf="loading" message="Chargement du suivi de visite…" [centered]="true" />
 
   <ng-container *ngIf="!loading && row">
     <div class="card border-0 shadow-sm mb-3">

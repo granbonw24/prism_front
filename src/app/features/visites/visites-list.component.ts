@@ -14,6 +14,7 @@ import {
   sortByLabel,
   toMenaSelectOptions,
 } from '@shared/mena-searchable-select/mena-select-options.util';
+import { MenaLoadingComponent } from '@shared/mena-loading/mena-loading.component';
 import { MenaToolbarButtonComponent } from '@shared/mena-toolbar-button/mena-toolbar-button.component';
 
 /**
@@ -48,6 +49,7 @@ type DocumentUpsertPayload = {
     MenaRowActionButtonComponent,
     MenaSearchableSelectComponent,
     MenaToolbarButtonComponent,
+    MenaLoadingComponent,
   ],
   templateUrl: './visites-list.component.html',
   styleUrl: './visites-list.component.css',
@@ -325,12 +327,8 @@ export class VisitesListComponent implements OnInit {
   }
 
   alphaOptionLabel(a: AlphaListRow): string {
-    const code = (a.codeCentre ?? '').trim();
     const lib = (a.libelle ?? '').trim();
-    const typ = (a.codeType ?? '').trim();
-    if (typ && lib) return `${typ} — ${lib}${code ? ` (${code})` : ''}`;
-    if (lib) return lib + (code ? ` (${code})` : '');
-    return code || `Alpha #${a.idCentre}`;
+    return lib || `Alpha #${a.idCentre}`;
   }
 
   /** Libellé lisible pour la fiche (priorité type + nature ; le code reste en secours). */
@@ -361,10 +359,7 @@ export class VisitesListComponent implements OnInit {
   }
 
   typeOptionLabel(t: TypeDoc): string {
-    const code = (t.codeTypeDocument ?? '').trim();
-    const lib = (t.libelleTypeDocument ?? '').trim();
-    if (code && lib) return `${code} — ${lib}`;
-    return lib || code || `Type #${t.id}`;
+    return (t.libelleTypeDocument ?? '').trim() || `Type #${t.id}`;
   }
 
   menaAlphaFilterOptions(): MenaSelectOption<number | ''>[] {

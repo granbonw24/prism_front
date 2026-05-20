@@ -17,6 +17,9 @@
       (input)="onInputInput($any($event.target).value)"
       (blur)="onInputBlur()"
     />
+    <span *ngIf="loading" class="mena-searchable-select__spinner" aria-hidden="true">
+      <i class="fas fa-spinner fa-spin"></i>
+    </span>
     <button
       type="button"
       class="mena-searchable-select__toggle"
@@ -39,24 +42,30 @@
     </button>
   </div>
   <ul *ngIf="open && !disabled" class="mena-searchable-select__list" role="listbox">
-    <li
-      *ngIf="allowNull"
-      class="mena-searchable-select__item mena-searchable-select__item--null"
-      [class.is-selected]="value == null"
-      (mousedown)="selectOption({ value: null, label: nullLabel }, $event)"
-    >
-      {{ nullLabel }}
+    <li *ngIf="loading" class="mena-searchable-select__loading-item" role="option" aria-disabled="true">
+      <i class="fas fa-spinner fa-spin mena-searchable-select__loading-icon" aria-hidden="true"></i>
+      <span>Chargement…</span>
     </li>
-    <li
-      *ngFor="let option of filteredOptions"
-      class="mena-searchable-select__item"
-      [class.is-selected]="isSelected(option)"
-      (mousedown)="selectOption(option, $event)"
-    >
-      {{ option.label }}
-    </li>
-    <li *ngIf="filteredOptions.length === 0 && (!allowNull || query.trim())" class="mena-searchable-select__empty">
-      Aucun résultat
-    </li>
+    <ng-container *ngIf="!loading">
+      <li
+        *ngIf="allowNull"
+        class="mena-searchable-select__item mena-searchable-select__item--null"
+        [class.is-selected]="value == null"
+        (mousedown)="selectOption({ value: null, label: nullLabel }, $event)"
+      >
+        {{ nullLabel }}
+      </li>
+      <li
+        *ngFor="let option of filteredOptions"
+        class="mena-searchable-select__item"
+        [class.is-selected]="isSelected(option)"
+        (mousedown)="selectOption(option, $event)"
+      >
+        {{ option.label }}
+      </li>
+      <li *ngIf="filteredOptions.length === 0 && (!allowNull || query.trim())" class="mena-searchable-select__empty">
+        Aucun résultat
+      </li>
+    </ng-container>
   </ul>
 </div>

@@ -52,7 +52,7 @@ export class MenaSearchableSelectComponent implements ControlValueAccessor, OnIn
   }
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (changes['options']) {
+    if (changes['options'] || changes['loading']) {
       this.refreshFilteredOptions();
       this.syncQueryFromValue();
     }
@@ -93,7 +93,7 @@ export class MenaSearchableSelectComponent implements ControlValueAccessor, OnIn
   }
 
   onInputFocus(): void {
-    if (this.isControlDisabled) {
+    if (this.disabled) {
       return;
     }
     this.open = true;
@@ -146,7 +146,7 @@ export class MenaSearchableSelectComponent implements ControlValueAccessor, OnIn
   togglePanel(event: MouseEvent): void {
     event.preventDefault();
     event.stopPropagation();
-    if (this.isControlDisabled) {
+    if (this.disabled) {
       return;
     }
     this.open = !this.open;
@@ -179,6 +179,10 @@ export class MenaSearchableSelectComponent implements ControlValueAccessor, OnIn
   }
 
   private syncQueryFromValue(): void {
+    if (this.loading) {
+      this.query = '';
+      return;
+    }
     if (this.value == null) {
       this.query = '';
       return;

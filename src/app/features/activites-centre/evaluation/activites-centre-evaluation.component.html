@@ -35,7 +35,7 @@
       <h6 class="m-0 font-weight-bold text-primary">Liste des évaluations périodiques</h6>
     </div>
     <div class="card-body pt-3">
-      <div *ngIf="loading" class="small text-muted py-3">Chargement...</div>
+      <app-mena-loading *ngIf="loading" message="Chargement des évaluations…" [centered]="true" />
       <div *ngIf="!loading" class="table-responsive">
         <table class="table table-bordered table-sm align-middle">
           <thead class="thead-light">
@@ -125,7 +125,7 @@
         <div class="form-row">
           <div class="form-group col-md-6">
             <label>Centre Alpha</label>
-            <app-mena-searchable-select
+            <app-mena-searchable-select [loading]="loading"
               [(ngModel)]="form.idAlpha"
               [options]="menaAlphaFormOptions()"
               [disabled]="saving"
@@ -133,7 +133,7 @@
           </div>
           <div class="form-group col-md-6">
             <label>Période d’activité</label>
-            <app-mena-searchable-select
+            <app-mena-searchable-select [loading]="loading"
               [(ngModel)]="form.idPeriodeActivite"
               [options]="menaPeriodeFormOptions()"
               [disabled]="saving"
@@ -143,7 +143,7 @@
         <div class="form-row">
           <div class="form-group col-md-6">
             <label>Niveau</label>
-            <app-mena-searchable-select
+            <app-mena-searchable-select [loading]="loading"
               [(ngModel)]="form.idNiveauEvaluation"
               (ngModelChange)="onNiveauChange()"
               [options]="menaNiveauFormOptions()"
@@ -152,7 +152,7 @@
           </div>
           <div class="form-group col-md-6">
             <label>Type d’évaluation</label>
-            <app-mena-searchable-select
+            <app-mena-searchable-select [loading]="loading"
               [(ngModel)]="form.typeEvaluation"
               (ngModelChange)="onTypeChange()"
               [options]="menaTypeFormOptions()"

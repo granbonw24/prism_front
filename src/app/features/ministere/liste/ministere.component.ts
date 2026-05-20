@@ -2,11 +2,12 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import type { Ministere } from '@models/ministere';
 import { MinistereService } from '@services/ministere.service';
+import { MenaLoadingComponent } from '@shared/mena-loading/mena-loading.component';
 
 @Component({
   selector: 'app-ministere',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, MenaLoadingComponent],
   templateUrl: './ministere.component.html',
   styleUrl: './ministere.component.css',
 })

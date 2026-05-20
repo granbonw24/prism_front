@@ -4,7 +4,10 @@ describe('UtilisateursComponent circonscription filtering', () => {
   let component: UtilisateursComponent;
 
   beforeEach(() => {
-    component = new UtilisateursComponent({} as never);
+    component = new UtilisateursComponent(
+      {} as never,
+      { hasPermission: () => true, currentSession: null } as never,
+    );
     component.drenas = [
       { id: 1, code: 'D1', libelle: 'DRENA 1' },
       { id: 2, code: 'D2', libelle: 'DRENA 2' },

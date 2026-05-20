@@ -1,0 +1,137 @@
+<div class="container-fluid">
+  <div class="d-sm-flex align-items-center justify-content-between mb-3">
+    <h1 class="h4 mb-0 text-gray-800">{{ title }}</h1>
+    <div class="d-flex flex-wrap" style="gap: 0.5rem">
+      <app-mena-toolbar-btn variant="cancel" label="Retour à la liste" (clicked)="cancel()" />
+    </div>
+  </div>
+
+  <div *ngIf="errorMessage" class="alert alert-danger py-2">{{ errorMessage }}</div>
+
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-body pt-3">
+      <app-mena-loading *ngIf="loading" message="Chargement…" [centered]="true" />
+      <ng-container *ngIf="!loading">
+        <div class="form-row mb-3" *ngIf="mode === 'create'">
+          <div class="form-group col-md-4">
+            <label class="small text-muted">Type de centre</label>
+            <app-mena-searchable-select
+              [(ngModel)]="centreTypeFilter"
+              (ngModelChange)="onCentreTypeChange()"
+              [options]="menaCentreTypeOptions()"
+              [searchable]="false"
+              [allowNull]="false"
+              nullLabel="Tous les types"
+              [disabled]="saving"
+            />
+          </div>
+          <div class="form-group col-md-8">
+            <label class="small text-muted">Centre <span class="mena-required-mark">*</span></label>
+            <app-mena-searchable-select
+              [(ngModel)]="form.idCentreId"
+              [options]="menaCentreOptions()"
+              nullLabel="— Sélectionner un centre —"
+              [disabled]="saving"
+            />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group col-md-2">
+            <label class="small text-muted">Civilité <span class="mena-required-mark">*</span></label>
+            <app-mena-searchable-select [(ngModel)]="form.idCiviliteId" [options]="menaCiviliteOptions()" nullLabel="Sélectionner…" [disabled]="saving" />
+          </div>
+          <div class="form-group col-md-3">
+            <label class="small text-muted">Nom <span class="mena-required-mark">*</span></label>
+            <input class="form-control" [(ngModel)]="form.nomPersonnel" [disabled]="saving" />
+          </div>
+          <div class="form-group col-md-4">
+            <label class="small text-muted">Prénoms <span class="mena-required-mark">*</span></label>
+            <input class="form-control" [(ngModel)]="form.prenomsPersonnel" [disabled]="saving" />
+          </div>
+          <div class="form-group col-md-3">
+            <label class="small text-muted">Date de naissance</label>
+            <input type="date" class="form-control" [(ngModel)]="form.dateNaissance" [disabled]="saving" />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group col-md-3">
+            <label class="small text-muted">Contact <span class="mena-required-mark" *ngIf="mode === 'create'">*</span></label>
+            <input class="form-control" [(ngModel)]="form.contactPersonnel" maxlength="20" [disabled]="saving" />
+          </div>
+          <div class="form-group col-md-3">
+            <label class="small text-muted">Email</label>
+            <input type="email" class="form-control" [(ngModel)]="form.emailPersonnel" [disabled]="saving" />
+          </div>
+          <div class="form-group col-md-3">
+            <label class="small text-muted">Niveau d'étude <span class="mena-required-mark">*</span></label>
+            <app-mena-searchable-select [(ngModel)]="form.idNiveauPersonnelId" [options]="menaNiveauOptions()" nullLabel="Sélectionner…" [disabled]="saving" />
+          </div>
+          <div class="form-group col-md-3">
+            <label class="small text-muted">Diplôme <span class="mena-required-mark">*</span></label>
+            <app-mena-searchable-select [(ngModel)]="form.idDiplomeId" [options]="menaDiplomeOptions()" nullLabel="Sélectionner…" [disabled]="saving" />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group col-md-3">
+            <label class="small text-muted">Fonction <span class="mena-required-mark">*</span></label>
+            <app-mena-searchable-select [(ngModel)]="form.idFonctionId" [options]="menaFonctionOptions()" nullLabel="Sélectionner…" [disabled]="saving" />
+          </div>
+          <div class="form-group col-md-3">
+            <label class="small text-muted">Statut <span class="mena-required-mark">*</span></label>
+            <app-mena-searchable-select [(ngModel)]="form.idStatutPersonnelId" [options]="menaStatutOptions()" nullLabel="Sélectionner…" [disabled]="saving" />
+          </div>
+          <div class="form-group col-md-3">
+            <label class="small text-muted">Années d'expérience</label>
+            <input type="number" min="0" class="form-control" [(ngModel)]="form.anneExpePersonnel" [disabled]="saving" />
+          </div>
+          <div class="form-group col-md-3">
+            <label class="small text-muted">Sexe</label>
+            <select class="form-control" [(ngModel)]="form.sexePersonnel" [disabled]="saving">
+              <option value="">--</option>
+              <option value="M">M</option>
+              <option value="F">F</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row" *ngIf="showDenominationField() || showProgrammeField() || showRepresentantLegalField()">
+          <div class="form-group col-md-4" *ngIf="showDenominationField()">
+            <label class="small text-muted">Dénomination (centre)</label>
+            <input class="form-control" [(ngModel)]="form.denominationPersonnel" [disabled]="saving" />
+          </div>
+          <div class="form-group col-md-4" *ngIf="showProgrammeField()">
+            <label class="small text-muted">Nom du programme</label>
+            <input class="form-control" [(ngModel)]="form.nomDuPrgramme" [disabled]="saving" />
+          </div>
+          <div class="form-group col-md-4" *ngIf="showRepresentantLegalField()">
+            <label class="small text-muted">Représentant légal de la structure</label>
+            <input class="form-control" [(ngModel)]="form.nomRepresentantLegalSturcture" [disabled]="saving" />
+          </div>
+        </div>
+
+        <fieldset class="border rounded px-3 py-2 mb-3">
+          <legend class="small text-muted w-auto px-1 mb-0">Formation certifiée en alphabétisation et éducation non formelle</legend>
+          <div class="form-row align-items-center mt-2">
+            <div class="col-auto">
+              <label class="mb-0 mr-3"><input type="radio" name="certifierPersonnel" [ngModel]="form.certifierPersonnel" (ngModelChange)="onCertificationChange($event)" [value]="true" [disabled]="saving" /> Oui</label>
+              <label class="mb-0"><input type="radio" name="certifierPersonnel" [ngModel]="form.certifierPersonnel" (ngModelChange)="onCertificationChange($event)" [value]="false" [disabled]="saving" /> Non</label>
+            </div>
+            <div class="col-md-6" *ngIf="form.certifierPersonnel === true">
+              <label class="small text-muted">Structure de formation</label>
+              <app-mena-searchable-select [(ngModel)]="form.idStructureFormationCertificationId" [options]="menaStructureFormationOptions()" nullLabel="Sélectionner…" [disabled]="saving" />
+            </div>
+          </div>
+        </fieldset>
+
+        <button class="btn btn-primary mr-2" (click)="save()" [disabled]="!canSave()">
+          <span *ngIf="saving">Enregistrement…</span>
+          <span *ngIf="!saving">{{ mode === 'edit' ? 'Enregistrer les modifications' : 'Créer le personnel' }}</span>
+        </button>
+        <button type="button" class="btn btn-outline-secondary" (click)="cancel()" [disabled]="saving">Annuler</button>
+      </ng-container>
+    </div>
+  </div>
+</div>

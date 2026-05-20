@@ -893,3 +893,13 @@ body {
     grid-template-columns: 1fr 1fr;
   }
 }
+
+/* Menu latéral : libellés longs (Paramétrage, Activités centre, etc.) */
+@media (min-width: 768px) {
+  .sidebar.mena-sidebar {
+    width: 17rem !important;
+  }
+  body:not(.sidebar-toggled) .sidebar.mena-sidebar {
+    width: 17rem !important;
+  }
+}

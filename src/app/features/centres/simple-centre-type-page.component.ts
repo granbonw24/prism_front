@@ -37,12 +37,14 @@ import { isNationalView } from '@core/circonscription/circonscription.util';
 import { AuthSession } from '@core/models/auth.models';
 import { AuthService } from '@services/auth.service';
 import { MenaRowActionButtonComponent } from '@shared/mena-row-action-button/mena-row-action-button.component';
+import { MenaLoadingComponent } from '@shared/mena-loading/mena-loading.component';
 import { MenaSearchableSelectComponent } from '@shared/mena-searchable-select/mena-searchable-select.component';
 import { MenaToolbarButtonComponent } from '@shared/mena-toolbar-button/mena-toolbar-button.component';
 import { MenaContextDashboardComponent } from '@shared/mena-context-dashboard/mena-context-dashboard.component';
 import {
   CentrePageMode,
   centrePageModeFromRoute,
+  displayOrDash,
   fetchPromoteurOptionDetails,
   printCentreIdentificationFiche,
   wizardSavedFicheFromCreateResponse,
@@ -55,6 +57,7 @@ import {
   menaNatureSelectOptions,
   menaPeriodiciteSelectOptions,
   menaPromoteurSelectOptions,
+  menaRefLibelleStringOptions,
   menaRefSelectOptions,
   sortPromoteurOptions,
   sortRefOptions,
@@ -70,6 +73,7 @@ type DrenaDepartementOption = RefOption & {
   selector: 'app-simple-centre-type-page',
   standalone: true,
   imports: [
+    MenaLoadingComponent,
     CommonModule,
     FormsModule,
     RouterLink,
@@ -116,6 +120,10 @@ export class SimpleCentreTypePageComponent implements OnInit {
 
   /** Recherche multicritère (paramètre API `q`). */
   searchQ = '';
+  /** Filtres liste : circonscription / IEPP (query `idDrena`, `idIep`). */
+  listFilterDrenaId: number | null = null;
+  listFilterIepId: number | null = null;
+  private listGeoInitialized = false;
   private listSearchDebounceHandle: ReturnType<typeof setTimeout> | null = null;
 
   /** Filtres liste ; `libelle` est mappé vers libelleCec / libellleCp / libelleSie selon `apiPath`. */
@@ -151,6 +159,10 @@ export class SimpleCentreTypePageComponent implements OnInit {
   sousPrefectures: SousPrefectureOption[] = [];
   promoteurs: PromoteurOption[] = [];
   typePersonneMoraleOptions: RefOption[] = [];
+  civilites: RefOption[] = [];
+  fonctions: RefOption[] = [];
+  /** Référentiel `niveau_personnel` (libellé stocké dans promoteur.niveauEtudes). */
+  niveauxPersonnel: RefOption[] = [];
   anneesScolaires: RefOption[] = [];
   niveaux: RefOption[] = [];
   promoteurMode: 'existing' | 'new' = 'existing';
@@ -347,6 +359,9 @@ export class SimpleCentreTypePageComponent implements OnInit {
       autorites: this.http.get<AutoriteOption[]>(`${this.apiBaseUrl}/api/autoriteautorisation`),
       promoteurs: this.http.get<any[]>(`${this.apiBaseUrl}/api/promoteur`),
       typePersonneMorales: this.http.get<any[]>(`${this.apiBaseUrl}/api/type-personne-morale`),
+      civilites: this.http.get<any[]>(`${this.apiBaseUrl}/api/civilite`),
+      fonctions: this.http.get<any[]>(`${this.apiBaseUrl}/api/fonctions`),
+      niveauxPersonnel: this.http.get<any[]>(`${this.apiBaseUrl}/api/niveau-personnel`),
       anneesScolaires: this.http.get<any[]>(`${this.apiBaseUrl}/api/anneescolaire`),
       niveaux: this.http.get<any[]>(`${this.apiBaseUrl}${this.niveauApiPath()}`),
     };
@@ -385,6 +400,9 @@ export class SimpleCentreTypePageComponent implements OnInit {
       code: undefined,
       libelle: x.libelle ?? undefined,
     }));
+    this.civilites = ((res['civilites'] as any[]) ?? []).map((x: any) => this.refOptionFromApi(x));
+    this.fonctions = ((res['fonctions'] as any[]) ?? []).map((x: any) => this.refOptionFromApi(x));
+    this.niveauxPersonnel = ((res['niveauxPersonnel'] as any[]) ?? []).map((x: any) => this.refOptionFromApi(x));
     this.anneesScolaires = ((res['anneesScolaires'] as any[]) ?? []).map((x: any) => ({
       id: x.id,
       code: x.codeAnneeScolaire ?? x.code ?? undefined,
@@ -419,6 +437,9 @@ export class SimpleCentreTypePageComponent implements OnInit {
     this.autorites = sortByLabel(this.autorites, autoriteOptionLabel);
     this.promoteurs = sortPromoteurOptions(this.promoteurs);
     this.typePersonneMoraleOptions = sortRefOptions(this.typePersonneMoraleOptions);
+    this.civilites = sortRefOptions(this.civilites);
+    this.fonctions = sortRefOptions(this.fonctions);
+    this.niveauxPersonnel = sortRefOptions(this.niveauxPersonnel);
     this.anneesScolaires = sortRefOptions(this.anneesScolaires);
     this.niveaux = sortRefOptions(this.niveaux);
   }
@@ -471,6 +492,13 @@ export class SimpleCentreTypePageComponent implements OnInit {
     this.rows = list.map((x) => this.mapRow(x));
     this.applyWizardRefs(res);
     this.loading = false;
+    if (this.isListPage && !this.listGeoInitialized) {
+      this.listGeoInitialized = true;
+      if (this.applyListFilterFromSession()) {
+        this.pageIndex = 0;
+        this.loadAll();
+      }
+    }
   }
 
   canGoNext(): boolean {
@@ -1188,7 +1216,74 @@ export class SimpleCentreTypePageComponent implements OnInit {
     if (q !== '') {
       p = p.set('q', q);
     }
+    if (this.listFilterIepId != null) {
+      p = p.set('idIep', String(this.listFilterIepId));
+    } else if (this.listFilterDrenaId != null) {
+      p = p.set('idDrena', String(this.listFilterDrenaId));
+    }
+    for (const [key, val] of Object.entries(this.simpleListFilter)) {
+      const s = String(val ?? '').trim();
+      if (s !== '' && key !== 'idIep') {
+        p = p.set(key, s);
+      }
+    }
     return p;
+  }
+
+  filteredListIeps(): IepOption[] {
+    if (this.listFilterDrenaId == null) {
+      return this.ieps;
+    }
+    return this.ieps.filter((iep) => iep.drena?.id === this.listFilterDrenaId);
+  }
+
+  onListDrenaFilterChange(): void {
+    if (
+      this.listFilterIepId != null &&
+      !this.filteredListIeps().some((iep) => iep.id === this.listFilterIepId)
+    ) {
+      this.listFilterIepId = null;
+    }
+    this.applyListFilters();
+  }
+
+  onListIepFilterChange(): void {
+    if (this.listFilterIepId != null) {
+      const iep = this.ieps.find((i) => i.id === this.listFilterIepId);
+      if (iep?.drena?.id != null) {
+        this.listFilterDrenaId = iep.drena.id;
+      }
+    }
+    this.applyListFilters();
+  }
+
+  lockListFilterDrena(): boolean {
+    return this.lockSessionGeoDrena();
+  }
+
+  lockListFilterIep(): boolean {
+    return this.lockSessionGeoIep();
+  }
+
+  /** Pré-remplit les filtres liste selon le périmètre utilisateur. Retourne true si un filtre a été posé. */
+  private applyListFilterFromSession(): boolean {
+    const s = this.auth.currentSession;
+    if (!s || this.isNationalScope(s)) {
+      return false;
+    }
+    if (s.idIep != null) {
+      this.listFilterIepId = s.idIep;
+      const iep = this.ieps.find((i) => i.id === s.idIep);
+      if (iep?.drena?.id != null) {
+        this.listFilterDrenaId = iep.drena.id;
+      }
+      return true;
+    }
+    if (s.idDrena != null) {
+      this.listFilterDrenaId = s.idDrena;
+      return true;
+    }
+    return false;
   }
 
   private mapRow(x: Record<string, unknown>): Row {
@@ -1359,6 +1454,10 @@ export class SimpleCentreTypePageComponent implements OnInit {
       ) as string | undefined,
       libelle: (
         value['libelle'] ??
+        value['libelleCivilite'] ??
+        value['libelleFonction'] ??
+        value['libelleNiveauEtude'] ??
+        value['libelleNiveauPersonnel'] ??
         value['nomDrena'] ??
         value['nomDepartement'] ??
         value['nomCommune'] ??
@@ -1549,6 +1648,20 @@ export class SimpleCentreTypePageComponent implements OnInit {
     return t ? this.refOptionLabel(t) : `#${id}`;
   }
 
+  readonly displayOrDash = displayOrDash;
+
+  menaCiviliteLibelleOptions() {
+    return menaRefLibelleStringOptions(this.civilites);
+  }
+
+  menaFonctionLibelleOptions() {
+    return menaRefLibelleStringOptions(this.fonctions);
+  }
+
+  menaNiveauPersonnelLibelleOptions() {
+    return menaRefLibelleStringOptions(this.niveauxPersonnel);
+  }
+
   private buildNiveauxPayload(): CentreTypeNiveauPayload[] {
     return (this.model.niveaux ?? [])
       .filter((row) => row.anneeScolaireId != null && row.niveauId != null)
@@ -1630,9 +1743,12 @@ export class SimpleCentreTypePageComponent implements OnInit {
 
   resetListFilters(): void {
     this.searchQ = '';
+    this.listFilterDrenaId = null;
+    this.listFilterIepId = null;
     for (const k of Object.keys(this.simpleListFilter)) {
       this.simpleListFilter[k] = '';
     }
+    this.applyListFilterFromSession();
     this.pageIndex = 0;
     this.loadAll();
   }

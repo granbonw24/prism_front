@@ -1,0 +1,35 @@
+.mena-loading {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--mena-ink-muted, #6b6560);
+  padding: 0.75rem 0;
+}
+
+.mena-loading--inline {
+  display: inline-flex;
+  padding: 0.25rem 0;
+}
+
+.mena-loading--centered {
+  justify-content: center;
+  padding: 2rem 0;
+}
+
+.mena-loading--sm .mena-loading__icon {
+  font-size: 0.85rem;
+}
+
+.mena-loading--sm .mena-loading__text {
+  font-size: 0.85rem;
+}
+
+.mena-loading__icon {
+  font-size: 1rem;
+  color: var(--mena-orange-700, #d66f1e);
+  flex-shrink: 0;
+}
+
+.mena-loading__text {
+  font-size: 0.9rem;
+}

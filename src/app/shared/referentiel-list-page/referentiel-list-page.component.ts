@@ -11,6 +11,7 @@ import {
 } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { Subscription } from 'rxjs';
+import { finalize } from 'rxjs/operators';
 import type { ReferentielFormField } from '@core/config/referentiel-form.types';
 import { filterVisibleListColumns } from '@core/config/list-column-visibility';
 import { resolveColumnHeaderLabel } from '@core/config/referentiel-column-labels';
@@ -21,6 +22,7 @@ import { MenaRowActionButtonComponent } from '@shared/mena-row-action-button/men
 import { MenaSearchableSelectComponent } from '@shared/mena-searchable-select/mena-searchable-select.component';
 import {
   sortByLabel,
+  refEntityLabelForSelect,
   toMenaSelectOptionsFromPairs,
 } from '@shared/mena-searchable-select/mena-select-options.util';
 import { AuthService } from '@services/auth.service';
@@ -30,6 +32,7 @@ import {
   MenaRecordDetailField,
   MenaRecordDetailModalComponent,
 } from '@shared/mena-record-detail-modal/mena-record-detail-modal.component';
+import { MenaLoadingComponent } from '@shared/mena-loading/mena-loading.component';
 import { MenaWorkflowQueueToolbarComponent } from '@shared/mena-workflow-queue-toolbar/mena-workflow-queue-toolbar.component';
 import {
   collectConseillerFilterOptions,
@@ -70,6 +73,7 @@ type WorkflowDecisionAction = 'rejeter' | 'retourner';
     MenaContextDashboardComponent,
     MenaRecordDetailModalComponent,
     MenaWorkflowQueueToolbarComponent,
+    MenaLoadingComponent,
   ],
   templateUrl: './referentiel-list-page.component.html',
   styleUrl: './referentiel-list-page.component.css',
@@ -168,6 +172,8 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
 
   /** Évite de relancer les GET d’options quand le cache est déjà rempli par l’API. */
   private readonly fieldOptionsApiLoaded = new Set<string>();
+  /** Clés des selects dont les options API sont en cours de chargement. */
+  private readonly fieldOptionsLoadingKeys = new Set<string>();
   /**
    * Libellés issus des objets référence de la ligne en édition (évite d’afficher un nu­mérique seul
    * avant/arrière chargement de la liste complète).
@@ -301,6 +307,13 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
 
   menaFieldOptions(field: ReferentielFormField) {
     return toMenaSelectOptionsFromPairs(this.getFieldOptions(field));
+  }
+
+  isFieldOptionsLoading(field: ReferentielFormField): boolean {
+    if (field.type !== 'select' || field.options?.length || !field.optionsApiPath) {
+      return false;
+    }
+    return this.fieldOptionsLoadingKeys.has(this.optionsCacheKey(field));
   }
 
   ngOnDestroy(): void {
@@ -1176,6 +1189,16 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
       idNiveauCp: ['NiveauCp', 'niveauCp'],
       idNiveauSie: ['NiveauSie', 'niveauSie'],
       idAnneeScolaire: ['AnneeScolaire', 'anneeScolaire'],
+      idDifficulte: ['Difficulte', 'difficulte'],
+      idImpact: ['Impact', 'impact'],
+      idInfrastructure: ['Infrastructure', 'infrastructure'],
+      idCompetence: ['Competence', 'competence'],
+      idDesignation: ['Designation', 'designation'],
+      idMaterielPedagogique: ['MaterielPedagogique', 'materielPedagogique'],
+      idNatureDocument: ['NatureDocument', 'natureDocument'],
+      idTypeDocument: ['TypeDocument', 'typeDocument'],
+      idPartenaire: ['Partenaire', 'partenaire'],
+      idCategorieAppui: ['CategorieAppui', 'categorieAppui'],
       idRegion: ['Region', 'region'],
       idDrena: ['Drena', 'drena'],
       idDepartement: ['Departement', 'departement'],
@@ -1576,10 +1599,12 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
       }
       const centreOptionsPaths = new Set(['/api/alpha', '/api/cec', '/api/cp', '/api/sie']);
       const optPath = field.optionsApiPath ?? '';
+      this.fieldOptionsLoadingKeys.add(cacheKey);
       const sub = this.http
         .get<unknown>(`${this.apiBaseUrl}${optPath}`, {
           params: centreOptionsPaths.has(optPath) ? CENTRE_OPTIONS_PAGE_PARAMS : undefined,
         })
+        .pipe(finalize(() => this.fieldOptionsLoadingKeys.delete(cacheKey)))
         .subscribe({
         next: (rows) => {
           const list = unwrapListBody(rows);
@@ -1625,25 +1650,10 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
     }
     if (typeof valueRaw !== 'string' && typeof valueRaw !== 'number') return null;
 
-    const labelKeys = field.optionLabelKeys ?? ['libelle', 'nom', 'label', 'code', 'id'];
-    const parts: string[] = [];
-    for (const k of labelKeys) {
-      const v = row[k];
-      if (v == null) continue;
-      const s = String(v).trim();
-      if (s) parts.push(s);
-    }
-    if (parts.length === 0) {
-      for (const k of ['libelle', 'code', 'label', 'nom']) {
-        const v = row[k];
-        if (v != null && String(v).trim()) {
-          parts.push(String(v).trim());
-        }
-      }
-    }
+    const labelKeys = field.optionLabelKeys ?? ['libelle', 'nom', 'label'];
     return {
       value: valueRaw,
-      label: parts.length ? parts.join(' — ') : String(valueRaw),
+      label: refEntityLabelForSelect(row, labelKeys),
     };
   }
 

@@ -21,6 +21,7 @@ import {
   sortActivitesRefs,
 } from '@features/activites-centre/activites-centre-select.util';
 import { MenaRowActionButtonComponent } from '@shared/mena-row-action-button/mena-row-action-button.component';
+import { MenaLoadingComponent } from '@shared/mena-loading/mena-loading.component';
 import { MenaSearchableSelectComponent } from '@shared/mena-searchable-select/mena-searchable-select.component';
 import {
   sortByLabel,
@@ -90,6 +91,7 @@ type EvaluationForm = {
   selector: 'app-activites-centre-evaluation',
   standalone: true,
   imports: [
+    MenaLoadingComponent,
     CommonModule,
     FormsModule,
     MenaRowActionButtonComponent,
@@ -372,7 +374,7 @@ export class ActivitesCentreEvaluationComponent implements OnInit {
   }
 
   alphaOptionLabel(alpha: AlphaOption): string {
-    return alpha.libelle?.trim() || alpha.codeCentre?.trim() || alpha.code?.trim() || `Centre ${this.alphaOptionId(alpha) ?? ''}`;
+    return alpha.libelle?.trim() || `Centre #${this.alphaOptionId(alpha) ?? '—'}`;
   }
 
   refLabel(ref: Ref | null | undefined): string {
