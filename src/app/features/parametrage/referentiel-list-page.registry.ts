@@ -1,6 +1,7 @@
 import type { Type } from '@angular/core';
 import { AutoriteAutorisationPageComponent } from './centres-autorisations/autorite-autorisation/autorite-autorisation-page.component';
 import { CampagnePageComponent } from './centres-autorisations/campagne/campagne-page.component';
+import { CategorieCentreAlphaPageComponent } from './pedagogie/categorie-centre-alpha/categorie-centre-alpha-page.component';
 import { CategorieAppuiPageComponent } from './others/categorie-appui/categorie-appui-page.component';
 import { CivilitePageComponent } from './others/civilite/civilite-page.component';
 import { CommunautePageComponent } from './others/communaute/communaute-page.component';
@@ -57,6 +58,7 @@ export const REFERENTIEL_LIST_PAGE_BY_PATH: Record<string, Type<unknown>> = {
   "autoriteautorisation": AutoriteAutorisationPageComponent,
   "campagne": CampagnePageComponent,
   "categorieappui": CategorieAppuiPageComponent,
+  "categorie-centre-alpha": CategorieCentreAlphaPageComponent,
   "civilite": CivilitePageComponent,
   "communaute": CommunautePageComponent,
   "competence": CompetencePageComponent,

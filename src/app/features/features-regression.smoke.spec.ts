@@ -24,4 +24,11 @@ describe('Régressions fonctionnelles (smoke)', () => {
   it('route promoteurs dédiée', () => {
     expect(promoteursFeatureRoutes.some((r) => r.path === 'promoteurs')).toBeTrue();
   });
+
+  it('catégorie centre alpha : menu paramétrage pédagogie', () => {
+    const entry = REFERENTIEL_ROUTE_DATA.find((r) => r.path === 'categorie-centre-alpha');
+    expect(entry?.menuGroup).toBe('pedagogie');
+    expect(entry?.apiPath).toBe('/api/categorie-centre-alpha');
+    expect(REFERENTIEL_LIST_PAGE_BY_PATH['categorie-centre-alpha']).toBeTruthy();
+  });
 });

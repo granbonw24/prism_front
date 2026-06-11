@@ -658,6 +658,22 @@ export const REFERENTIEL_ROUTE_DATA: ReferentielRouteData[] = [
     ],
   },
   {
+    path: 'categorie-centre-alpha',
+    title: 'Catégories centre alpha',
+    menuGroup: 'pedagogie',
+    apiPath: '/api/categorie-centre-alpha',
+    columnLabels: {
+      codeCategorieCentreAlpha: 'Code',
+      libelleCategorieCentreAlpha: 'Libellé',
+    },
+    createFields: [
+      F('libelleCategorieCentreAlpha', 'Libellé', 'text', {
+        required: true,
+        maxLength: 30,
+      }),
+    ],
+  },
+  {
     path: 'statutpersonnel',
     title: 'Statuts personnel',
     menuGroup: 'others',
