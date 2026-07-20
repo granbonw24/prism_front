@@ -46,7 +46,7 @@ export class AuthPresentationService {
     if (!session) return [];
     return [
       { label: 'Région', ref: session.region, id: session.idRegion },
-      { label: 'DRENA', ref: session.drena, id: session.idDrena },
+      { label: 'DRENAET', ref: session.drena, id: session.idDrena },
       { label: 'IEPP', ref: session.iep, id: session.idIep },
       { label: 'Département', ref: session.departement, id: session.idDepartement },
       { label: 'Sous-préfecture', ref: session.sousPrefecture, id: session.idSousPrefecture },

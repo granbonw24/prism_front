@@ -1,4 +1,4 @@
-﻿<div class="container-fluid">
+<div class="container-fluid">
   <div class="d-sm-flex align-items-center justify-content-between mb-3">
     <div>
       <h1 class="h4 mb-0 text-gray-800">{{ isCreatePage ? createTitle : title }}</h1>
@@ -24,6 +24,9 @@
 
   <div *ngIf="errorMessage" class="alert alert-danger py-2">
     {{ errorMessage }}
+  </div>
+  <div *ngIf="gpsHint" class="alert alert-warning py-2">
+    {{ gpsHint }}
   </div>
 
   <app-mena-context-dashboard
@@ -82,6 +85,22 @@
             </select>
           </div>
         </div>
+        <div class="form-row" *ngIf="promoteurMode === 'existing' && recapWizardExistingPromoteurDetails() as p">
+          <div class="col-12">
+            <div class="alert alert-light border small mb-0 py-2">
+              <div class="font-weight-bold">{{ p.details?.libellePromoteur || p.libelle || 'Promoteur' }}</div>
+              <div class="text-muted">
+                <span *ngIf="p.details?.codePromoteur || p.code">Code : {{ p.details?.codePromoteur || p.code }}</span>
+                <span *ngIf="p.details?.typePromoteur"> · Type : {{ p.details?.typePromoteur }}</span>
+                <span *ngIf="p.details?.personnePhysique?.dateNaissance as dn"> · Né le {{ dn }}</span>
+                <span *ngIf="p.details?.personnePhysique as pp">
+                  · {{ pp.nom || '' }} {{ pp.prenom || '' }}
+                </span>
+                <span *ngIf="p.details?.personneMorale?.denomination as den"> · {{ den }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
         <div class="form-row" *ngIf="promoteurMode === 'new' && model.promoteur.typePromoteur === 'PHYSIQUE'">
           <div class="form-group col-md-3">
             <label class="small text-muted">Civilité</label>
@@ -105,10 +124,6 @@
           <div class="form-group col-md-3">
             <label class="small text-muted">Date de naissance</label>
             <input type="date" class="form-control" [(ngModel)]="model.promoteur.personnePhysique!.dateNaissance" [disabled]="saving" />
-          </div>
-          <div class="form-group col-md-3">
-            <label class="small text-muted">Ancienneté</label>
-            <input class="form-control" [(ngModel)]="model.promoteur.personnePhysique!.anciennete" [disabled]="saving" />
           </div>
         </div>
         <div class="form-row" *ngIf="promoteurMode === 'new' && model.promoteur.typePromoteur === 'PHYSIQUE'">
@@ -141,7 +156,7 @@
             />
           </div>
           <div class="form-group col-md-4">
-            <label class="small text-muted">Fonction</label>
+            <label class="small text-muted">{{ wizardPromoteurFonctionLabel() }}</label>
             <app-mena-searchable-select
               [loading]="loading"
               [(ngModel)]="model.promoteur.personnePhysique!.fonction"
@@ -149,6 +164,16 @@
               nullLabel="—"
               [disabled]="saving"
             />
+          </div>
+        </div>
+        <div class="form-row" *ngIf="promoteurMode === 'new' && model.promoteur.typePromoteur === 'PHYSIQUE'">
+          <div class="form-group col-md-6">
+            <label class="small text-muted">E-mail</label>
+            <input class="form-control" type="email" [(ngModel)]="model.promoteur.personnePhysique!.mail" [disabled]="saving" />
+          </div>
+          <div class="form-group col-md-6">
+            <label class="small text-muted">Organisation faîtière</label>
+            <input class="form-control" [(ngModel)]="model.promoteur.personnePhysique!.organisationFaitiere" [disabled]="saving" />
           </div>
         </div>
         <div class="form-row" *ngIf="promoteurMode === 'new' && model.promoteur.typePromoteur === 'MORALE'">
@@ -202,7 +227,7 @@
             />
           </div>
           <div class="form-group col-md-3">
-            <label class="small text-muted">DRENA</label>
+            <label class="small text-muted">DRENAET</label>
             <app-mena-searchable-select [loading]="loading"
               [(ngModel)]="createDrenaId"
               (ngModelChange)="onCreateDrenaChange()"
@@ -232,16 +257,17 @@
 
         <div class="form-row">
           <div class="form-group col-md-3">
-            <label class="small text-muted">Localité</label>
+            <label class="small text-muted">Localité<span class="mena-required-mark" aria-hidden="true"> *</span></label>
             <app-mena-searchable-select [loading]="loading"
               [(ngModel)]="model.centre.localiteId"
               (ngModelChange)="onCreateLocaliteChange()"
               [options]="menaLocaliteOptions(filteredCreateLocalites())"
               [disabled]="saving || lockSessionGeoLocalite()"
             />
+            <div class="small text-muted mt-1">Préremplie selon la commune / le profil, modifiable.</div>
           </div>
           <div class="form-group col-md-3">
-            <label class="small text-muted">IEP</label>
+            <label class="small text-muted">IEPP<span class="mena-required-mark" aria-hidden="true"> *</span></label>
             <app-mena-searchable-select [loading]="loading"
               [(ngModel)]="model.centre.iepId"
               (ngModelChange)="onCreateIepChange()"
@@ -250,7 +276,7 @@
             />
           </div>
           <div class="form-group col-md-6">
-            <label class="small text-muted">Nature centre</label>
+            <label class="small text-muted">Nature centre<span class="mena-required-mark" aria-hidden="true"> *</span></label>
             <app-mena-searchable-select [loading]="loading"
               [(ngModel)]="model.centre.natureCentreId"
               [options]="menaNatureOptions()"
@@ -295,44 +321,70 @@
         </div>
 
         <div class="form-row">
-          <div class="form-group col-md-6">
-            <label class="small text-muted">Encadreur non MENA</label>
-            <input class="form-control" [(ngModel)]="model.centre.encadreurNonMena" [disabled]="saving" />
-          </div>
           <div class="form-group col-md-3">
             <label class="small text-muted">Encadré par MENA</label>
-            <select class="form-control" [(ngModel)]="model.centre.encadrerParMena" [disabled]="saving">
+            <select
+              class="form-control"
+              [(ngModel)]="model.centre.encadrerParMena"
+              (ngModelChange)="onEncadrerParMenaChange($event)"
+              [disabled]="saving"
+            >
               <option [ngValue]="true">Oui</option>
               <option [ngValue]="false">Non</option>
             </select>
           </div>
+          <div class="form-group col-md-6" *ngIf="model.centre.encadrerParMena === false">
+            <label class="small text-muted">Encadreur non MENA</label>
+            <input class="form-control" [(ngModel)]="model.centre.encadreurNonMena" [disabled]="saving" />
+          </div>
+        </div>
+
+        <div class="form-row">
           <div class="form-group col-md-3">
-            <label class="small text-muted">Localisation</label>
+            <label class="small text-muted">Latitude GPS <span class="text-muted font-weight-normal">(facultatif)</span></label>
+            <input class="form-control" [(ngModel)]="model.centre.latitudeGps" [disabled]="saving" />
+          </div>
+          <div class="form-group col-md-3">
+            <label class="small text-muted">Longitude GPS <span class="text-muted font-weight-normal">(facultatif)</span></label>
+            <input class="form-control" [(ngModel)]="model.centre.longitudeGps" [disabled]="saving" />
+          </div>
+          <div class="form-group col-md-2 d-flex align-items-end">
+            <button type="button" class="btn btn-outline-secondary btn-block mb-3" (click)="fillGpsFromMyPosition()" [disabled]="saving">
+              Ma position
+            </button>
+          </div>
+          <div class="form-group col-md-4">
+            <label class="small text-muted">Repère géographique</label>
             <input class="form-control" [(ngModel)]="model.centre.localisationCentre" [disabled]="saving" />
           </div>
         </div>
 
         <div class="form-row">
-          <div class="form-group col-md-6">
+          <div class="form-group col-md-4">
+            <label class="small text-muted">GPS valide</label>
+            <select class="form-control" [(ngModel)]="model.centre.gpsValide" [disabled]="saving">
+              <option [ngValue]="null">Non vérifié</option>
+              <option [ngValue]="true">Oui</option>
+              <option [ngValue]="false">Non</option>
+            </select>
+          </div>
+          <div class="form-group col-md-4">
             <label class="small text-muted">Zone d’implantation</label>
-            <input class="form-control bg-light" [value]="selectedCreateMilieuImplantationLabel()" readonly />
-            <div class="small text-muted mt-1">Déduit automatiquement de la localité sélectionnée.</div>
+            <app-mena-searchable-select
+              [loading]="loading"
+              [(ngModel)]="model.centre.nomMilieuImplentation"
+              [options]="menaZoneImplantationOptions()"
+              nullLabel="—"
+              [disabled]="saving"
+            />
+          </div>
+          <div class="form-group col-md-4">
+            <label class="small text-muted">Date création DAAJE</label>
+            <input type="date" class="form-control" [(ngModel)]="model.centre.dateCreationDaaje" [disabled]="saving" />
           </div>
         </div>
 
         <div class="form-row">
-          <div class="form-group col-md-4">
-            <label class="small text-muted">Total apprenants</label>
-            <input
-              type="number"
-              min="0"
-              class="form-control bg-light text-muted"
-              [ngModel]="model.centre.totalApprenants"
-              [disabled]="true"
-              readonly
-            />
-            <div class="small text-muted mt-1">Calculé automatiquement (garçons + filles).</div>
-          </div>
           <div class="form-group col-md-4">
             <label class="small text-muted">Garçons</label>
             <input
@@ -355,24 +407,17 @@
               [disabled]="saving"
             />
           </div>
-        </div>
-
-        <div class="form-row">
           <div class="form-group col-md-4">
-            <label class="small text-muted">Latitude GPS</label>
-            <input class="form-control" [(ngModel)]="model.centre.latitudeGps" [disabled]="saving" />
-          </div>
-          <div class="form-group col-md-4">
-            <label class="small text-muted">Longitude GPS</label>
-            <input class="form-control" [(ngModel)]="model.centre.longitudeGps" [disabled]="saving" />
-          </div>
-          <div class="form-group col-md-4">
-            <label class="small text-muted">GPS valide</label>
-            <select class="form-control" [(ngModel)]="model.centre.gpsValide" [disabled]="saving">
-              <option [ngValue]="null">Non vérifié</option>
-              <option [ngValue]="true">Oui</option>
-              <option [ngValue]="false">Non</option>
-            </select>
+            <label class="small text-muted">Total apprenants</label>
+            <input
+              type="number"
+              min="0"
+              class="form-control bg-light text-muted"
+              [ngModel]="model.centre.totalApprenants"
+              [disabled]="true"
+              readonly
+            />
+            <div class="small text-muted mt-1">Calculé automatiquement (garçons + filles).</div>
           </div>
         </div>
 
@@ -390,7 +435,13 @@
         <div class="form-row" *ngIf="isCecWizard()">
           <div class="form-group col-md-6">
             <label class="small text-muted">École tutrice</label>
-            <input class="form-control" [(ngModel)]="model.ecoleTutrice" [disabled]="saving" />
+            <app-mena-searchable-select
+              [loading]="loading"
+              [(ngModel)]="model.ecoleTutrice"
+              [options]="menaEcoleTutriceOptions()"
+              nullLabel="—"
+              [disabled]="saving"
+            />
           </div>
           <div class="form-group col-md-6">
             <label class="small text-muted">Année de création</label>
@@ -423,11 +474,7 @@
           <div *ngFor="let n of model.niveaux ?? []; let i = index" class="form-row align-items-end">
             <div class="form-group col-md-3">
               <label class="small text-muted">Année scolaire</label>
-              <app-mena-searchable-select [loading]="loading"
-                [(ngModel)]="n.anneeScolaireId"
-                [options]="menaAnneeScolaireOptions()"
-                [disabled]="saving"
-              />
+              <input class="form-control bg-light" [value]="anneeScolaireLabel(n.anneeScolaireId) || activeAnneeScolaireLabel()" readonly />
             </div>
             <div class="form-group col-md-4">
               <label class="small text-muted">{{ niveauTitle() }}</label>
@@ -526,9 +573,8 @@
                     </dd>
                     <dt>Contact</dt><dd>{{ displayOrDash(pp.contact) }}</dd>
                     <dt>Sexe</dt><dd>{{ displayOrDash(pp.sexe) }}</dd>
-                    <dt>Date de naissance</dt><dd>{{ displayOrDash(pp.dateNaissance) }}</dd>
-                    <dt>Ancienneté</dt><dd>{{ displayOrDash(pp.anciennete) }}</dd>
-                    <dt>Boîte postale</dt><dd>{{ displayOrDash(pp.boitePostale) }}</dd>
+                      <dt>Date de naissance</dt><dd>{{ displayOrDash(pp.dateNaissance) }}</dd>
+                      <dt>Boîte postale</dt><dd>{{ displayOrDash(pp.boitePostale) }}</dd>
                     <dt>Niveau d'études</dt><dd>{{ displayOrDash(pp.niveauEtudes) }}</dd>
                     <dt>Fonction</dt><dd>{{ displayOrDash(pp.fonction) }}</dd>
                   </dl>
@@ -554,7 +600,7 @@
                 <dt>Code centre</dt>
                 <dd>{{ wizardSavedSuccess ? wizardRecapCodeCentre() : "Attribué à l'enregistrement" }}</dd>
                 <dt>Localité</dt><dd>{{ localiteLabel(model.centre.localiteId) }}</dd>
-                <dt>IEP</dt><dd>{{ iepLabel(model.centre.iepId) }}</dd>
+                <dt>IEPP</dt><dd>{{ iepLabel(model.centre.iepId) }}</dd>
                 <dt>Nature</dt><dd>{{ natureLabel(model.centre.natureCentreId) }}</dd>
                 <dt>Autorité</dt><dd>{{ autoriteLabel(model.centre.autoriteAutorisationId) }}</dd>
                 <dt>Autorisation</dt>
@@ -567,7 +613,7 @@
                 <dd>{{ model.centre.totalApprenants ?? '—' }} (H: {{ model.centre.totalHommes ?? '—' }} / F: {{ model.centre.totalFemmes ?? '—' }})</dd>
                 <dt>GPS</dt>
                 <dd>{{ model.centre.latitudeGps?.trim() || '—' }}, {{ model.centre.longitudeGps?.trim() || '—' }}</dd>
-                <dt>Localisation</dt><dd>{{ model.centre.localisationCentre || '—' }}</dd>
+                <dt>Repère géographique</dt><dd>{{ model.centre.localisationCentre || '—' }}</dd>
                 <dt>Milieu</dt><dd>{{ model.centre.nomMilieuImplentation || '—' }}</dd>
               </dl>
             </section>
@@ -667,12 +713,12 @@
         <div class="font-weight-bold text-secondary mb-2 mt-3">Circonscription</div>
         <div class="form-row">
           <div class="form-group col-md-6 col-lg-4 mb-2">
-            <label class="mb-0 text-muted small">DRENA</label>
+            <label class="mb-0 text-muted small">DRENAET</label>
             <app-mena-searchable-select
               [(ngModel)]="listFilterDrenaId"
               (ngModelChange)="onListDrenaFilterChange()"
               [options]="menaRefOptions(drenas)"
-              nullLabel="Toutes les DRENA"
+              nullLabel="Toutes les DRENAET"
               placeholder="Rechercher une DRENA…"
               inputClass="form-control form-control-sm"
               [disabled]="loading || lockListFilterDrena()"
@@ -694,6 +740,23 @@
           </div>
         </div>
 
+        <div class="font-weight-bold text-secondary mb-2 mt-3">Statut</div>
+        <div class="form-row">
+          <div class="form-group col-md-6 col-lg-4 mb-2">
+            <label class="mb-0 text-muted small">Centres affichés</label>
+            <select
+              class="form-control form-control-sm"
+              [(ngModel)]="listFilterActif"
+              (ngModelChange)="applyListFilters()"
+              [disabled]="loading"
+            >
+              <option value="all">Tous</option>
+              <option value="yes">Actifs uniquement</option>
+              <option value="no">Inactifs uniquement</option>
+            </select>
+          </div>
+        </div>
+
         <div class="d-flex flex-wrap align-items-center mt-2">
           <button type="button" class="btn btn-sm btn-primary" (click)="applyListFilters()">Filtrer</button>
           <button type="button" class="btn btn-sm btn-outline-secondary ml-1" (click)="resetListFilters()">Réinitialiser</button>
@@ -708,17 +771,18 @@
               <th>Centre</th>
               <th>Promoteur</th>
               <th>Localité</th>
-              <th>IEP</th>
+              <th>IEPP</th>
               <th>Nature</th>
               <th class="text-center">Autor.</th>
               <th class="text-center">Eau</th>
               <th class="text-center">Élec.</th>
               <th class="text-center">Visites</th>
-              <th style="width: 110px" class="text-center">Actions</th>
+              <th class="text-center">Statut</th>
+              <th style="width: 150px" class="text-center">Actions</th>
             </tr>
           </thead>
           <tbody>
-            <tr *ngFor="let r of rows">
+            <tr *ngFor="let r of rows" [class.text-muted]="r.actif === false">
               <td class="font-weight-bold">{{ r.libelle ?? '—' }}</td>
               <td>{{ promoteurSummary(r) }}</td>
               <td>{{ localiteLabel(r.idLocalite ?? null) }}</td>
@@ -728,6 +792,10 @@
               <td class="text-center">{{ r.aDeLeau === true ? 'Oui' : r.aDeLeau === false ? 'Non' : '—' }}</td>
               <td class="text-center">{{ r.estElectrifie === true ? 'Oui' : r.estElectrifie === false ? 'Non' : '—' }}</td>
               <td class="text-center">{{ r.nombreVisite ?? '—' }}</td>
+              <td class="text-center">
+                <span *ngIf="r.actif !== false" class="badge badge-success">Actif</span>
+                <span *ngIf="r.actif === false" class="badge badge-secondary">Inactif</span>
+              </td>
               <td class="text-center mena-col-actions">
                 <div class="mena-row-actions justify-content-center">
                   <app-mena-row-action
@@ -745,6 +813,22 @@
                     (clicked)="openEdit(r)"
                   />
                   <app-mena-row-action
+                    *ngIf="r.actif !== false"
+                    variant="deactivate"
+                    title="Désactiver"
+                    ariaLabel="Désactiver"
+                    [disabled]="saving"
+                    (clicked)="toggleActif(r)"
+                  />
+                  <app-mena-row-action
+                    *ngIf="r.actif === false"
+                    variant="activate"
+                    title="Activer"
+                    ariaLabel="Activer"
+                    [disabled]="saving"
+                    (clicked)="toggleActif(r)"
+                  />
+                  <app-mena-row-action
                     variant="delete"
                     title="Supprimer"
                     ariaLabel="Supprimer"
@@ -755,7 +839,7 @@
               </td>
             </tr>
             <tr *ngIf="rows.length === 0">
-              <td colspan="10" class="text-center text-muted py-4">Aucun enregistrement.</td>
+              <td colspan="11" class="text-center text-muted py-4">Aucun enregistrement.</td>
             </tr>
           </tbody>
         </table>
@@ -908,7 +992,7 @@
                 <td>{{ detailLocaliteLabel(d) }}</td>
               </tr>
               <tr>
-                <th>IEP</th>
+                <th>IEPP</th>
                 <td>{{ detailIepLabel(d) }}</td>
               </tr>
               <tr>
@@ -978,16 +1062,16 @@
                 </td>
               </tr>
               <tr>
-                <th>Total apprenants</th>
-                <td>{{ d.totalApprenants ?? '—' }}</td>
-              </tr>
-              <tr>
                 <th>Garçons</th>
                 <td>{{ d.totalHommes ?? '—' }}</td>
               </tr>
               <tr>
                 <th>Filles</th>
                 <td>{{ d.totalFemmes ?? '—' }}</td>
+              </tr>
+              <tr>
+                <th>Total apprenants</th>
+                <td>{{ d.totalApprenants ?? '—' }}</td>
               </tr>
               <tr>
                 <th>Latitude GPS</th>
@@ -1018,7 +1102,7 @@
                 <td>{{ d.encadrerParMena === true ? 'Oui' : d.encadrerParMena === false ? 'Non' : '—' }}</td>
               </tr>
               <tr>
-                <th>Localisation</th>
+                <th>Repère géographique</th>
                 <td>{{ d.localisationCentre ?? '—' }}</td>
               </tr>
               <tr>
@@ -1074,7 +1158,13 @@
           <div class="form-row" *ngIf="isCecWizard()">
             <div class="form-group col-md-6">
               <label class="small text-muted">École tutrice</label>
-              <input class="form-control" [(ngModel)]="editForm.ecoleTutrice" [disabled]="saving" />
+              <app-mena-searchable-select
+                [loading]="loading"
+                [(ngModel)]="editForm.ecoleTutrice"
+                [options]="menaEcoleTutriceOptions()"
+                nullLabel="—"
+                [disabled]="saving"
+              />
             </div>
             <div class="form-group col-md-6">
               <label class="small text-muted">Année de création</label>
@@ -1093,7 +1183,7 @@
               />
             </div>
             <div class="form-group col-md-3">
-              <label class="small text-muted">DRENA</label>
+              <label class="small text-muted">DRENAET</label>
               <app-mena-searchable-select [loading]="loading"
                 [(ngModel)]="editDrenaId"
                 (ngModelChange)="onEditDrenaChange()"
@@ -1102,7 +1192,7 @@
               />
             </div>
             <div class="form-group col-md-3">
-              <label class="small text-muted">IEP</label>
+              <label class="small text-muted">IEPP</label>
               <app-mena-searchable-select [loading]="loading"
                 [(ngModel)]="editForm.idIep"
                 (ngModelChange)="onEditIepChange()"
@@ -1186,44 +1276,75 @@
           </div>
 
           <div class="form-row">
-            <div class="form-group col-md-6">
-              <label class="small text-muted">Encadreur non MENA</label>
-              <input class="form-control" [(ngModel)]="editForm.encadreurNonMena" [disabled]="saving" />
+            <div class="form-group col-md-8">
+              <label class="small text-muted">Statut du centre</label>
+              <select class="form-control" [(ngModel)]="editForm.actif" [disabled]="saving">
+                <option [ngValue]="true">Actif — inclus dans les statistiques</option>
+                <option [ngValue]="false">Inactif — exclu des statistiques</option>
+              </select>
+              <small class="form-text text-muted">
+                Les centres inactifs restent consultables mais ne comptent plus dans les agrégats statistiques.
+              </small>
             </div>
+          </div>
+
+          <div class="form-row">
             <div class="form-group col-md-6">
               <label class="small text-muted">Encadré par MENA</label>
-              <select class="form-control" [(ngModel)]="editForm.encadrerParMena" [disabled]="saving">
+              <select
+                class="form-control"
+                [(ngModel)]="editForm.encadrerParMena"
+                (ngModelChange)="onEditEncadrerParMenaChange($event)"
+                [disabled]="saving"
+              >
                 <option [ngValue]="null">—</option>
                 <option [ngValue]="true">Oui</option>
                 <option [ngValue]="false">Non</option>
               </select>
             </div>
-          </div>
-
-          <div class="form-row">
-            <div class="form-group col-md-6">
-              <label class="small text-muted">Localisation</label>
-              <input class="form-control" [(ngModel)]="editForm.localisationCentre" [disabled]="saving" />
-            </div>
-            <div class="form-group col-md-6">
-              <label class="small text-muted">Milieu d’implantation</label>
-              <input class="form-control bg-light" [value]="selectedEditMilieuImplantationLabel()" readonly />
+            <div class="form-group col-md-6" *ngIf="editForm.encadrerParMena === false">
+              <label class="small text-muted">Encadreur non MENA</label>
+              <input class="form-control" [(ngModel)]="editForm.encadreurNonMena" [disabled]="saving" />
             </div>
           </div>
 
           <div class="form-row">
             <div class="form-group col-md-4">
-              <label class="small text-muted">Total apprenants</label>
-              <input
-                type="number"
-                min="0"
-                class="form-control bg-light text-muted"
-                [ngModel]="editForm.totalApprenants"
-                [disabled]="true"
-                readonly
-              />
-              <div class="small text-muted mt-1">Calculé automatiquement.</div>
+              <label class="small text-muted">Latitude GPS</label>
+              <input class="form-control" [(ngModel)]="editForm.latitudeGps" [disabled]="saving" />
             </div>
+            <div class="form-group col-md-4">
+              <label class="small text-muted">Longitude GPS</label>
+              <input class="form-control" [(ngModel)]="editForm.longitudeGps" [disabled]="saving" />
+            </div>
+            <div class="form-group col-md-4">
+              <label class="small text-muted">Repère géographique</label>
+              <input class="form-control" [(ngModel)]="editForm.localisationCentre" [disabled]="saving" />
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group col-md-4">
+              <label class="small text-muted">GPS valide</label>
+              <select class="form-control" [(ngModel)]="editForm.gpsValide" [disabled]="saving">
+                <option [ngValue]="null">Non vérifié</option>
+                <option [ngValue]="true">Oui</option>
+                <option [ngValue]="false">Non</option>
+              </select>
+            </div>
+            <div class="form-group col-md-6">
+              <label class="small text-muted">Zone d’implantation</label>
+              <app-mena-searchable-select
+                [loading]="loading"
+                [(ngModel)]="editForm.nomMilieuImplentation"
+                [options]="menaZoneImplantationOptions()"
+                nullLabel="—"
+                [disabled]="saving"
+              />
+            </div>
+          </div>
+
+          <div class="form-row">
             <div class="form-group col-md-4">
               <label class="small text-muted">Garçons</label>
               <input
@@ -1246,24 +1367,17 @@
                 [disabled]="saving"
               />
             </div>
-          </div>
-
-          <div class="form-row">
             <div class="form-group col-md-4">
-              <label class="small text-muted">Latitude GPS</label>
-              <input class="form-control" [(ngModel)]="editForm.latitudeGps" [disabled]="saving" />
-            </div>
-            <div class="form-group col-md-4">
-              <label class="small text-muted">Longitude GPS</label>
-              <input class="form-control" [(ngModel)]="editForm.longitudeGps" [disabled]="saving" />
-            </div>
-            <div class="form-group col-md-4">
-              <label class="small text-muted">GPS valide</label>
-              <select class="form-control" [(ngModel)]="editForm.gpsValide" [disabled]="saving">
-                <option [ngValue]="null">Non vérifié</option>
-                <option [ngValue]="true">Oui</option>
-                <option [ngValue]="false">Non</option>
-              </select>
+              <label class="small text-muted">Total apprenants</label>
+              <input
+                type="number"
+                min="0"
+                class="form-control bg-light text-muted"
+                [ngModel]="editForm.totalApprenants"
+                [disabled]="true"
+                readonly
+              />
+              <div class="small text-muted mt-1">Calculé automatiquement.</div>
             </div>
           </div>
 
@@ -1294,11 +1408,7 @@
             <div *ngFor="let n of editNiveaux; let i = index" class="form-row align-items-end">
               <div class="form-group col-md-3">
                 <label class="small text-muted">Année scolaire</label>
-                <app-mena-searchable-select [loading]="loading"
-                  [(ngModel)]="n.anneeScolaireId"
-                  [options]="menaAnneeScolaireOptions()"
-                  [disabled]="saving"
-                />
+                <input class="form-control bg-light" [value]="anneeScolaireLabel(n.anneeScolaireId) || activeAnneeScolaireLabel()" readonly />
               </div>
               <div class="form-group col-md-4">
                 <label class="small text-muted">{{ niveauTitle() }}</label>

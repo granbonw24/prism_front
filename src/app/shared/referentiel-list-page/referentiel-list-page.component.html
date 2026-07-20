@@ -362,7 +362,17 @@
   [subtitle]="detailSubtitle"
   [loading]="detailLoading"
   [fields]="detailFields"
+  [showHistory]="hasWorkflow"
+  (historyRequested)="openHistoryFromDetail()"
   (closed)="closeDetails()"
+/>
+
+<app-mena-saisie-workflow-history-modal
+  [open]="historyOpen"
+  [resource]="apiPath"
+  [recordId]="detailRecordId"
+  title="Historique de validation"
+  (closed)="closeHistory()"
 />
 
 <!-- Modal création / édition -->
@@ -428,18 +438,22 @@
                   *ngIf="field.type === 'text'"
                   type="text"
                   class="form-control form-control-sm"
+                  [class.bg-light]="!!field.readOnly"
                   [id]="'cf-' + field.key"
                   [formControlName]="field.key"
                   [attr.maxlength]="field.maxLength ?? null"
+                  [readOnly]="!!field.readOnly"
                 />
                 <input
                   *ngIf="field.type === 'number'"
                   type="number"
                   class="form-control form-control-sm"
+                  [class.bg-light]="!!field.readOnly"
                   [ngClass]="{ 'text-right mena-effectif-num-input': numberCompact }"
                   [id]="'cf-' + field.key"
                   [formControlName]="field.key"
                   inputmode="numeric"
+                  [readOnly]="!!field.readOnly"
                 />
                 <input
                   *ngIf="field.type === 'date'"
@@ -447,23 +461,38 @@
                   class="form-control form-control-sm"
                   [id]="'cf-' + field.key"
                   [formControlName]="field.key"
+                  [readOnly]="!!field.readOnly"
+                  [class.bg-light]="!!field.readOnly"
                 />
-                <app-mena-searchable-select
-                  *ngIf="field.type === 'select'"
-                  [id]="'cf-' + field.key"
-                  [formControlName]="field.key"
-                  [options]="menaFieldOptions(field)"
-                  nullLabel="-- Sélectionner --"
-                  inputClass="form-control form-control-sm"
-                  [loading]="isFieldOptionsLoading(field)"
-                  [disabled]="formSubmitting || isFieldOptionsLoading(field)"
-                />
+                <ng-container *ngIf="field.type === 'select'">
+                  <input
+                    *ngIf="field.readOnly; else editableSelect"
+                    type="text"
+                    class="form-control form-control-sm bg-light"
+                    [id]="'cf-' + field.key"
+                    [value]="selectFieldDisplayLabel(field)"
+                    readonly
+                    tabindex="-1"
+                  />
+                  <ng-template #editableSelect>
+                    <app-mena-searchable-select
+                      [id]="'cf-' + field.key"
+                      [formControlName]="field.key"
+                      [options]="menaFieldOptions(field)"
+                      nullLabel="-- Sélectionner --"
+                      inputClass="form-control form-control-sm"
+                      [loading]="isFieldOptionsLoading(field)"
+                      [disabled]="formSubmitting || isFieldOptionsLoading(field)"
+                    />
+                  </ng-template>
+                </ng-container>
                 <div *ngIf="field.type === 'checkbox'" class="custom-control custom-checkbox mt-1">
                   <input
                     type="checkbox"
                     class="custom-control-input"
                     [id]="'cf-' + field.key"
                     [formControlName]="field.key"
+                    [disabled]="!!field.readOnly || formSubmitting"
                   />
                   <label class="custom-control-label small" [attr.for]="'cf-' + field.key">
                     Oui
@@ -481,6 +510,7 @@
             <ng-container *ngIf="inputEffectifDenseForm; else classicReferentielFields">
               <div class="mena-effectif-meta card border-0 shadow-none bg-light rounded-lg mb-2">
                 <div class="card-body py-2 px-2">
+                  <div class="mena-effectif-group__title mb-2">Informations générales</div>
                   <div class="form-row">
                     <ng-container *ngFor="let field of formFieldsNonNumeric">
                       <ng-container
@@ -493,30 +523,120 @@
                   </div>
                 </div>
               </div>
-              <div
-                class="mena-effectif-numeric-scroll rounded-lg"
-                *ngIf="formFieldsNumeric.length"
-                role="region"
-                aria-label="Effectifs par tranche"
-              >
-                <div class="mena-effectif-numeric-caption small text-muted mb-2 px-1">
-                  Effectifs (valeurs numériques) — faire défiler si besoin
-                </div>
-                <div class="form-row">
-                  <ng-container *ngFor="let field of formFieldsNumeric">
+
+              <div class="mena-effectif-total-bar mb-2" *ngIf="formFieldsNumericTotals.length">
+                <div class="mena-effectif-group__title mb-2">Effectif total</div>
+                <div class="form-row align-items-end">
+                  <ng-container *ngFor="let field of formFieldsNumericTotals">
                     <ng-container
                       *ngTemplateOutlet="
                         refField;
-                        context: { field: field, colClass: 'col-md-4', numberCompact: true }
+                        context: {
+                          field: field,
+                          colClass: formFieldsNumericTotals.length > 1 ? 'col-md-4' : 'col-md-6',
+                          numberCompact: false
+                        }
                       "
                     ></ng-container>
                   </ng-container>
+                  <div class="form-group mb-2 col-md-6" *ngIf="hasEffectifTotalControl">
+                    <label class="small font-weight-bold text-secondary mena-field-label mb-1 d-block">
+                      Somme des saisies
+                    </label>
+                    <ng-container *ngIf="hasEffectifGenderTotals; else effectifSumCombined">
+                      <div
+                        class="mena-effectif-live-sum form-control form-control-sm bg-white mb-1"
+                        [class.is-match]="effectifSumMatchesH"
+                        [class.is-mismatch]="!effectifSumMatchesH"
+                        aria-live="polite"
+                      >
+                        <span class="mena-effectif-live-sum__value">H {{ effectifPartsSumH }}</span>
+                        <span class="mena-effectif-live-sum__meta text-muted">
+                          / total {{ effectifTotalTargetH }}
+                          <ng-container *ngIf="!effectifSumMatchesH">
+                            · reste {{ effectifRemainderH }}
+                          </ng-container>
+                        </span>
+                      </div>
+                      <div
+                        class="mena-effectif-live-sum form-control form-control-sm bg-white"
+                        [class.is-match]="effectifSumMatchesF"
+                        [class.is-mismatch]="!effectifSumMatchesF"
+                        aria-live="polite"
+                      >
+                        <span class="mena-effectif-live-sum__value">F {{ effectifPartsSumF }}</span>
+                        <span class="mena-effectif-live-sum__meta text-muted">
+                          / total {{ effectifTotalTargetF }}
+                          <ng-container *ngIf="!effectifSumMatchesF">
+                            · reste {{ effectifRemainderF }}
+                          </ng-container>
+                        </span>
+                      </div>
+                      <div
+                        class="small mt-1"
+                        [class.text-success]="effectifSumMatches"
+                        [class.text-danger]="!effectifSumMatches"
+                      >
+                        <ng-container *ngIf="effectifSumMatches; else mismatchHintHf">
+                          Les rubriques H et F correspondent aux effectifs totaux.
+                        </ng-container>
+                        <ng-template #mismatchHintHf>
+                          La somme des rubriques H et F doit égaler chaque effectif total.
+                        </ng-template>
+                      </div>
+                    </ng-container>
+                    <ng-template #effectifSumCombined>
+                      <div
+                        class="mena-effectif-live-sum form-control form-control-sm bg-white"
+                        [class.is-match]="effectifSumMatches"
+                        [class.is-mismatch]="!effectifSumMatches"
+                        aria-live="polite"
+                      >
+                        <span class="mena-effectif-live-sum__value">{{ effectifPartsSum }}</span>
+                        <span class="mena-effectif-live-sum__meta text-muted">
+                          / total {{ effectifTotalTarget }}
+                          <ng-container *ngIf="!effectifSumMatches">
+                            · reste {{ effectifRemainder }}
+                          </ng-container>
+                        </span>
+                      </div>
+                      <div class="small mt-1" [class.text-success]="effectifSumMatches" [class.text-danger]="!effectifSumMatches">
+                        <ng-container *ngIf="effectifSumMatches; else mismatchHint">
+                          Les rubriques correspondent à l’effectif total.
+                        </ng-container>
+                        <ng-template #mismatchHint>
+                          La somme des rubriques doit être égale à l’effectif total.
+                        </ng-template>
+                      </div>
+                    </ng-template>
+                  </div>
+                </div>
+              </div>
+
+              <div
+                class="mena-effectif-numeric-scroll rounded-lg"
+                *ngIf="formFieldsNumericGroups.length"
+                role="region"
+                aria-label="Effectifs par tranche"
+              >
+                <div *ngFor="let group of formFieldsNumericGroups" class="mena-effectif-group">
+                  <div class="mena-effectif-group__title">{{ group.title }}</div>
+                  <div class="form-row">
+                    <ng-container *ngFor="let field of group.fields">
+                      <ng-container
+                        *ngTemplateOutlet="
+                          refField;
+                          context: { field: field, colClass: 'col-md-4', numberCompact: true }
+                        "
+                      ></ng-container>
+                    </ng-container>
+                  </div>
                 </div>
               </div>
             </ng-container>
             <ng-template #classicReferentielFields>
               <div class="form-row">
-                <ng-container *ngFor="let field of fieldsForForm">
+                <ng-container *ngFor="let field of formFieldsVisible">
                   <ng-container
                     *ngTemplateOutlet="refField; context: { field: field, colClass: 'col-md-6', numberCompact: false }"
                   ></ng-container>
@@ -534,7 +654,7 @@
               <button
                 type="submit"
                 class="btn btn-primary btn-sm mena-btn-add"
-                [disabled]="formSubmitting"
+                [disabled]="formSubmitting || (hasEffectifTotalControl && !effectifSumMatches)"
               >
                 {{
                   formSubmitting

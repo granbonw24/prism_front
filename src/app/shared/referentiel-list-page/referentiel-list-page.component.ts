@@ -32,6 +32,7 @@ import {
   MenaRecordDetailField,
   MenaRecordDetailModalComponent,
 } from '@shared/mena-record-detail-modal/mena-record-detail-modal.component';
+import { MenaSaisieWorkflowHistoryModalComponent } from '@shared/mena-saisie-workflow-history-modal/mena-saisie-workflow-history-modal.component';
 import { MenaLoadingComponent } from '@shared/mena-loading/mena-loading.component';
 import { MenaWorkflowQueueToolbarComponent } from '@shared/mena-workflow-queue-toolbar/mena-workflow-queue-toolbar.component';
 import {
@@ -42,6 +43,10 @@ import {
   rowMatchesWorkflowTab,
   type WorkflowQueueTab,
 } from '@core/workflow/workflow-queue.util';
+import {
+  groupEffectifNumericParts,
+  type EffectifFieldGroup,
+} from '@features/apprenant/effectif/effectif-field-groups.util';
 
 /**
  * Paramètres pour les listes déroulantes « centre » (API paginée).
@@ -72,6 +77,7 @@ type WorkflowDecisionAction = 'rejeter' | 'retourner';
     MenaSearchableSelectComponent,
     MenaContextDashboardComponent,
     MenaRecordDetailModalComponent,
+    MenaSaisieWorkflowHistoryModalComponent,
     MenaWorkflowQueueToolbarComponent,
     MenaLoadingComponent,
   ],
@@ -168,10 +174,14 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
   detailLoading = false;
   detailFields: MenaRecordDetailField[] = [];
   detailSubtitle = '';
+  detailRecordId: number | string | null = null;
+  historyOpen = false;
   fieldOptions: Record<string, Array<{ value: string | number; label: string }>> = {};
 
   /** Évite de relancer les GET d’options quand le cache est déjà rempli par l’API. */
   private readonly fieldOptionsApiLoaded = new Set<string>();
+  /** Valeurs auto (année scolaire active, etc.) mémorisées après 1er chargement. */
+  private readonly autoSelectResolved = new Map<string, string | number>();
   /** Clés des selects dont les options API sont en cours de chargement. */
   private readonly fieldOptionsLoadingKeys = new Set<string>();
   /**
@@ -309,6 +319,17 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
     return toMenaSelectOptionsFromPairs(this.getFieldOptions(field));
   }
 
+  /** Libellé affiché pour un select en lecture seule (année scolaire / campagne). */
+  selectFieldDisplayLabel(field: ReferentielFormField): string {
+    const raw = this.recordForm?.get(field.key)?.value;
+    if (raw === null || raw === undefined || raw === '') {
+      return this.isFieldOptionsLoading(field) ? 'Chargement…' : '—';
+    }
+    const opts = this.getFieldOptions(field);
+    const found = opts.find((o) => String(o.value) === String(raw));
+    return found?.label ?? String(raw);
+  }
+
   isFieldOptionsLoading(field: ReferentielFormField): boolean {
     if (field.type !== 'select' || field.options?.length || !field.optionsApiPath) {
       return false;
@@ -333,12 +354,111 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
 
   /** Mise en page dense effectif : tout sauf les compteurs numériques. */
   get formFieldsNonNumeric(): ReferentielFormField[] {
-    return this.fieldsForForm.filter((f) => f.type !== 'number');
+    return this.fieldsForForm.filter((f) => f.type !== 'number' && !f.hidden);
   }
 
-  /** Mise en page dense effectif : uniquement les champs numériques (grille 3 colonnes). */
+  /** Totaux d’effectif (saisis en tête). */
+  get formFieldsNumericTotals(): ReferentielFormField[] {
+    return this.fieldsForForm.filter((f) => f.type === 'number' && !f.hidden && this.isEffectifTotalField(f));
+  }
+
+  /** Rubriques numériques (hors total) — grille détaillée. */
   get formFieldsNumeric(): ReferentielFormField[] {
-    return this.fieldsForForm.filter((f) => f.type === 'number');
+    return this.fieldsForForm.filter((f) => f.type === 'number' && !f.hidden && !this.isEffectifTotalField(f));
+  }
+
+  get formFieldsNumericTotalsH(): ReferentielFormField[] {
+    return this.formFieldsNumericTotals.filter((f) => this.effectifFieldGender(f) === 'H');
+  }
+
+  get formFieldsNumericTotalsF(): ReferentielFormField[] {
+    return this.formFieldsNumericTotals.filter((f) => this.effectifFieldGender(f) === 'F');
+  }
+
+  get formFieldsNumericPartsH(): ReferentielFormField[] {
+    return this.formFieldsNumeric.filter((f) => this.effectifFieldGender(f) === 'H');
+  }
+
+  get formFieldsNumericPartsF(): ReferentielFormField[] {
+    return this.formFieldsNumeric.filter((f) => this.effectifFieldGender(f) === 'F');
+  }
+
+  /** Contrôle séparé H / F lorsqu’il y a au moins un total de chaque. */
+  get hasEffectifGenderTotals(): boolean {
+    return this.formFieldsNumericTotalsH.length > 0 && this.formFieldsNumericTotalsF.length > 0;
+  }
+
+  /** Rubriques regroupées par tranche d’âge / famille (formulaires Apprenant densés). */
+  get formFieldsNumericGroups(): EffectifFieldGroup[] {
+    if (!this.inputEffectifDenseForm) {
+      return [];
+    }
+    return groupEffectifNumericParts(this.formFieldsNumeric);
+  }
+
+  /** Champs visibles du formulaire classique (hors champs auto / techniques). */
+  get formFieldsVisible(): ReferentielFormField[] {
+    return this.fieldsForForm.filter((f) => !f.hidden);
+  }
+
+  get hasEffectifTotalControl(): boolean {
+    return this.inputEffectifDenseForm && this.formFieldsNumericTotals.length > 0 && this.formFieldsNumeric.length > 0;
+  }
+
+  /** Somme live des rubriques saisies. */
+  get effectifPartsSum(): number {
+    return this.sumFormNumberFields(this.formFieldsNumeric);
+  }
+
+  /** Cible : somme des champs « Effectif total ». */
+  get effectifTotalTarget(): number {
+    return this.sumFormNumberFields(this.formFieldsNumericTotals);
+  }
+
+  get effectifPartsSumH(): number {
+    return this.sumFormNumberFields(this.formFieldsNumericPartsH);
+  }
+
+  get effectifPartsSumF(): number {
+    return this.sumFormNumberFields(this.formFieldsNumericPartsF);
+  }
+
+  get effectifTotalTargetH(): number {
+    return this.sumFormNumberFields(this.formFieldsNumericTotalsH);
+  }
+
+  get effectifTotalTargetF(): number {
+    return this.sumFormNumberFields(this.formFieldsNumericTotalsF);
+  }
+
+  get effectifRemainder(): number {
+    return this.effectifTotalTarget - this.effectifPartsSum;
+  }
+
+  get effectifRemainderH(): number {
+    return this.effectifTotalTargetH - this.effectifPartsSumH;
+  }
+
+  get effectifRemainderF(): number {
+    return this.effectifTotalTargetF - this.effectifPartsSumF;
+  }
+
+  get effectifSumMatchesH(): boolean {
+    return this.effectifPartsSumH === this.effectifTotalTargetH;
+  }
+
+  get effectifSumMatchesF(): boolean {
+    return this.effectifPartsSumF === this.effectifTotalTargetF;
+  }
+
+  get effectifSumMatches(): boolean {
+    if (!this.hasEffectifTotalControl) {
+      return true;
+    }
+    if (this.hasEffectifGenderTotals) {
+      return this.effectifSumMatchesH && this.effectifSumMatchesF;
+    }
+    return this.effectifPartsSum === this.effectifTotalTarget;
   }
 
   /** Carte actifs / inactifs : uniquement si une colonne d’état booléenne est détectée. */
@@ -822,8 +942,11 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
       this.formModalOpen = true;
       return;
     }
-    this.loadFieldOptions();
+    // Construire le formulaire avant le chargement d’options, puis ré-appliquer les auto-sélections
+    // (évite la course : options déjà en cache appliquées alors que recordForm est encore null).
     this.recordForm = this.buildRecordForm();
+    this.loadFieldOptions();
+    this.ensureAutoSelectedFields();
     this.formModalOpen = true;
   }
 
@@ -836,6 +959,7 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
     this.detailLoading = true;
     this.detailFields = [];
     this.detailSubtitle = this.buildDeleteLabel(row);
+    this.detailRecordId = id;
     const url = `${this.apiBaseUrl}${this.apiPath}/${encodeURIComponent(String(id))}`;
     this.http.get<Record<string, unknown>>(url).subscribe({
       next: (full) => {
@@ -854,9 +978,24 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
     this.detailLoading = false;
     this.detailFields = [];
     this.detailSubtitle = '';
+    this.detailRecordId = null;
+  }
+
+  openHistoryFromDetail(): void {
+    if (this.detailRecordId == null || !this.hasWorkflow) {
+      return;
+    }
+    this.historyOpen = true;
+  }
+
+  closeHistory(): void {
+    this.historyOpen = false;
   }
 
   private buildDetailFields(row: Record<string, unknown>): MenaRecordDetailField[] {
+    if (this.inputEffectifDenseForm && this.fieldsForForm.length > 0) {
+      return this.buildEffectifDetailFields(row);
+    }
     const seen = new Set<string>();
     const fields: MenaRecordDetailField[] = [];
     const push = (key: string, label?: string) => {
@@ -880,6 +1019,110 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
       push(k);
     }
     return fields;
+  }
+
+  /**
+   * Détail Apprenant : infos générales → totaux → tranches d’âge regroupées.
+   */
+  private buildEffectifDetailFields(row: Record<string, unknown>): MenaRecordDetailField[] {
+    const fields: MenaRecordDetailField[] = [];
+    const seen = new Set<string>();
+
+    const pushField = (formField: ReferentielFormField) => {
+      const { key, value } = this.resolveDetailValue(row, formField);
+      if (seen.has(key) || seen.has(formField.key)) {
+        return;
+      }
+      seen.add(key);
+      seen.add(formField.key);
+      fields.push({
+        label: formField.label,
+        value,
+      });
+    };
+
+    const pushSection = (title: string) => {
+      fields.push({ label: title, value: '', section: true });
+    };
+
+    const general = this.fieldsForForm.filter((f) => f.type !== 'number' && !f.hidden);
+    const totals = this.fieldsForForm.filter((f) => f.type === 'number' && !f.hidden && this.isEffectifTotalField(f));
+    const parts = this.fieldsForForm.filter((f) => f.type === 'number' && !f.hidden && !this.isEffectifTotalField(f));
+    const groups = groupEffectifNumericParts(parts);
+
+    if (general.length) {
+      pushSection('Informations générales');
+      for (const f of general) {
+        pushField(f);
+      }
+    }
+
+    // Code auto / id utiles s’ils existent en ligne et pas déjà poussés
+    for (const k of Object.keys(row)) {
+      if (seen.has(k) || k.startsWith('_') || k === 'hibernateLazyInitializer') {
+        continue;
+      }
+      if (this.shouldSkipDetailKey(k, row)) {
+        continue;
+      }
+      if (/^code/i.test(k) || k === 'id') {
+        seen.add(k);
+        // Insérer le code juste après le titre générales si présent
+        const insertAt = fields.findIndex((x) => x.section && x.label === 'Informations générales') + 1;
+        const item = { label: this.columnHeaderLabel(k), value: this.formatCell(row[k], k) };
+        if (insertAt > 0) {
+          fields.splice(insertAt, 0, item);
+        } else {
+          fields.unshift(item);
+        }
+      }
+    }
+
+    if (totals.length) {
+      pushSection('Effectif total');
+      for (const f of totals) {
+        pushField(f);
+      }
+    }
+
+    if (groups.length) {
+      pushSection('Effectifs par tranche');
+      for (const g of groups) {
+        pushSection(g.title);
+        for (const f of g.fields) {
+          pushField(f);
+        }
+      }
+    }
+
+    return fields;
+  }
+
+  /** Préfère la clé enrichie (ex. periodeActivite) quand l’id brut est redondant. */
+  private resolveDetailValue(
+    row: Record<string, unknown>,
+    formField: ReferentielFormField,
+  ): { key: string; value: string } {
+    const key = formField.key;
+    const aliases: Record<string, string[]> = {
+      idPeriodeActivite: ['periodeActivite', 'PeriodeActivite'],
+      idAnneeScolaire: ['anneeScolaire', 'AnneeScolaire'],
+      idCentre: ['centre', 'Centre', 'alpha', 'Alpha'],
+      idNiveauAlpha: ['niveauAlpha', 'NiveauAlpha'],
+      idNiveauCp: ['niveauCp', 'NiveauCp'],
+      idNiveauSie: ['niveauSie', 'NiveauSie'],
+      idCampagne: ['campagne', 'Campagne'],
+      cecIdCentre: ['cecIdCentre', 'ecoleRattachement'],
+    };
+    for (const alt of aliases[key] ?? []) {
+      if (row[alt] !== undefined && row[alt] !== null) {
+        return { key: alt, value: this.formatCell(row[alt], alt) };
+      }
+    }
+    if (row[key] !== undefined) {
+      return { key, value: this.formatCell(row[key], key) };
+    }
+    return { key, value: '—' };
   }
 
   /** Évite le doublon id brut + objet référentiel enrichi (ex. performance : idPeriodeActivite + periodeActivite). */
@@ -931,8 +1174,21 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
     if (!this.recordForm || !this.apiPath) {
       return;
     }
+    this.ensureAutoSelectedFields();
     this.recordForm.markAllAsTouched();
     if (this.recordForm.invalid) {
+      const missing = this.fieldsForForm
+        .filter((f) => this.recordForm?.get(f.key)?.invalid)
+        .map((f) => f.label || f.key);
+      this.formError =
+        missing.length > 0
+          ? `Formulaire incomplet : ${missing.join(', ')}.`
+          : 'Formulaire incomplet : vérifiez les champs obligatoires.';
+      return;
+    }
+    if (this.hasEffectifTotalControl && !this.effectifSumMatches) {
+      this.formError =
+        `La somme des effectifs saisis (${this.effectifPartsSum}) doit être égale à l’effectif total (${this.effectifTotalTarget}).`;
       return;
     }
     const payload = this.buildPayload(this.recordForm.getRawValue());
@@ -1147,6 +1403,54 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
     return this.auth.hasAnyRole([...roles, 'ADMIN', 'SUPER_ADMIN', 'SUPER_ROOT']);
   }
 
+  private sumFormNumberFields(fields: ReferentielFormField[]): number {
+    if (!this.recordForm) {
+      return 0;
+    }
+    let sum = 0;
+    for (const f of fields) {
+      const raw = this.recordForm.get(f.key)?.value;
+      const n = typeof raw === 'number' ? raw : Number(raw);
+      if (Number.isFinite(n)) {
+        sum += n;
+      }
+    }
+    return sum;
+  }
+
+  /**
+   * Champ « Effectif total » (ou totaux H/F) vs rubriques détaillées.
+   */
+  private isEffectifTotalField(field: ReferentielFormField): boolean {
+    if (field.type !== 'number') {
+      return false;
+    }
+    if (field.effectifRole === 'legacyTotal' || field.effectifRole === 'part') {
+      return false;
+    }
+    if (field.effectifRole === 'total') {
+      return true;
+    }
+    const label = (field.label ?? '').toLowerCase();
+    if (label.includes('effectif total') || /effectif\s+niveau/.test(label)) {
+      return true;
+    }
+    // Clés métier : …NiveauH|F / …NiveauHomme|Femme (pas le total unique legacy NiveauCp|Cec|Sie)
+    return /(NiveauHomme|NiveauFemme|NiveauH|NiveauF|alphaNiveauFemme)$/i.test(field.key);
+  }
+
+  /** Genre d’un champ d’effectif (H / F) à partir de la clé. */
+  private effectifFieldGender(field: ReferentielFormField): 'H' | 'F' | null {
+    const key = field.key;
+    if (/(Homme|Garcon|Garçon)$/i.test(key) || /H(?:Cp|Cec)?$/i.test(key) || /NiveauH$/i.test(key)) {
+      return 'H';
+    }
+    if (/(Femme|Fille)$/i.test(key) || /F(?:Cp|Cec)?$/i.test(key) || /NiveauF$/i.test(key) || /alphaNiveauFemme$/i.test(key)) {
+      return 'F';
+    }
+    return null;
+  }
+
   private buildRecordForm(
     initial?: Record<string, unknown> | null,
   ): FormGroup {
@@ -1282,7 +1586,22 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
         out[f.key] = v;
       }
     }
+    this.syncLegacyEffectifTotals(out);
     return out;
+  }
+
+  /** Remplit le total unique historique (NiveauCp|Cec|Sie) = total H + total F. */
+  private syncLegacyEffectifTotals(out: Record<string, unknown>): void {
+    const legacyFields = this.fieldsForForm.filter((f) => f.effectifRole === 'legacyTotal');
+    if (!legacyFields.length) {
+      return;
+    }
+    const combined =
+      this.sumFormNumberFields(this.formFieldsNumericTotalsH) +
+      this.sumFormNumberFields(this.formFieldsNumericTotalsF);
+    for (const leg of legacyFields) {
+      out[leg.key] = combined;
+    }
   }
 
   private rowMatchesFilter(row: Record<string, unknown>, q: string): boolean {
@@ -1595,6 +1914,7 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
       const cacheKey = this.optionsCacheKey(field);
       if (this.fieldOptionsApiLoaded.has(cacheKey)) {
         this.mergeSeedIntoFieldOptions(cacheKey);
+        this.applyCachedAutoSelect(field);
         continue;
       }
       const centreOptionsPaths = new Set(['/api/alpha', '/api/cec', '/api/cp', '/api/sie']);
@@ -1614,6 +1934,7 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
           built = this.mergeSeedIntoOptionsList(cacheKey, built);
           this.fieldOptions[cacheKey] = built;
           this.fieldOptionsApiLoaded.add(cacheKey);
+          this.applyAutoSelectFlag(field, list as Record<string, unknown>[]);
         },
         error: () => {
           const seedOnly = this.optionSeeds[cacheKey] ? [this.optionSeeds[cacheKey]] : [];
@@ -1634,6 +1955,67 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
 
   private optionsCacheKey(field: ReferentielFormField): string {
     return `${field.key}::${field.optionsApiPath ?? ''}`;
+  }
+
+  /**
+   * En création : injecte la valeur « active » (ex. année scolaire en cours)
+   * sans laisser l'utilisateur la choisir.
+   */
+  private applyAutoSelectFlag(field: ReferentielFormField, rows: Record<string, unknown>[]): void {
+    if (!field.autoSelectFlagKey) {
+      return;
+    }
+    const flag = field.autoSelectFlagKey;
+    let active = rows.find((r) => r[flag] === true || r[flag] === 1 || r[flag] === 'true');
+    if (!active && rows.length === 1) {
+      active = rows[0];
+    }
+    if (!active && rows.length > 0) {
+      // Aucune année marquée active : prendre la première pour ne pas bloquer la saisie.
+      active = rows[0];
+    }
+    if (!active) {
+      return;
+    }
+    const opt = this.toOption(field, active);
+    if (opt == null) {
+      return;
+    }
+    this.autoSelectResolved.set(field.key, opt.value);
+    this.applyCachedAutoSelect(field);
+  }
+
+  private applyCachedAutoSelect(field: ReferentielFormField): void {
+    if (this.formMode !== 'create' || !field.autoSelectFlagKey || !this.recordForm) {
+      return;
+    }
+    const ctrl = this.recordForm.get(field.key);
+    if (!ctrl || (ctrl.value !== null && ctrl.value !== undefined && ctrl.value !== '')) {
+      return;
+    }
+    const cached = this.autoSelectResolved.get(field.key);
+    if (cached !== undefined) {
+      ctrl.setValue(cached);
+      return;
+    }
+    // Repli : première option disponible (évite un submit silencieux si aucune année « active »).
+    const opts = this.fieldOptions[this.optionsCacheKey(field)] ?? [];
+    if (opts.length > 0) {
+      ctrl.setValue(opts[0].value);
+      this.autoSelectResolved.set(field.key, opts[0].value);
+    }
+  }
+
+  /** Applique toutes les auto-sélections (année scolaire, etc.) sur le formulaire courant. */
+  private ensureAutoSelectedFields(): void {
+    if (!this.recordForm || this.formMode !== 'create') {
+      return;
+    }
+    for (const field of this.fieldsForForm) {
+      if (field.autoSelectFlagKey) {
+        this.applyCachedAutoSelect(field);
+      }
+    }
   }
 
   private toOption(field: ReferentielFormField, row: Record<string, unknown>): { value: string | number; label: string } | null {

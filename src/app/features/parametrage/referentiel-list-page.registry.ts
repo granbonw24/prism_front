@@ -1,7 +1,6 @@
 import type { Type } from '@angular/core';
 import { AutoriteAutorisationPageComponent } from './centres-autorisations/autorite-autorisation/autorite-autorisation-page.component';
 import { CampagnePageComponent } from './centres-autorisations/campagne/campagne-page.component';
-import { CategorieCentreAlphaPageComponent } from './pedagogie/categorie-centre-alpha/categorie-centre-alpha-page.component';
 import { CategorieAppuiPageComponent } from './others/categorie-appui/categorie-appui-page.component';
 import { CivilitePageComponent } from './others/civilite/civilite-page.component';
 import { CommunautePageComponent } from './others/communaute/communaute-page.component';
@@ -10,7 +9,6 @@ import { DesignationPageComponent } from './others/designation/designation-page.
 import { SourceFinancementPageComponent } from './others/source-financement/source-financement-page.component';
 import { DifficultePageComponent } from './others/difficulte/difficulte-page.component';
 import { DiplomePageComponent } from './others/diplome/diplome-page.component';
-import { NiveauPersonnelPageComponent } from './others/niveau-personnel/niveau-personnel-page.component';
 import { StructureFormationCertificationPageComponent } from './others/structure-formation-certification/structure-formation-certification-page.component';
 import { DocumentPageComponent } from './documents/document/document-page.component';
 import { DisciplinePageComponent } from './activites-centre/discipline/discipline-page.component';
@@ -26,7 +24,6 @@ import { CommunePageComponent } from './geographie/commune/commune-page.componen
 import { ImpactPageComponent } from './others/impact/impact-page.component';
 import { InfrastructurePageComponent } from './others/infrastructure/infrastructure-page.component';
 import { MaterielPedagogiquePageComponent } from './pedagogie/materiel-pedagogique/materiel-pedagogique-page.component';
-import { LangueApprentissagePageComponent } from './pedagogie/langue-apprentissage/langue-apprentissage-page.component';
 import { ManuelPageComponent } from './activites-centre/manuel/manuel-page.component';
 import { MinisterePageComponent } from './others/ministere/ministere-page.component';
 import { ModeAlphaPageComponent } from './pedagogie/mode-alpha/mode-alpha-page.component';
@@ -34,6 +31,7 @@ import { NatureCentrePageComponent } from './centres-autorisations/nature-centre
 import { NatureDocumentPageComponent } from './documents/nature-document/nature-document-page.component';
 import { NiveauAlphaPageComponent } from './pedagogie/niveau-alpha/niveau-alpha-page.component';
 import { NiveauCpPageComponent } from './pedagogie/niveau-cp/niveau-cp-page.component';
+import { NiveauPersonnelPageComponent } from './others/niveau-personnel/niveau-personnel-page.component';
 import { NiveaucontrolePageComponent } from './activites-centre/niveaucontrole/niveaucontrole-page.component';
 import { PeriodeevaluationPageComponent } from './activites-centre/periodeevaluation/periodeevaluation-page.component';
 import { NiveauevaluationPageComponent } from './activites-centre/niveauevaluation/niveauevaluation-page.component';
@@ -42,13 +40,17 @@ import { AspectaameliorerPageComponent } from './activites-centre/aspectaamelior
 import { NiveauSieCecPageComponent } from './pedagogie/niveau-sie-cec/niveau-sie-cec-page.component';
 import { PartenairePageComponent } from './others/partenaire/partenaire-page.component';
 import { PeriodeActivitePageComponent } from './others/periode-activite/periode-activite-page.component';
+import { EcoleTutricePageComponent } from './others/ecole-tutrice/ecole-tutrice-page.component';
 import { PeriodicitePageComponent } from './centres-autorisations/periodicite/periodicite-page.component';
 import { RegimeAlphaPageComponent } from './pedagogie/regime-alpha/regime-alpha-page.component';
+import { CategorieCentreAlphaPageComponent } from './pedagogie/categorie-centre-alpha/categorie-centre-alpha-page.component';
+import { LangueApprentissagePageComponent } from './pedagogie/langue-apprentissage/langue-apprentissage-page.component';
 import { StatutPersonnelPageComponent } from './others/statut-personnel/statut-personnel-page.component';
 import { SupportDidactiquePageComponent } from './pedagogie/support-didactique/support-didactique-page.component';
 import { TypeAlphaPageComponent } from './pedagogie/type-alpha/type-alpha-page.component';
 import { TypeDocumentPageComponent } from './documents/type-document/type-document-page.component';
 import { LocaliteDImplantationPageComponent } from './geographie/localite-d-implantation/localite-d-implantation-page.component';
+import { MilieuImplantationPageComponent } from './geographie/milieu-implantation/milieu-implantation-page.component';
 
 /**
  * Associe le segment d’URL (`ReferentielRouteData.path`) au composant page dédié.
@@ -58,7 +60,6 @@ export const REFERENTIEL_LIST_PAGE_BY_PATH: Record<string, Type<unknown>> = {
   "autoriteautorisation": AutoriteAutorisationPageComponent,
   "campagne": CampagnePageComponent,
   "categorieappui": CategorieAppuiPageComponent,
-  "categorie-centre-alpha": CategorieCentreAlphaPageComponent,
   "civilite": CivilitePageComponent,
   "communaute": CommunautePageComponent,
   "competence": CompetencePageComponent,
@@ -66,7 +67,6 @@ export const REFERENTIEL_LIST_PAGE_BY_PATH: Record<string, Type<unknown>> = {
   "source-financement": SourceFinancementPageComponent,
   "difficulte": DifficultePageComponent,
   "diplome": DiplomePageComponent,
-  "niveau-personnel": NiveauPersonnelPageComponent,
   "structure-formation-certification": StructureFormationCertificationPageComponent,
   "document": DocumentPageComponent,
   "discipline": DisciplinePageComponent,
@@ -82,7 +82,6 @@ export const REFERENTIEL_LIST_PAGE_BY_PATH: Record<string, Type<unknown>> = {
   "impact": ImpactPageComponent,
   "infrastructure": InfrastructurePageComponent,
   "materielpedagogique": MaterielPedagogiquePageComponent,
-  "langue-apprentissage": LangueApprentissagePageComponent,
   "manuel": ManuelPageComponent,
   "ministere": MinisterePageComponent,
   "modealpha": ModeAlphaPageComponent,
@@ -90,6 +89,7 @@ export const REFERENTIEL_LIST_PAGE_BY_PATH: Record<string, Type<unknown>> = {
   "naturedocument": NatureDocumentPageComponent,
   "niveaualpha": NiveauAlphaPageComponent,
   "niveaucp": NiveauCpPageComponent,
+  "niveau-personnel": NiveauPersonnelPageComponent,
   "niveaucontrole": NiveaucontrolePageComponent,
   "periodeevaluation": PeriodeevaluationPageComponent,
   "niveauevaluation": NiveauevaluationPageComponent,
@@ -98,11 +98,15 @@ export const REFERENTIEL_LIST_PAGE_BY_PATH: Record<string, Type<unknown>> = {
   "niveausiecec": NiveauSieCecPageComponent,
   "partenaire": PartenairePageComponent,
   "periodeactivite": PeriodeActivitePageComponent,
+  "ecole-tutrice": EcoleTutricePageComponent,
   "periodicite": PeriodicitePageComponent,
   "regimealpha": RegimeAlphaPageComponent,
+  "categorie-centre-alpha": CategorieCentreAlphaPageComponent,
+  "langue-apprentissage": LangueApprentissagePageComponent,
   "statutpersonnel": StatutPersonnelPageComponent,
   "supportdidactique": SupportDidactiquePageComponent,
   "typealpha": TypeAlphaPageComponent,
   "typedocument": TypeDocumentPageComponent,
+  "milieu-implantation": MilieuImplantationPageComponent,
   "localite-d-implantation": LocaliteDImplantationPageComponent,
 };

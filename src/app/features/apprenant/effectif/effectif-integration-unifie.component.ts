@@ -38,9 +38,11 @@ const INTEGRATION_CONFIG: Record<IntegrationKind, IntegrationConfig> = {
     apiPath: '/api/effectif-cepe-cp',
     createFields: EFFECTIF_CEPE_CP_CREATE_FIELDS,
     listColumnKeys: [
-      'codeEffectifCepeCp',
+      'periodeActivite',
       'anneeScolaire',
       'centre',
+      'effectifCepeCpNiveauH',
+      'effectifCepeCpNiveauF',
       'effectifCepeCandidatFCp',
       'effectifCepeCandidatHCp',
       'effectifCepeAdmisFCp',
@@ -52,10 +54,12 @@ const INTEGRATION_CONFIG: Record<IntegrationKind, IntegrationConfig> = {
     apiPath: '/api/effectif-cepe-cec',
     createFields: EFFECTIF_CEPE_CEC_CREATE_FIELDS,
     listColumnKeys: [
-      'codeEffectifCepeCec',
+      'periodeActivite',
       'anneeScolaire',
       'centre',
       'cecIdCentre',
+      'effectifCepeCecNiveauH',
+      'effectifCepeCecNiveauF',
       'effectifCepeCandidatFilleCec',
       'effectifCepeCandidatGarconCec',
       'effectifCepeAdmisFilleCec',
@@ -67,13 +71,12 @@ const INTEGRATION_CONFIG: Record<IntegrationKind, IntegrationConfig> = {
     apiPath: '/api/effectif-admis-integration-cp',
     createFields: EFFECTIF_ADMIS_INTEGRATION_CP_CREATE_FIELDS,
     listColumnKeys: [
-      'codeEffectifAdmisIntegrationCp',
+      'periodeActivite',
       'anneeScolaire',
       'centre',
       'niveauCp',
-      'effectifAdmisIntegrationCp911IvoirienH',
-      'effectifAdmisIntegrationCp911IvoirienF',
-      'effectifAdmisIntegrationCpNiveauCp',
+      'effectifAdmisIntegrationCpNiveauH',
+      'effectifAdmisIntegrationCpNiveauF',
     ],
   },
   formelCp: {
@@ -81,13 +84,12 @@ const INTEGRATION_CONFIG: Record<IntegrationKind, IntegrationConfig> = {
     apiPath: '/api/effectif-integration-formel-cp',
     createFields: EFFECTIF_INTEGRATION_FORMEL_CP_CREATE_FIELDS,
     listColumnKeys: [
-      'codeEffectifIntegrationFormelCp',
+      'periodeActivite',
       'anneeScolaire',
       'centre',
       'niveauCp',
-      'effectifIntegrationFormelCp911IvoirienH',
-      'effectifIntegrationFormelCp911IvoirienF',
-      'effectifIntegrationFormelCpNiveauCp',
+      'effectifIntegrationFormelCpNiveauH',
+      'effectifIntegrationFormelCpNiveauF',
     ],
   },
   promuSie: {
@@ -95,12 +97,11 @@ const INTEGRATION_CONFIG: Record<IntegrationKind, IntegrationConfig> = {
     apiPath: '/api/effectif-promu-sie',
     createFields: EFFECTIF_PROMU_SIE_CREATE_FIELDS,
     listColumnKeys: [
-      'codeEffectifPromuSie',
+      'periodeActivite',
       'anneeScolaire',
       'niveauSie',
-      'effectifPromuSie3IvoirienH',
-      'effectifPromuSie3IvoirienF',
-      'effectifPromuSieNiveauSie',
+      'effectifPromuSieNiveauH',
+      'effectifPromuSieNiveauF',
     ],
   },
   promuCec: {
@@ -108,13 +109,12 @@ const INTEGRATION_CONFIG: Record<IntegrationKind, IntegrationConfig> = {
     apiPath: '/api/effectif-promu-cec',
     createFields: EFFECTIF_PROMU_CEC_CREATE_FIELDS,
     listColumnKeys: [
-      'codeEffectifPromuCec',
+      'periodeActivite',
       'anneeScolaire',
       'centre',
       'niveauSie',
-      'effectifPromuCecMoins3F',
-      'effectifPromuCecMoins3H',
-      'effectifPromuCecNiveauCec',
+      'effectifPromuCecNiveauH',
+      'effectifPromuCecNiveauF',
     ],
   },
   reverseSie: {
@@ -122,12 +122,11 @@ const INTEGRATION_CONFIG: Record<IntegrationKind, IntegrationConfig> = {
     apiPath: '/api/effectif-reverse-formel-sie',
     createFields: EFFECTIF_REVERSE_FORMEL_SIE_CREATE_FIELDS,
     listColumnKeys: [
-      'codeEffectifReverseFormelSie',
+      'periodeActivite',
       'anneeScolaire',
       'niveauSie',
-      'effectifReverseFormelSie3IvoirienH',
-      'effectifReverseFormelSie3IvoirienF',
-      'effectifReverseFormelSieNiveauSie',
+      'effectifReverseFormelSieNiveauH',
+      'effectifReverseFormelSieNiveauF',
     ],
   },
 };
@@ -149,7 +148,7 @@ const INTEGRATION_CONFIG: Record<IntegrationKind, IntegrationConfig> = {
       inputContextDashboardModule="APPRENANT"
       [inputContextDashboardSubModule]="selectedKind"
       [inputContextDashboardAlwaysVisible]="true"
-      [addFormContextLabel]="'Type d’effectif'"
+      [addFormContextLabel]="showKindSelector ? 'Type d’effectif' : undefined"
       [addFormContextValue]="selectedKind"
       [addFormContextOptions]="kindOptions"
       (addFormContextValueChange)="onKindChanged($event)"
@@ -206,6 +205,10 @@ export class EffectifIntegrationUnifieComponent implements OnInit, OnDestroy {
 
   get activeConfig(): IntegrationConfig {
     return INTEGRATION_CONFIG[this.selectedKind];
+  }
+
+  get showKindSelector(): boolean {
+    return this.kindOptions.length > 1;
   }
 
   private normalizeKind(value: unknown): IntegrationKind | null {

@@ -1,6 +1,6 @@
 import type { AuthSession } from '@core/models/auth.models';
 
-export type WorkflowQueueTab = 'ACTION' | 'EN_COURS' | 'TERMINE';
+export type WorkflowQueueTab = 'ACTION' | 'EN_COURS' | 'TERMINE' | 'RENVOYE';
 
 export type WorkflowQueueTabLabels = Record<WorkflowQueueTab, string>;
 
@@ -24,18 +24,20 @@ export function workflowQueueTabLabels(session: AuthSession | null): WorkflowQue
       ACTION: 'À soumettre',
       EN_COURS: 'En attente de validation',
       TERMINE: 'Validé',
+      RENVOYE: 'Renvoyé pour modification',
     };
   }
   return {
-    ACTION: 'À valider',
+    ACTION: 'En attente',
     EN_COURS: 'À venir',
-    TERMINE: 'Déjà validé par moi',
+    TERMINE: 'Traité',
+    RENVOYE: 'Renvoyé pour modification',
   };
 }
 
 export function readWorkflowQueueTab(row: Record<string, unknown>): WorkflowQueueTab | null {
   const raw = row['workflowOnglet'];
-  if (raw === 'ACTION' || raw === 'EN_COURS' || raw === 'TERMINE') {
+  if (raw === 'ACTION' || raw === 'EN_COURS' || raw === 'TERMINE' || raw === 'RENVOYE') {
     return raw;
   }
   return classifyWorkflowTabFallback(row);
@@ -46,8 +48,9 @@ function classifyWorkflowTabFallback(row: Record<string, unknown>): WorkflowQueu
   const st = String(row['workflowStatut'] ?? 'BROUILLON');
   switch (st) {
     case 'BROUILLON':
-    case 'RETOURNE':
       return 'ACTION';
+    case 'RETOURNE':
+      return 'RENVOYE';
     case 'SOUMIS':
       return 'EN_COURS';
     default:
@@ -69,6 +72,7 @@ export function countByWorkflowTab(
     ACTION: 0,
     EN_COURS: 0,
     TERMINE: 0,
+    RENVOYE: 0,
   };
   for (const row of rows) {
     const tab = readWorkflowQueueTab(row);

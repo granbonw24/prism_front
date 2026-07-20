@@ -5,6 +5,8 @@ import { Component, EventEmitter, Input, Output } from '@angular/core';
 export interface MenaRecordDetailField {
   label: string;
   value: string;
+  /** Affiche une ligne de section (titre de groupe) au lieu d’une paire label/valeur. */
+  section?: boolean;
 }
 
 @Component({
@@ -21,10 +23,17 @@ export class MenaRecordDetailModalComponent {
   @Input() subtitle = '';
   @Input() loading = false;
   @Input() fields: MenaRecordDetailField[] = [];
+  /** Affiche le bouton Historique (workflow multi-validation). */
+  @Input() showHistory = false;
 
   @Output() closed = new EventEmitter<void>();
+  @Output() historyRequested = new EventEmitter<void>();
 
   onClose(): void {
     this.closed.emit();
+  }
+
+  onHistory(): void {
+    this.historyRequested.emit();
   }
 }

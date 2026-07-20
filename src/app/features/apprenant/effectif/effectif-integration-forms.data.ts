@@ -1,6 +1,7 @@
 import type { ReferentielFormField } from '@core/config/referentiel-form.types';
 
 import {
+  FK_PERIODE_ACTIVITE,
   FK_ANNEE_SCOLAIRE,
   FK_CENTRE_CEC,
   FK_CENTRE_CP,
@@ -8,8 +9,24 @@ import {
   FK_NIVEAU_SIE,
 } from './effectif-satellite-forms.data';
 
-function num(key: string, label: string): ReferentielFormField {
-  return { key, label, type: 'number' };
+function num(key: string, label: string, effectifRole?: 'total' | 'part'): ReferentielFormField {
+  return effectifRole ? { key, label, type: 'number', effectifRole } : { key, label, type: 'number' };
+}
+
+function numTotal(key: string, label = 'Effectif total'): ReferentielFormField {
+  return num(key, label, 'total');
+}
+
+function numTotalH(key: string): ReferentielFormField {
+  return numTotal(key, 'Effectif total (H)');
+}
+
+function numTotalF(key: string): ReferentielFormField {
+  return numTotal(key, 'Effectif total (F)');
+}
+
+function numLegacyTotal(key: string): ReferentielFormField {
+  return { key, label: 'Effectif total', type: 'number', hidden: true, effectifRole: 'legacyTotal' };
 }
 
 /** Deuxième FK CEC (`cecIdCentre` côté JPA) — même liste `/api/cec`, libellé distinct. */
@@ -26,8 +43,11 @@ const FK_CEC_ID_CENTRE: ReferentielFormField = {
 
 /** CEPE — candidats / admis, centre CP — `/api/effectif-cepe-cp` */
 export const EFFECTIF_CEPE_CP_CREATE_FIELDS: ReferentielFormField[] = [
+  FK_PERIODE_ACTIVITE,
   FK_ANNEE_SCOLAIRE,
   FK_CENTRE_CP,
+  numTotalH('effectifCepeCpNiveauH'),
+  numTotalF('effectifCepeCpNiveauF'),
   num('effectifCepeCandidatFCp', 'CEPE CP — candidates F'),
   num('effectifCepeCandidatHCp', 'CEPE CP — candidats H'),
   num('effectifCepeCandidatIvoirienCp', 'CEPE CP — candidats ivoiriens'),
@@ -42,9 +62,12 @@ export const EFFECTIF_CEPE_CP_CREATE_FIELDS: ReferentielFormField[] = [
 
 /** CEPE — deux centres CEC — `/api/effectif-cepe-cec` */
 export const EFFECTIF_CEPE_CEC_CREATE_FIELDS: ReferentielFormField[] = [
+  FK_PERIODE_ACTIVITE,
   FK_ANNEE_SCOLAIRE,
   { ...FK_CENTRE_CEC, label: 'Centre CEC (principal)' },
   FK_CEC_ID_CENTRE,
+  numTotalH('effectifCepeCecNiveauH'),
+  numTotalF('effectifCepeCecNiveauF'),
   num('effectifCepeCandidatFilleCec', 'CEPE CEC — candidates'),
   num('effectifCepeCandidatGarconCec', 'CEPE CEC — garçons candidats'),
   num('effectifCepeCandidatIvoirienCec', 'CEPE CEC — candidats ivoiriens'),
@@ -59,9 +82,13 @@ export const EFFECTIF_CEPE_CEC_CREATE_FIELDS: ReferentielFormField[] = [
 
 /** Admis intégration CP — `/api/effectif-admis-integration-cp` */
 export const EFFECTIF_ADMIS_INTEGRATION_CP_CREATE_FIELDS: ReferentielFormField[] = [
+  FK_PERIODE_ACTIVITE,
   FK_ANNEE_SCOLAIRE,
   FK_NIVEAU_CP,
   FK_CENTRE_CP,
+  numTotalH('effectifAdmisIntegrationCpNiveauH'),
+  numTotalF('effectifAdmisIntegrationCpNiveauF'),
+  numLegacyTotal('effectifAdmisIntegrationCpNiveauCp'),
   num('effectifAdmisIntegrationCp911IvoirienH', 'Admis intégration — 9-11 Ivoirien H'),
   num('effectifAdmisIntegrationCp911IvoirienF', 'Admis intégration — 9-11 Ivoirien F'),
   num('effectifAdmisIntegrationCp911HandicapH', 'Admis intégration — 9-11 Handicap H'),
@@ -80,14 +107,17 @@ export const EFFECTIF_ADMIS_INTEGRATION_CP_CREATE_FIELDS: ReferentielFormField[]
   num('effectifAdmisIntegrationCp14HandicapF', 'Admis intégration — 14 Handicap F'),
   num('effectifAdmisIntegrationCp14NonIvoirienF', 'Admis intégration — 14 Non Ivoirien F'),
   num('effectifAdmisIntegrationCp14NonIvoirienH', 'Admis intégration — 14 Non Ivoirien H'),
-  num('effectifAdmisIntegrationCpNiveauCp', 'Admis intégration — effectif niveau'),
 ];
 
 /** Intégration formelle CP — `/api/effectif-integration-formel-cp` */
 export const EFFECTIF_INTEGRATION_FORMEL_CP_CREATE_FIELDS: ReferentielFormField[] = [
+  FK_PERIODE_ACTIVITE,
   FK_ANNEE_SCOLAIRE,
   FK_NIVEAU_CP,
   FK_CENTRE_CP,
+  numTotalH('effectifIntegrationFormelCpNiveauH'),
+  numTotalF('effectifIntegrationFormelCpNiveauF'),
+  numLegacyTotal('effectifIntegrationFormelCpNiveauCp'),
   num('effectifIntegrationFormelCp911IvoirienH', 'Intégration formelle — 9-11 Ivoirien H'),
   num('effectifIntegrationFormelCp911IvoirienF', 'Intégration formelle — 9-11 Ivoirien F'),
   num('effectifIntegrationFormelCp911HandicapH', 'Intégration formelle — 9-11 Handicap H'),
@@ -106,11 +136,11 @@ export const EFFECTIF_INTEGRATION_FORMEL_CP_CREATE_FIELDS: ReferentielFormField[
   num('effectifIntegrationFormelCp14HandicapF', 'Intégration formelle — 14 Handicap F'),
   num('effectifIntegrationFormelCp14NonIvoirienF', 'Intégration formelle — 14 Non Ivoirien F'),
   num('effectifIntegrationFormelCp14NonIvoirienH', 'Intégration formelle — 14 Non Ivoirien H'),
-  num('effectifIntegrationFormelCpNiveauCp', 'Intégration formelle — effectif niveau'),
 ];
 
 /** Promu SIE — pas de centre — `/api/effectif-promu-sie` */
 export const EFFECTIF_PROMU_SIE_CREATE_FIELDS: ReferentielFormField[] = [
+  FK_PERIODE_ACTIVITE,
   FK_ANNEE_SCOLAIRE,
   FK_NIVEAU_SIE,
   num('effectifPromuSie3IvoirienH', 'Promu SIE — 3 Ivoirien H'),
@@ -141,12 +171,15 @@ export const EFFECTIF_PROMU_SIE_CREATE_FIELDS: ReferentielFormField[] = [
   num('effectifPromuSie1314EtPlusIvoirienH', 'Promu SIE — 13-14+ Ivoirien H'),
   num('effectifPromuSie1314EtPlusHandicapF', 'Promu SIE — 13-14+ Handicap F'),
   num('effectifPromuSie1314EtPlusHandicapH', 'Promu SIE — 13-14+ Handicap H'),
-  num('effectifPromuSieNiveauSie', 'Promu SIE — effectif niveau'),
+  numTotalH('effectifPromuSieNiveauH'),
+  numTotalF('effectifPromuSieNiveauF'),
+  numLegacyTotal('effectifPromuSieNiveauSie'),
 ];
 
 /** Promu CEC — `/api/effectif-promu-cec` */
 export const EFFECTIF_PROMU_CEC_CREATE_FIELDS: ReferentielFormField[] = [
   FK_NIVEAU_SIE,
+  FK_PERIODE_ACTIVITE,
   FK_ANNEE_SCOLAIRE,
   FK_CENTRE_CEC,
   num('effectifPromuCecMoins3F', 'Promu CEC — moins 3 F'),
@@ -179,12 +212,15 @@ export const EFFECTIF_PROMU_CEC_CREATE_FIELDS: ReferentielFormField[] = [
   num('effectifPromuCec1216IvoirienF', 'Promu CEC — 12-16 Ivoirien F'),
   num('effectifPromuCec1216HandicapH', 'Promu CEC — 12-16 Handicap H'),
   num('effectifPromuCec1216HandicapF', 'Promu CEC — 12-16 Handicap F'),
-  num('effectifPromuCecNiveauCec', 'Promu CEC — effectif niveau'),
+  numTotalH('effectifPromuCecNiveauH'),
+  numTotalF('effectifPromuCecNiveauF'),
+  numLegacyTotal('effectifPromuCecNiveauCec'),
 ];
 
 /** Reverse formel SIE — pas de centre — `/api/effectif-reverse-formel-sie` */
 export const EFFECTIF_REVERSE_FORMEL_SIE_CREATE_FIELDS: ReferentielFormField[] = [
   FK_NIVEAU_SIE,
+  FK_PERIODE_ACTIVITE,
   FK_ANNEE_SCOLAIRE,
   num('effectifReverseFormelSie3IvoirienH', 'Reverse formel SIE — 3 Ivoirien H'),
   num('effectifReverseFormelSie3IvoirienF', 'Reverse formel SIE — 3 Ivoirien F'),
@@ -214,5 +250,7 @@ export const EFFECTIF_REVERSE_FORMEL_SIE_CREATE_FIELDS: ReferentielFormField[] =
   num('effectifReverseFormelSie1314EtPlusIvoirienH', 'Reverse formel SIE — 13-14+ Ivoirien H'),
   num('effectifReverseFormelSie1314EtPlusHandicapF', 'Reverse formel SIE — 13-14+ Handicap F'),
   num('effectifReverseFormelSie1314EtPlusHandicapH', 'Reverse formel SIE — 13-14+ Handicap H'),
-  num('effectifReverseFormelSieNiveauSie', 'Reverse formel SIE — effectif niveau'),
+  numTotalH('effectifReverseFormelSieNiveauH'),
+  numTotalF('effectifReverseFormelSieNiveauF'),
+  numLegacyTotal('effectifReverseFormelSieNiveauSie'),
 ];

@@ -11,9 +11,9 @@ Document de pilotage : **objectifs**, **phases**, **liste des écrans**, et **jo
 
 | Champ | Valeur |
 |--------|--------|
-| **Dernière mise à jour** | 2026-04-07 |
-| **Phase active** | Phase 2–3 — référentiels CRUD + robustesse API ; module Apprenant (effectifs + intégrations) ; placeholders métier (Performance, Visites, etc.) |
-| **Prochaine action suggérée** | Prioriser soit **menus placeholder** (brancher API métier ou documenter le périmètre v1), soit **Phase 4** (`environment.prod.ts`, CI). Optionnel : menu filtré par **permissions** (Phase 1.4). |
+| **Dernière mise à jour** | 2026-07-13 |
+| **Phase active** | Intégration 100 % backlog client (Lots 1–5) — livré en partie ; finitions workflow/stats/import à poursuivre |
+| **Prochaine action suggérée** | Tests Java 21 + `ng build` ; compléter stats par acteur et déduction effectifs rubrique ; document éval. certificative N2 |
 
 ---
 
@@ -67,7 +67,7 @@ Le chantier est considéré **clos** lorsque :
 | 1.1 | Intercepteur HTTP : sur **401** → nettoyage token + session + redirection `/login` | Fait (`unauthorizedInterceptor`) |
 | 1.2 | `SessionStore` sans `HttpClient` (évite cycles DI avec intercepteurs) | Fait |
 | 1.3 | (Optionnel) Toasts / messages d’erreur API | Fait (`NotificationService` + bandeau shell ; intercepteur 0/403/5xx ; messages détaillés 4xx dans `ReferentielListPageComponent` via `formatHttpError`) |
-| 1.4 | (Optionnel) Menu selon `permissions` | À faire |
+| 1.4 | (Optionnel) Menu selon `permissions` | Fait (sidebar `canView*` + gardes routes) |
 | 1.5 | Nettoyage fichiers copies (`*copy*`) | Fait (fichiers évidents supprimés) |
 | 1.6 | Thème UI vert / orange (inspiration CI), typo Source Sans 3, cohérence sidebar / listes / login | Fait (`styles.css`, menu, login, listes) |
 
@@ -127,7 +127,7 @@ Pour **chaque** ligne : la colonne « Liste » est **faite** si l’API répond 
 |----------|--------|
 | Dashboard v1 statique (thème + mention explicite) | Fait |
 | Liens rapide référentiels (badges depuis `REFERENTIEL_ROUTE_DATA`) | Fait |
-| Dashboard données réelles | À faire (endpoints métier à définir) |
+| Dashboard données réelles | Fait (`/api/admin/dashboard`) |
 
 ### Lot D — Navigation & marque
 
@@ -143,7 +143,7 @@ Pour **chaque** ligne : la colonne « Liste » est **faite** si l’API répond 
 | Livrable | Statut |
 |----------|--------|
 | Vérifier que chaque entrée visible du menu ouvre une route valide (pas de page vide / TODO) | Fait |
-| Vérifier que chaque route appelle une API existante (GET au minimum) | En cours (Apprenant : effectifs + abandon/handicap/passage/compétences + **intégrations & CEPE** ; reste : sections placeholder) |
+| Vérifier que chaque route appelle une API existante (GET au minimum) | Fait (Apprenant complet ; activités centre branchées) |
 | Uniformiser les actions de liste (Détails / Modifier / Supprimer) sur tous les écrans admin | En cours |
 | Remplacer les IDs bruts par des libellés métier dans formulaires + tableaux | En cours (effectif dynamique engagé) |
 | Règle utilisateur: **un seul rôle** (UI + backend) | Fait |
@@ -181,6 +181,8 @@ Ajouter **en haut** du tableau (dernier en premier).
 
 | Date | Auteur / contexte | Changement |
 |------|-------------------|------------|
+| 2026-07-13 | Assistant | **Plan intégration 100 %** : Lot 1 UI (ancienneté hors scope, année scolaire CP figée, code document, libellés, obligatoires). Lot 2–3 modèle : CEC « moins de 6 ans », AppUser RH, promoteur mail/org. faîtière, dates centre + actif, période début/fin + hors délai, taux éval. auto, école tutrice param, fonctions typeCentre, import CSV apprenants, géoloc, onglet RENVOYE workflow, IEPP consultation. Effectifs restent sous menu Apprenant. |
+| 2026-06-26 | Assistant | **Flows Apprenant** : menu décommenté (compétences, promus, reverse SIE) + fonctionnalités RBAC dédiées (`APPRENANT_COMPETENCES`, `APPRENANT_PROMUS`, `APPRENANT_REVERSE_FORMEL_SIE`) ; backend `ApprenantRbacInitializer` (droits conseiller/coord./superviseur/IEPP/centrale). **Visites** : `GET /api/visites` filtré par circonscription serveur (`CentreCirconscriptionSpecifications.forDocument`). Roadmap Phase 1.4 / Lot E / dashboard réels marqués faits. |
 | 2026-04-07 | Assistant | **Listes centres** : paramètre API **`q`** (recherche globale OR + id si entier) pour Alpha, CEC, CP, SIE ; UI — champ « Recherche rapide » ; Postman — GET all documentés (`page`, `size`, `sort`, `q`). Roadmap : section **Conventions — listes paginées centres** ; backend : `prism/DOCS/ARCHITECTURE-LISTES-CENTRES.md`. |
 | 2026-04-05 | Assistant | **Suite roadmap après tests intégrations** : backend `prism` — utilitaire `JpaAssociationIds` appliqué à **tous** les `toRow` des contrôleurs effectif / compétence-centre (lecture d’id FK sans initialiser les proxies Hibernate). Front déjà livré : écran unifié **Apprenant → Effectif intégrations et CEPE** (`/apprenant/integrations`) + APIs CEPE / admis & formel CP / promu / reverse SIE. **Prochaine étape roadmap** : placeholders (Performance, Control, Visites, Évaluation) ou Phase 4 prod / CI. |
 | 2026-04-03 | Assistant | Alignement final avec la regle projet sur les services: recentralisation des services metier (`AdministrationService`, `AnneescolaireService`, `MinistereService`) dans `src/app/services`, recablage des imports des features, suppression des fichiers `features/*/data-access/*.service.ts` pour garantir une source unique des services. |

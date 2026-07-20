@@ -15,18 +15,33 @@
         <div *ngIf="!loading && fields.length" class="table-responsive">
           <table class="table table-sm table-bordered mb-0 mena-detail-table">
             <tbody>
-              <tr *ngFor="let f of fields">
-                <th scope="row" class="text-muted font-weight-normal" style="width: 38%; min-width: 10rem">
-                  {{ f.label }}
-                </th>
-                <td class="text-break">{{ f.value }}</td>
-              </tr>
+              <ng-container *ngFor="let f of fields">
+                <tr *ngIf="f.section" class="mena-detail-section">
+                  <td colspan="2" class="mena-detail-section__label">{{ f.label }}</td>
+                </tr>
+                <tr *ngIf="!f.section">
+                  <th scope="row" class="text-muted font-weight-normal" style="width: 38%; min-width: 10rem">
+                    {{ f.label }}
+                  </th>
+                  <td class="text-break">{{ f.value }}</td>
+                </tr>
+              </ng-container>
             </tbody>
           </table>
         </div>
         <p *ngIf="!loading && !fields.length" class="text-muted mb-0">Aucune donnée à afficher.</p>
       </div>
       <div class="modal-footer border-0 pt-0">
+        <button
+          *ngIf="showHistory"
+          type="button"
+          class="btn btn-outline-primary btn-sm mr-auto"
+          (click)="onHistory()"
+          [disabled]="loading"
+        >
+          <i class="fas fa-history mr-1" aria-hidden="true"></i>
+          Historique
+        </button>
         <button type="button" class="btn btn-outline-secondary btn-sm" (click)="onClose()" [disabled]="loading">
           Fermer
         </button>

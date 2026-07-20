@@ -1,4 +1,5 @@
 import { MenaLoadingComponent } from '@shared/mena-loading/mena-loading.component';
+import { MenaSaisieWorkflowHistoryModalComponent } from '@shared/mena-saisie-workflow-history-modal/mena-saisie-workflow-history-modal.component';
 import { CommonModule } from '@angular/common';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Component, Inject, OnInit } from '@angular/core';
@@ -27,7 +28,11 @@ const DETAIL_FIELDS: DetailField[] = [
   selector: 'app-activites-centre-visite-detail',
   standalone: true,
   imports: [
-    MenaLoadingComponent,CommonModule, RouterLink],
+    MenaLoadingComponent,
+    MenaSaisieWorkflowHistoryModalComponent,
+    CommonModule,
+    RouterLink,
+  ],
   templateUrl: './activites-centre-visite-detail.component.html',
   styleUrl: './activites-centre-visite-detail.component.css',
 })
@@ -35,6 +40,7 @@ export class ActivitesCentreVisiteDetailComponent implements OnInit {
   loading = false;
   errorMessage: string | null = null;
   row: VisiteRow | null = null;
+  historyOpen = false;
 
   constructor(
     private readonly route: ActivatedRoute,
@@ -59,6 +65,14 @@ export class ActivitesCentreVisiteDetailComponent implements OnInit {
         this.errorMessage = this.formatError(err);
       },
     });
+  }
+
+  openHistory(): void {
+    this.historyOpen = true;
+  }
+
+  closeHistory(): void {
+    this.historyOpen = false;
   }
 
   fields(section: DetailField['section']): DetailField[] {

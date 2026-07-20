@@ -26,6 +26,7 @@ export const referentielFeatureRoutes: Routes = REFERENTIEL_ROUTE_DATA.filter((r
           workflowFeature: r.workflowFeature ?? null,
           createFields: r.createFields ?? [],
           columnLabels: r.columnLabels ?? {},
+          listColumnKeys: r.listColumnKeys ?? null,
         },
       },
       menuPermission,

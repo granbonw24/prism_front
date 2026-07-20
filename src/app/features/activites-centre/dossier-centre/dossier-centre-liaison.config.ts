@@ -30,8 +30,6 @@ export type DossierCentreLiaisonConfig = {
   otherCatalogTokens?: string[];
   catalogRefKey: string;
   centreRefKey: 'Centre' | 'Alpha';
-  alphaOnly?: boolean;
-  extraFields?: DossierLiaisonExtraField[];
   selectionMode: DossierLiaisonSelectionMode;
   /** Champ libellé dans les réponses API catalogue (ex. libelleLangue). */
   catalogLabelField?: string;
@@ -39,6 +37,7 @@ export type DossierCentreLiaisonConfig = {
   allowsCustomLabelEntry?: boolean;
   customEntryLabel?: string;
   customEntryPlaceholder?: string;
+  extraFields?: DossierLiaisonExtraField[];
 };
 
 export const DOSSIER_CENTRE_LIAISON_CONFIGS: DossierCentreLiaisonConfig[] = [
@@ -52,7 +51,6 @@ export const DOSSIER_CENTRE_LIAISON_CONFIGS: DossierCentreLiaisonConfig[] = [
     catalogLabelKeys: ['libelleDifficulte', 'codeDifficulte'],
     catalogRefKey: 'Difficulte',
     centreRefKey: 'Centre',
-    alphaOnly: true,
     selectionMode: 'catalog-multi',
   },
   {
@@ -65,7 +63,6 @@ export const DOSSIER_CENTRE_LIAISON_CONFIGS: DossierCentreLiaisonConfig[] = [
     catalogLabelKeys: ['libelleImpact', 'codeImpact'],
     catalogRefKey: 'Impact',
     centreRefKey: 'Centre',
-    alphaOnly: true,
     selectionMode: 'catalog-multi',
   },
   {
@@ -78,7 +75,6 @@ export const DOSSIER_CENTRE_LIAISON_CONFIGS: DossierCentreLiaisonConfig[] = [
     catalogLabelKeys: ['libelleCompetence', 'codeCompetence'],
     catalogRefKey: 'Competence',
     centreRefKey: 'Centre',
-    alphaOnly: true,
     selectionMode: 'catalog-multi',
   },
   {
@@ -123,8 +119,8 @@ export const DOSSIER_CENTRE_LIAISON_CONFIGS: DossierCentreLiaisonConfig[] = [
   },
   {
     section: 'materiel',
-    title: 'Matériel alpha',
-    shortLabel: 'Matériel alpha',
+    title: 'Matériel pédagogique',
+    shortLabel: 'Matériel',
     apiPath: '/api/materielalpha',
     fkField: 'idMaterielPedagogique',
     catalogApiPath: '/api/materielpedagogiques',
@@ -133,10 +129,26 @@ export const DOSSIER_CENTRE_LIAISON_CONFIGS: DossierCentreLiaisonConfig[] = [
     catalogSelectLabel: 'Matériel pédagogique',
     otherCatalogTokens: ['autre'],
     centreRefKey: 'Centre',
-    alphaOnly: true,
     selectionMode: 'catalog-multi',
     extraFields: [
       { key: 'libelleAutreMateriel', label: 'Précision (autre)', type: 'text', maxLength: 100 },
+    ],
+  },
+  {
+    section: 'supports',
+    title: 'Supports didactiques',
+    shortLabel: 'Supports',
+    apiPath: '/api/support-didactique-alpha',
+    fkField: 'idSupportDidactique',
+    catalogApiPath: '/api/SupportDidactiques',
+    catalogLabelKeys: ['libelleSupportDidactique'],
+    catalogRefKey: 'SupportDidactique',
+    catalogSelectLabel: 'Support didactique',
+    otherCatalogTokens: ['autre'],
+    centreRefKey: 'Centre',
+    selectionMode: 'catalog-multi',
+    extraFields: [
+      { key: 'libelleAutreSupport', label: 'Précision (autre)', type: 'text', maxLength: 50 },
     ],
   },
   {
@@ -150,7 +162,6 @@ export const DOSSIER_CENTRE_LIAISON_CONFIGS: DossierCentreLiaisonConfig[] = [
     catalogLabelKeys: ['libelleLangue'],
     catalogRefKey: '',
     centreRefKey: 'Centre',
-    alphaOnly: true,
     selectionMode: 'label-catalog',
     catalogLabelField: 'libelleLangue',
     allowsCustomLabelEntry: true,
@@ -163,11 +174,6 @@ export function liaisonConfigForSection(section: string): DossierCentreLiaisonCo
   return DOSSIER_CENTRE_LIAISON_CONFIGS.find((c) => c.section === section);
 }
 
-export function visibleLiaisonSections(centreType: CentreType | null): DossierCentreLiaisonConfig[] {
-  return DOSSIER_CENTRE_LIAISON_CONFIGS.filter((c) => {
-    if (c.alphaOnly && centreType !== 'alpha') {
-      return false;
-    }
-    return true;
-  });
+export function visibleLiaisonSections(_centreType: CentreType | null): DossierCentreLiaisonConfig[] {
+  return DOSSIER_CENTRE_LIAISON_CONFIGS;
 }

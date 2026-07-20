@@ -395,6 +395,7 @@ export class PersonnelComponent implements OnInit {
       { label: 'Statut', value: this.labelFromRef(this.statuts, row.statutPersonnelId, (s) => this.statutLabel(s)) },
       { label: 'Niveau', value: this.labelFromRef(this.niveaux, row.niveauPersonnelId, (n) => this.niveauLabel(n)) },
       { label: 'Diplôme', value: this.labelFromRef(this.diplomes, row.diplomeId ?? null, (d) => this.diplomeLabel(d)) },
+      { label: 'Autre diplôme', value: row.libelleAutreDiplome?.trim() || '—' },
       { label: 'Contact', value: row.contactPersonnel?.trim() || '—' },
       { label: 'Email', value: row.emailPersonnel?.trim() || '—' },
       { label: 'Sexe', value: row.sexePersonnel?.trim() || '—' },

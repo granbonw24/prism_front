@@ -21,6 +21,26 @@
   --mena-muted: #6b6560;
   --mena-card-border: rgba(214, 111, 30, 0.14);
   --mena-radius: 10px;
+  --mena-sidebar-width: 19rem;
+  --mena-sidebar-collapsed-width: 6.5rem;
+
+  /*
+   * Typographie plateforme — Source Sans 3 (UI institutionnelle, lisible FR).
+   * Une seule stack ; remplace Nunito de SB Admin via les variables Bootstrap.
+   */
+  --mena-font-sans: "Source Sans 3", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --mena-font-mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, "Liberation Mono", monospace;
+  --mena-font-size: 15px;
+  --mena-line-height: 1.5;
+  --mena-letter-spacing: 0.01em;
+
+  --font-family-sans-serif: var(--mena-font-sans);
+  --font-family-monospace: var(--mena-font-mono);
+  --bs-font-sans-serif: var(--mena-font-sans);
+  --bs-body-font-family: var(--mena-font-sans);
+  --bs-body-font-size: var(--mena-font-size);
+  --bs-body-line-height: var(--mena-line-height);
+  --bs-body-color: var(--mena-ink);
 }
 
 .mena-required-mark {
@@ -28,11 +48,27 @@
   font-weight: 700;
 }
 
+html {
+  font-size: var(--mena-font-size);
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
 html,
+body,
+#page-top,
+#wrapper,
+#content-wrapper,
+#content,
+.container-fluid {
+  font-family: var(--mena-font-sans);
+}
+
 body {
-  font-family: "Source Sans 3", "Segoe UI", system-ui, sans-serif;
-  font-size: 15px;
-  line-height: 1.5;
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: var(--mena-line-height);
+  letter-spacing: var(--mena-letter-spacing);
   color: var(--mena-ink);
   /* Blanc cassé très légèrement orangé */
   background-color: var(--mena-surface);
@@ -44,6 +80,45 @@ body {
   );
   background-attachment: fixed;
   min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Alignement SB Admin / Bootstrap : héritage de la stack plateforme */
+.btn,
+.form-control,
+.custom-select,
+.dropdown-menu,
+.modal,
+.card,
+.table,
+.nav,
+.navbar,
+.sidebar,
+.topbar,
+.breadcrumb,
+.page-link,
+.badge,
+.alert,
+.list-group,
+.tooltip,
+.popover,
+input,
+select,
+textarea,
+button,
+label,
+h1, h2, h3, h4, h5, h6,
+.h1, .h2, .h3, .h4, .h5, .h6 {
+  font-family: inherit;
+}
+
+code,
+kbd,
+pre,
+.samp,
+.text-monospace {
+  font-family: var(--mena-font-mono);
 }
 
 /* Sidebar : orange chaleureux, touche de vert léger en bas */
@@ -61,10 +136,12 @@ body {
     ) !important;
   background-color: var(--mena-orange-800) !important;
   height: 100vh;
-  max-height: 100vh;
+  height: 100dvh;
+  max-height: 100dvh;
   overflow-x: hidden;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
+  flex-shrink: 0;
 }
 
 .sidebar.mena-sidebar .sidebar-brand {
@@ -99,6 +176,14 @@ body {
   border-radius: 8px;
   margin: 2px 0.5rem;
   transition: background 0.15s ease, color 0.15s ease;
+  box-sizing: border-box;
+}
+
+.sidebar.mena-sidebar .nav-item .nav-link span {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  line-height: 1.3;
 }
 
 .sidebar.mena-sidebar .nav-item .nav-link:hover {
@@ -115,9 +200,15 @@ body {
   padding-left: calc(1rem - 3px);
 }
 
-/* Sous-menu (collapse-item) actif : doit être très visible */
+/* Sous-menu (collapse-item) : libellés longs + état actif visible */
+.sidebar.mena-sidebar .collapse-inner .collapse-item {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  line-height: 1.3;
+}
+
 .sidebar.mena-sidebar .collapse-inner .collapse-item.active {
-  /* Le sous-menu est sur fond blanc (collapse-inner), donc actif = fond orangé + texte foncé lisible */
   background: var(--mena-orange-100);
   color: var(--mena-orange-950) !important;
   font-weight: 700;
@@ -187,20 +278,35 @@ body {
   border-radius: var(--mena-radius);
 }
 
-/* Layout shell : sidebar SB Admin + zone contenu sans débordement horizontal */
+/* Layout shell : menu fixe, scroll uniquement sur le corps de page */
+html:has(#wrapper.mena-layout-wrapper),
+body:has(#wrapper.mena-layout-wrapper) {
+  height: 100%;
+  overflow: hidden;
+}
+
 .mena-layout-wrapper {
-  min-height: 100vh;
-  overflow-x: hidden;
+  height: 100vh;
+  height: 100dvh;
+  max-height: 100dvh;
+  overflow: hidden;
   align-items: stretch;
 }
 
 .mena-content-wrapper {
-  min-height: 100vh;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  max-height: 100dvh;
   overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .mena-main-inner {
   min-height: 0;
+  min-width: 0;
 }
 
 /* Petits écrans : tableaux et modales utilisables au doigt */
@@ -894,12 +1000,35 @@ body {
   }
 }
 
-/* Menu latéral : libellés longs (Paramétrage, Activités centre, etc.) */
+/* Menu latéral : largeur confortable + libellés longs sans débordement */
 @media (min-width: 768px) {
   .sidebar.mena-sidebar {
-    width: 17rem !important;
+    position: sticky;
+    top: 0;
+    align-self: flex-start;
+    flex: 0 0 var(--mena-sidebar-width);
+    width: var(--mena-sidebar-width) !important;
+    min-width: var(--mena-sidebar-width);
+    max-width: var(--mena-sidebar-width);
   }
+
   body:not(.sidebar-toggled) .sidebar.mena-sidebar {
-    width: 17rem !important;
+    width: var(--mena-sidebar-width) !important;
+  }
+
+  body:not(.sidebar-toggled) .sidebar.mena-sidebar .nav-item .nav-link {
+    width: 100% !important;
+    max-width: 100%;
+    text-align: left;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.35rem;
+  }
+
+  body.sidebar-toggled .sidebar.mena-sidebar {
+    flex-basis: var(--mena-sidebar-collapsed-width);
+    width: var(--mena-sidebar-collapsed-width) !important;
+    min-width: var(--mena-sidebar-collapsed-width);
+    max-width: var(--mena-sidebar-collapsed-width);
   }
 }

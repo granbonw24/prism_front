@@ -11,12 +11,12 @@ export const FK_PERIODE_ACTIVITE: ReferentielFormField = {
   payloadAsObjectId: true,
 };
 
-export const FK_CENTRE_ALPHA: ReferentielFormField = {
+export const FK_CENTRE_SIE: ReferentielFormField = {
   key: 'idCentre',
-  label: "Centre d'Alphabétisation",
+  label: 'Centre SIE',
   type: 'select',
   required: true,
-  optionsApiPath: '/api/alpha',
+  optionsApiPath: '/api/sie',
   optionValueKey: 'idCentre',
   optionLabelKeys: ['codeType', 'libelle', 'codeCentre'],
   payloadAsObjectId: true,
@@ -31,6 +31,23 @@ export const FK_ANNEE_SCOLAIRE: ReferentielFormField = {
   optionValueKey: 'id',
   optionLabelKeys: ['debutAnneeScolaire', 'finAnneeScolaire'],
   payloadAsObjectId: true,
+  /** Figée : année en cours injectée, affichée en lecture seule. */
+  readOnly: true,
+  autoSelectFlagKey: 'etatAnneeScolaire',
+};
+
+/** Campagne figée (lecture seule) — pour les écrans qui s’y rattachent. */
+export const FK_CAMPAGNE: ReferentielFormField = {
+  key: 'idCampagne',
+  label: 'Campagne',
+  type: 'select',
+  required: true,
+  optionsApiPath: '/api/campagnes',
+  optionValueKey: 'id',
+  optionLabelKeys: ['code', 'libelle'],
+  payloadAsObjectId: true,
+  readOnly: true,
+  autoSelectFlagKey: 'etatCampagne',
 };
 
 export const FK_NIVEAU_CP: ReferentielFormField = {
@@ -77,16 +94,44 @@ export const FK_CENTRE_CEC: ReferentielFormField = {
   payloadAsObjectId: true,
 };
 
-function num(key: string, label: string): ReferentielFormField {
-  return { key, label, type: 'number' };
+export const FK_CENTRE_ALPHA: ReferentielFormField = {
+  key: 'idCentre',
+  label: 'Centre Alpha',
+  type: 'select',
+  required: true,
+  optionsApiPath: '/api/alpha',
+  optionValueKey: 'idCentre',
+  optionLabelKeys: ['codeType', 'libelle', 'codeCentre'],
+  payloadAsObjectId: true,
+};
+
+function num(key: string, label: string, effectifRole?: 'total' | 'part'): ReferentielFormField {
+  return effectifRole ? { key, label, type: 'number', effectifRole } : { key, label, type: 'number' };
+}
+
+function numTotal(key: string, label = 'Effectif total'): ReferentielFormField {
+  return num(key, label, 'total');
+}
+
+function numTotalH(key: string): ReferentielFormField {
+  return numTotal(key, 'Effectif total (H)');
+}
+
+function numTotalF(key: string): ReferentielFormField {
+  return numTotal(key, 'Effectif total (F)');
+}
+
+/** Ancien total unique (H+F) — synchronisé au submit, non affiché. */
+function numLegacyTotal(key: string): ReferentielFormField {
+  return { key, label: 'Effectif total', type: 'number', hidden: true, effectifRole: 'legacyTotal' };
 }
 
 /** Effectif abandon Alpha — POST attend des relations `{ id }` (entité JPA). */
 export const EFFECTIF_ABANDON_ALPHA_CREATE_FIELDS: ReferentielFormField[] = [
   FK_PERIODE_ACTIVITE,
   FK_CENTRE_ALPHA,
-  num('effectifAbandonAlphaNiveauHomme', 'Abandon — niveau (H)'),
-  num('effectifAbandonAlphaNiveauFemme', 'Abandon — niveau (F)'),
+  numTotalH('effectifAbandonAlphaNiveauHomme'),
+  numTotalF('effectifAbandonAlphaNiveauFemme'),
   num('effectifAbandonAlphaMoins15F', 'Abandon — moins 15 F'),
   num('effectifAbandonAlphaMoins15H', 'Abandon — moins 15 H'),
   num('effectifAbandonAlphaMoins15IvoirienH', 'Abandon — moins 15 Ivoirien H'),
@@ -121,8 +166,8 @@ export const EFFECTIF_ABANDON_ALPHA_CREATE_FIELDS: ReferentielFormField[] = [
 export const EFFECTIF_PASSAGE_ALPHA_CREATE_FIELDS: ReferentielFormField[] = [
   FK_PERIODE_ACTIVITE,
   FK_CENTRE_ALPHA,
-  num('effectifPassageAlphaNiveauHomme', 'Passage — niveau (H)'),
-  num('effectifPassageAlphaNiveauFemme', 'Passage — niveau (F)'),
+  numTotalH('effectifPassageAlphaNiveauHomme'),
+  numTotalF('effectifPassageAlphaNiveauFemme'),
   num('effectifPassageAlphaMoins15F', 'Passage — moins 15 F'),
   num('effectifPassageAlphaMoins15H', 'Passage — moins 15 H'),
   num('effectifPassageAlphaMoins15IvoirienH', 'Passage — moins 15 Ivoirien H'),
@@ -153,8 +198,8 @@ export const EFFECTIF_PASSAGE_ALPHA_CREATE_FIELDS: ReferentielFormField[] = [
 export const EFFECTIF_HANDICAP_ALPHA_CREATE_FIELDS: ReferentielFormField[] = [
   FK_PERIODE_ACTIVITE,
   FK_CENTRE_ALPHA,
-  num('effectifSituationHandicapAlphaNiveauHomme', 'Handicap — niveau (H)'),
-  num('effectifSituationHandicapalphaNiveauFemme', 'Handicap — niveau (F)'),
+  numTotalH('effectifSituationHandicapAlphaNiveauHomme'),
+  numTotalF('effectifSituationHandicapalphaNiveauFemme'),
   num('effectifSituationHandicapAlphaMoins15F', 'Handicap — moins 15 F'),
   num('effectifSituationHandicapAlphaMoins15H', 'Handicap — moins 15 H'),
   num('effectifSituationHandicapAlphaMoins15IvoirienH', 'Handicap — moins 15 Ivoirien H'),
@@ -192,15 +237,27 @@ export const COMPETENCE_CENTRE_CREATE_FIELDS: ReferentielFormField[] = [
     optionLabelKeys: ['codeCompetence', 'libelleCompetence'],
     payloadAsObjectId: true,
   },
-  { ...FK_CENTRE_ALPHA, label: 'Centre Alpha (compétence)' },
+  {
+    key: 'idCentre',
+    label: 'Centre',
+    type: 'select',
+    required: true,
+    optionsApiPath: '/api/centres',
+    optionValueKey: 'id',
+    optionLabelKeys: ['codeCentre'],
+    payloadAsObjectId: true,
+  },
 ];
 
 /** Abandon CP — `/api/effectif-abandon-cp` */
 export const EFFECTIF_ABANDON_CP_CREATE_FIELDS: ReferentielFormField[] = [
+  FK_PERIODE_ACTIVITE,
   FK_ANNEE_SCOLAIRE,
   FK_NIVEAU_CP,
   FK_CENTRE_CP,
-  num('effectifAbandonCpNiveauCp', 'Effectif total'),
+  numTotalH('effectifAbandonCpNiveauH'),
+  numTotalF('effectifAbandonCpNiveauF'),
+  numLegacyTotal('effectifAbandonCpNiveauCp'),
   num('effectifAbandonCp911IvoirienH', 'Abandon CP — 9-11 Ivoirien Garçon'),
   num('effectifAbandonCp911IvoirienF', 'Abandon CP — 9-11 Ivoirienne Fille'),
   num('effectifAbandonCp911HandicapH', 'Abandon CP — 9-11 Handicap Garçon'),
@@ -223,9 +280,13 @@ export const EFFECTIF_ABANDON_CP_CREATE_FIELDS: ReferentielFormField[] = [
 
 /** Abandon CEC — `/api/effectif-abandon-cec` */
 export const EFFECTIF_ABANDON_CEC_CREATE_FIELDS: ReferentielFormField[] = [
+  FK_PERIODE_ACTIVITE,
   FK_ANNEE_SCOLAIRE,
   FK_NIVEAU_SIE,
   FK_CENTRE_CEC,
+  numTotalH('effectifAbandonCecNiveauH'),
+  numTotalF('effectifAbandonCecNiveauF'),
+  numLegacyTotal('effectifAbandonCecNiveauCec'),
   num('effectifAbandonCecMoins3F', 'Abandon CEC — moins 3 F'),
   num('effectifAbandonCecMoins3H', 'Abandon CEC — moins 3 H'),
   num('effectifAbandonCecMoins3IvoirienH', 'Abandon CEC — moins 3 Ivoirien H'),
@@ -256,7 +317,6 @@ export const EFFECTIF_ABANDON_CEC_CREATE_FIELDS: ReferentielFormField[] = [
   num('effectifAbandonCec1216IvoirienF', 'Abandon CEC — 12-16 Ivoirien F'),
   num('effectifAbandonCec1216HandicapH', 'Abandon CEC — 12-16 Handicap H'),
   num('effectifAbandonCec1216HandicapF', 'Abandon CEC — 12-16 Handicap F'),
-  num('effectifAbandonCecNiveauCec', 'Abandon CEC — effectif niveau'),
   { key: 'causeAbandonCec', label: 'Cause abandon', type: 'text', maxLength: 4000 },
 ];
 
@@ -265,8 +325,13 @@ export const EFFECTIF_ABANDON_CEC_CREATE_FIELDS: ReferentielFormField[] = [
  * Pas de centre en base : année + niveau SIE uniquement.
  */
 export const EFFECTIF_ABONDAN_SIE_CREATE_FIELDS: ReferentielFormField[] = [
+  FK_PERIODE_ACTIVITE,
   FK_ANNEE_SCOLAIRE,
+  FK_CENTRE_SIE,
   FK_NIVEAU_SIE,
+  numTotalH('effectifAbandonSieNiveauH'),
+  numTotalF('effectifAbandonSieNiveauF'),
+  numLegacyTotal('effectifAbandonSieNiveauSie'),
   num('effectifAbandonSie3IvoirienH', 'Abandon SIE — 3 Ivoirien H'),
   num('effectifAbandonSie3IvoirienF', 'Abandon SIE — 3 Ivoirien F'),
   num('effectifAbandonSie3HandicapH', 'Abandon SIE — 3 Handicap H'),
@@ -297,12 +362,12 @@ export const EFFECTIF_ABONDAN_SIE_CREATE_FIELDS: ReferentielFormField[] = [
   num('effectifAbandonSie1314EtPlusHandicapH', 'Abandon SIE — 13-14+ Handicap H'),
   num('effectifAbandonSie1314EtPlusNonIvoirienF', 'Abandon SIE — 13-14+ Non Ivoirien F'),
   num('effectifAbandonSie1314EtPlusNonIvoirienH', 'Abandon SIE — 13-14+ Non Ivoirien H'),
-  num('effectifAbandonSieNiveauSie', 'Abandon SIE — effectif niveau'),
   { key: 'causeAbandonSie', label: 'Cause abandon', type: 'text', maxLength: 4000 },
 ];
 
 /** Handicap CP — `/api/effectif-situation-handicap-cp` */
 export const EFFECTIF_HANDICAP_CP_CREATE_FIELDS: ReferentielFormField[] = [
+  FK_PERIODE_ACTIVITE,
   FK_ANNEE_SCOLAIRE,
   FK_NIVEAU_CP,
   FK_CENTRE_CP,
@@ -324,11 +389,14 @@ export const EFFECTIF_HANDICAP_CP_CREATE_FIELDS: ReferentielFormField[] = [
   num('effectifSituationHandicapCp14HandicapF', 'Handicap CP — 14 Handicap F'),
   num('effectifSituationHandicapCp14NonIvoirienF', 'Handicap CP — 14 Non Ivoirien F'),
   num('effectifSituationHandicapCp14NonIvoirienH', 'Handicap CP — 14 Non Ivoirien H'),
-  num('effectifSituationHandicapCpNiveauCp', 'Handicap CP — effectif niveau'),
+  numTotalH('effectifSituationHandicapCpNiveauH'),
+  numTotalF('effectifSituationHandicapCpNiveauF'),
+  numLegacyTotal('effectifSituationHandicapCpNiveauCp'),
 ];
 
 /** Handicap CEC — `/api/effectif-situation-handicap-cec` (pas de centre en base). */
 export const EFFECTIF_HANDICAP_CEC_CREATE_FIELDS: ReferentielFormField[] = [
+  FK_PERIODE_ACTIVITE,
   FK_ANNEE_SCOLAIRE,
   FK_NIVEAU_SIE,
   num('effectifSituationHandicapCecMoins3F', 'Handicap CEC — moins 3 F'),
@@ -349,12 +417,16 @@ export const EFFECTIF_HANDICAP_CEC_CREATE_FIELDS: ReferentielFormField[] = [
   num('effectifSituationHandicapCec1216H', 'Handicap CEC — 12-16 H'),
   num('effectifSituationHandicapCec1216IvoirienH', 'Handicap CEC — 12-16 Ivoirien H'),
   num('effectifSituationHandicapCec1216IvoirienF', 'Handicap CEC — 12-16 Ivoirien F'),
-  num('effectifSituationHandicapCecNiveauCec', 'Handicap CEC — effectif niveau'),
+  numTotalH('effectifSituationHandicapCecNiveauH'),
+  numTotalF('effectifSituationHandicapCecNiveauF'),
+  numLegacyTotal('effectifSituationHandicapCecNiveauCec'),
 ];
 
 /** Handicap SIE — `/api/effectif-situation-handicap-sie` (clé Jackson avec typo historique sur 10-12 H). */
 export const EFFECTIF_HANDICAP_SIE_CREATE_FIELDS: ReferentielFormField[] = [
+  FK_PERIODE_ACTIVITE,
   FK_ANNEE_SCOLAIRE,
+  FK_CENTRE_SIE,
   FK_NIVEAU_SIE,
   num('effectifSituationHandicapSie3IvoirienH', 'Handicap SIE — 3 Ivoirien H'),
   num('effectifSituationHandicapSie3IvoirienF', 'Handicap SIE — 3 Ivoirien F'),
@@ -372,5 +444,7 @@ export const EFFECTIF_HANDICAP_SIE_CREATE_FIELDS: ReferentielFormField[] = [
   num('effectifSituationHandicapSie1012NonIvoirienF', 'Handicap SIE — 10-12 Non Ivoirien F'),
   num('effectifSituationHandicapSie1314EtPlusIvoirienF', 'Handicap SIE — 13-14+ Ivoirien F'),
   num('effectifSituationHandicapSie1314EtPlusIvoirienH', 'Handicap SIE — 13-14+ Ivoirien H'),
-  num('effectifSituationHandicapSieNiveauSie', 'Handicap SIE — effectif niveau'),
+  numTotalH('effectifSituationHandicapSieNiveauH'),
+  numTotalF('effectifSituationHandicapSieNiveauF'),
+  numLegacyTotal('effectifSituationHandicapSieNiveauSie'),
 ];

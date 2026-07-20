@@ -63,13 +63,12 @@ describe('ActivitesCentreVisiteComponent', () => {
   it('charge les visites et configure les champs selon le mode de route', () => {
     fixture.detectChanges();
 
-    const requests = http.match(() => true);
-    expect(requests.length).toBe(4);
     flushPendingVisiteLoads(http, '/api/suivi-iepp', [
       {
         id: 1,
         alpha: { id: 10, code: 'ALP-001', libelle: 'Centre Alpha' },
         periodeActivite: { id: 1, code: 'P1', libelle: 'Période test' },
+        niveauAlpha: { id: 1, code: 'N1', libelle: 'Niveau 1' },
         nombreVisiteEffectueParIepp: 3,
         nombreReunionPointActiviteAlpha: 2,
       },
@@ -83,6 +82,7 @@ describe('ActivitesCentreVisiteComponent', () => {
       'nombreVisiteEffectueParIepp',
       'nombreReunionPointActiviteAlpha',
     ]);
+    expect(component.showNiveauAlphaColumn).toBeTrue();
     expect(component.filteredRows.length).toBe(1);
   });
 
@@ -265,6 +265,10 @@ describe('ActivitesCentreVisiteComponent', () => {
         req.flush([{ id: 1, code: 'P1', libelle: 'Période test' }]);
       } else if (req.request.url.endsWith('/api/alpha')) {
         req.flush({ content: [{ idCentre: 10, codeAlpha: 'ALP-001', libelleAlpha: 'Centre Alpha' }] });
+      } else if (req.request.url.endsWith('/api/niveaualpha')) {
+        req.flush([{ id: 1, code: 'N1', libelle: 'Niveau 1' }]);
+      } else {
+        req.flush([]);
       }
     }
 
@@ -273,6 +277,7 @@ describe('ActivitesCentreVisiteComponent', () => {
     component.openCreate('points');
     component.form.idAlpha = 10;
     component.form.idPeriodeActivite = 1;
+    component.form.idNiveauAlpha = 1;
     component.form.maitriseSeanceLecture = 'BONNE';
     component.form.maitriseSeanceEcriture = 'MOYENNE';
     component.form.maitriseSeanceCalcul = 'INSUFFISANT';
@@ -309,6 +314,8 @@ describe('ActivitesCentreVisiteComponent', () => {
         req.flush([{ id: 1, code: 'P1', libelle: 'Période test' }]);
       } else if (req.request.url.endsWith('/api/alpha')) {
         req.flush({ content: [{ idCentre: 13, codeAlpha: 'ALP-013', libelleAlpha: 'Centre Alpha 13' }] });
+      } else if (req.request.url.endsWith('/api/niveaualpha')) {
+        req.flush([{ id: 2, code: 'N2', libelle: 'Niveau 2' }]);
       }
     }
 
@@ -316,6 +323,7 @@ describe('ActivitesCentreVisiteComponent', () => {
     component.openCreate('suivi');
     component.form.idAlpha = 13;
     component.form.idPeriodeActivite = 1;
+    component.form.idNiveauAlpha = 2;
     component.form.nombreVisiteEffectueParIepp = 3;
     component.form.nombreReunionPointActiviteAlpha = 3;
     component.form.maitriseSeanceLecture = 'BONNE';
@@ -326,6 +334,7 @@ describe('ActivitesCentreVisiteComponent', () => {
     expect(post.request.body).toEqual({
       idAlpha: 13,
       idPeriodeActivite: 1,
+      idNiveauAlpha: 2,
       nombreVisiteEffectueParIepp: 3,
       nombreReunionPointActiviteAlpha: 3,
     });

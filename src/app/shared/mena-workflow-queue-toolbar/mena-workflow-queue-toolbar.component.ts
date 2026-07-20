@@ -31,7 +31,7 @@ export class MenaWorkflowQueueToolbarComponent {
   @Output() filterCentreIdChange = new EventEmitter<number | ''>();
   @Output() filterConseillerChange = new EventEmitter<string>();
 
-  readonly tabs: WorkflowQueueTab[] = ['ACTION', 'EN_COURS', 'TERMINE'];
+  readonly tabs: WorkflowQueueTab[] = ['ACTION', 'EN_COURS', 'RENVOYE', 'TERMINE'];
 
   get labels() {
     return workflowQueueTabLabels(this.session);

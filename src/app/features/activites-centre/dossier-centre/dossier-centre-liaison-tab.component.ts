@@ -216,7 +216,11 @@ export class DossierCentreLiaisonTabComponent implements OnChanges {
   }
 
   showExtraForLine(line: AffectionLine, field: DossierLiaisonExtraField): boolean {
-    if (field.key === 'libelleAutreMateriel' || field.key === 'libelleAutreInfrastructure') {
+    if (
+      field.key === 'libelleAutreMateriel' ||
+      field.key === 'libelleAutreInfrastructure' ||
+      field.key === 'libelleAutreSupport'
+    ) {
       return this.isOtherLine(line);
     }
     return true;
@@ -585,7 +589,11 @@ export class DossierCentreLiaisonTabComponent implements OnChanges {
 
   private lineHasExtraValues(line: AffectionLine): boolean {
     for (const field of this.config.extraFields ?? []) {
-      if (field.key === 'libelleAutreMateriel' || field.key === 'libelleAutreInfrastructure') {
+      if (
+        field.key === 'libelleAutreMateriel' ||
+        field.key === 'libelleAutreInfrastructure' ||
+        field.key === 'libelleAutreSupport'
+      ) {
         if (!this.isOtherLine(line)) {
           continue;
         }
@@ -611,7 +619,9 @@ export class DossierCentreLiaisonTabComponent implements OnChanges {
     }
     for (const field of this.config.extraFields ?? []) {
       if (
-        (field.key === 'libelleAutreMateriel' || field.key === 'libelleAutreInfrastructure') &&
+        (field.key === 'libelleAutreMateriel' ||
+          field.key === 'libelleAutreInfrastructure' ||
+          field.key === 'libelleAutreSupport') &&
         !this.isOtherLine(line)
       ) {
         continue;

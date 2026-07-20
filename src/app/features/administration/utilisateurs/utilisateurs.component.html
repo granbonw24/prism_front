@@ -253,6 +253,35 @@
         </div>
 
         <div class="form-row">
+          <div class="form-group col-md-4">
+            <label class="small text-muted">Nom</label>
+            <input class="form-control" [(ngModel)]="createForm.nom" [disabled]="saving" />
+          </div>
+          <div class="form-group col-md-4">
+            <label class="small text-muted">Prénoms</label>
+            <input class="form-control" [(ngModel)]="createForm.prenoms" [disabled]="saving" />
+          </div>
+          <div class="form-group col-md-4">
+            <label class="small text-muted">Date naissance</label>
+            <input type="date" class="form-control" [(ngModel)]="createForm.dateNaissance" [disabled]="saving" />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group col-md-4">
+            <label class="small text-muted">Lieu naissance</label>
+            <input class="form-control" [(ngModel)]="createForm.lieuNaissance" [disabled]="saving" />
+          </div>
+          <div class="form-group col-md-4">
+            <label class="small text-muted">Date prise de service</label>
+            <input type="date" class="form-control" [(ngModel)]="createForm.datePriseService" [disabled]="saving" />
+          </div>
+          <div class="form-group col-md-4">
+            <label class="small text-muted">Date départ retraite</label>
+            <input type="date" class="form-control" [(ngModel)]="createForm.dateDepartRetraite" [disabled]="saving" />
+          </div>
+        </div>
+
+        <div class="form-row">
           <div class="form-group col-md-6">
             <label class="small text-muted">Mot de passe</label>
             <app-mena-password-field
@@ -358,24 +387,12 @@
               <td>{{ scopeLabel(d.departement) }}</td>
             </tr>
             <tr>
-              <th>DRENA</th>
+              <th>DRENAET</th>
               <td>{{ scopeLabel(d.drena) }}</td>
             </tr>
             <tr>
               <th>IEPP</th>
               <td>{{ scopeLabel(d.iep) }}</td>
-            </tr>
-            <tr>
-              <th>Sous-préfecture</th>
-              <td>{{ scopeLabel(d.sousPrefecture) }}</td>
-            </tr>
-            <tr>
-              <th>Commune</th>
-              <td>{{ scopeLabel(d.commune) }}</td>
-            </tr>
-            <tr>
-              <th>Localité</th>
-              <td>{{ scopeLabel(d.localite) }}</td>
             </tr>
           </tbody>
         </table>
@@ -414,6 +431,35 @@
               <option [ngValue]="true">Oui</option>
               <option [ngValue]="false">Non</option>
             </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group col-md-4">
+            <label class="small text-muted">Nom</label>
+            <input class="form-control" [(ngModel)]="editForm.nom" [disabled]="saving" />
+          </div>
+          <div class="form-group col-md-4">
+            <label class="small text-muted">Prénoms</label>
+            <input class="form-control" [(ngModel)]="editForm.prenoms" [disabled]="saving" />
+          </div>
+          <div class="form-group col-md-4">
+            <label class="small text-muted">Date naissance</label>
+            <input type="date" class="form-control" [(ngModel)]="editForm.dateNaissance" [disabled]="saving" />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group col-md-4">
+            <label class="small text-muted">Lieu naissance</label>
+            <input class="form-control" [(ngModel)]="editForm.lieuNaissance" [disabled]="saving" />
+          </div>
+          <div class="form-group col-md-4">
+            <label class="small text-muted">Date prise de service</label>
+            <input type="date" class="form-control" [(ngModel)]="editForm.datePriseService" [disabled]="saving" />
+          </div>
+          <div class="form-group col-md-4">
+            <label class="small text-muted">Date départ retraite</label>
+            <input type="date" class="form-control" [(ngModel)]="editForm.dateDepartRetraite" [disabled]="saving" />
           </div>
         </div>
 

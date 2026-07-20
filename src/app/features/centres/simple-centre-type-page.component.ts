@@ -111,6 +111,7 @@ export class SimpleCentreTypePageComponent implements OnInit {
   loading = false;
   saving = false;
   errorMessage: string | null = null;
+  gpsHint: string | null = null;
 
   rows: Row[] = [];
   pageIndex = 0;
@@ -123,6 +124,7 @@ export class SimpleCentreTypePageComponent implements OnInit {
   /** Filtres liste : circonscription / IEPP (query `idDrena`, `idIep`). */
   listFilterDrenaId: number | null = null;
   listFilterIepId: number | null = null;
+  listFilterActif: 'all' | 'yes' | 'no' = 'all';
   private listGeoInitialized = false;
   private listSearchDebounceHandle: ReturnType<typeof setTimeout> | null = null;
 
@@ -151,6 +153,7 @@ export class SimpleCentreTypePageComponent implements OnInit {
   natures: NatureOption[] = [];
   periodicites: PeriodiciteOption[] = [];
   autorites: AutoriteOption[] = [];
+  milieuxImplantation: RefOption[] = [];
   regions: RefOption[] = [];
   drenas: RefOption[] = [];
   departements: DepartementOption[] = [];
@@ -164,7 +167,10 @@ export class SimpleCentreTypePageComponent implements OnInit {
   /** Référentiel `niveau_personnel` (libellé stocké dans promoteur.niveauEtudes). */
   niveauxPersonnel: RefOption[] = [];
   anneesScolaires: RefOption[] = [];
+  /** Année scolaire active (figée à la création des niveaux). */
+  activeAnneeScolaireId: number | null = null;
   niveaux: RefOption[] = [];
+  ecolesTutrices: RefOption[] = [];
   promoteurMode: 'existing' | 'new' = 'existing';
 
   readonly refOptionLabel = refOptionLabel;
@@ -204,6 +210,7 @@ export class SimpleCentreTypePageComponent implements OnInit {
       nomPartenaire: '',
       localisationCentre: '',
       nomMilieuImplentation: '',
+      dateCreationDaaje: null,
     },
     niveaux: [],
   };
@@ -248,6 +255,7 @@ export class SimpleCentreTypePageComponent implements OnInit {
     idPromoteur: number | null;
     ecoleTutrice: string | null;
     anneeCreation: number | null;
+    actif: boolean | null;
   } = {
     libelle: '',
     idLocalite: null,
@@ -274,6 +282,7 @@ export class SimpleCentreTypePageComponent implements OnInit {
     idPromoteur: null,
     ecoleTutrice: null,
     anneeCreation: null,
+    actif: true,
   };
   editNiveaux: CentreTypeNiveauPayload[] = [];
 
@@ -357,6 +366,7 @@ export class SimpleCentreTypePageComponent implements OnInit {
       natures: this.http.get<NatureOption[]>(`${this.apiBaseUrl}/api/naturecentre`),
       periodicites: this.http.get<PeriodiciteOption[]>(`${this.apiBaseUrl}/api/Periodicites`),
       autorites: this.http.get<AutoriteOption[]>(`${this.apiBaseUrl}/api/autoriteautorisation`),
+      milieuxImplantation: this.http.get<any[]>(`${this.apiBaseUrl}/api/milieu-implantation`),
       promoteurs: this.http.get<any[]>(`${this.apiBaseUrl}/api/promoteur`),
       typePersonneMorales: this.http.get<any[]>(`${this.apiBaseUrl}/api/type-personne-morale`),
       civilites: this.http.get<any[]>(`${this.apiBaseUrl}/api/civilite`),
@@ -364,6 +374,7 @@ export class SimpleCentreTypePageComponent implements OnInit {
       niveauxPersonnel: this.http.get<any[]>(`${this.apiBaseUrl}/api/niveau-personnel`),
       anneesScolaires: this.http.get<any[]>(`${this.apiBaseUrl}/api/anneescolaire`),
       niveaux: this.http.get<any[]>(`${this.apiBaseUrl}${this.niveauApiPath()}`),
+      ecolesTutrices: this.http.get<any[]>(`${this.apiBaseUrl}/api/ecole-tutrice`),
     };
   }
 
@@ -389,6 +400,11 @@ export class SimpleCentreTypePageComponent implements OnInit {
     this.natures = (res['natures'] as NatureOption[]) ?? [];
     this.periodicites = (res['periodicites'] as PeriodiciteOption[]) ?? [];
     this.autorites = (res['autorites'] as AutoriteOption[]) ?? [];
+    this.milieuxImplantation = ((res['milieuxImplantation'] as any[]) ?? []).map((x: any) => ({
+      id: Number(x.id ?? 0),
+      code: x.codeMilieuImplentation ?? x.code ?? undefined,
+      libelle: x.libelleTypeImplentation ?? x.libelle ?? undefined,
+    }));
     this.promoteurs = ((res['promoteurs'] as any[]) ?? []).map((x: any) => ({
       id: x.id,
       code: x.codePromoteur ?? undefined,
@@ -410,7 +426,9 @@ export class SimpleCentreTypePageComponent implements OnInit {
         x.debutAnneeScolaire != null && x.finAnneeScolaire != null
           ? `${x.debutAnneeScolaire} - ${x.finAnneeScolaire}`
           : x.libelle ?? x.libelleAnneeScolaire ?? undefined,
+      etatAnneeScolaire: x.etatAnneeScolaire === true || x.etatAnneeScolaire === 'true' || x.etatAnneeScolaire === 1,
     }));
+    this.activeAnneeScolaireId = this.resolveActiveAnneeScolaireId();
     this.niveaux = ((res['niveaux'] as any[]) ?? []).map((x: any) => ({
       id: x.id,
       code: x.codeNiveauCp ?? x.codeNiveauSie ?? x.code ?? undefined,
@@ -420,6 +438,11 @@ export class SimpleCentreTypePageComponent implements OnInit {
         x.libelleNiveau ??
         x.libelle ??
         undefined,
+    }));
+    this.ecolesTutrices = ((res['ecolesTutrices'] as any[]) ?? []).map((x: any) => ({
+      id: Number(x.id ?? 0),
+      code: x.codeEcoleTutrice ?? x.code ?? undefined,
+      libelle: (x.libelleEcoleTutrice ?? x.libelle ?? x.codeEcoleTutrice ?? x.code ?? '').toString().trim() || undefined,
     }));
     this.sortWizardReferenceLists();
     this.applySessionGeographyAnchors();
@@ -435,6 +458,7 @@ export class SimpleCentreTypePageComponent implements OnInit {
     this.natures = sortByLabel(this.natures, natureOptionLabel);
     this.periodicites = sortByLabel(this.periodicites, periodiciteOptionLabel);
     this.autorites = sortByLabel(this.autorites, autoriteOptionLabel);
+    this.milieuxImplantation = sortRefOptions(this.milieuxImplantation);
     this.promoteurs = sortPromoteurOptions(this.promoteurs);
     this.typePersonneMoraleOptions = sortRefOptions(this.typePersonneMoraleOptions);
     this.civilites = sortRefOptions(this.civilites);
@@ -442,6 +466,7 @@ export class SimpleCentreTypePageComponent implements OnInit {
     this.niveauxPersonnel = sortRefOptions(this.niveauxPersonnel);
     this.anneesScolaires = sortRefOptions(this.anneesScolaires);
     this.niveaux = sortRefOptions(this.niveaux);
+    this.ecolesTutrices = sortRefOptions(this.ecolesTutrices);
   }
 
   menaRefOptions(items: RefOption[]) {
@@ -466,6 +491,10 @@ export class SimpleCentreTypePageComponent implements OnInit {
 
   menaAutoriteOptions() {
     return menaAutoriteSelectOptions(this.autorites);
+  }
+
+  menaZoneImplantationOptions() {
+    return menaRefLibelleStringOptions(this.milieuxImplantation);
   }
 
   menaPeriodiciteOptions() {
@@ -514,8 +543,9 @@ export class SimpleCentreTypePageComponent implements OnInit {
       return true;
     }
     if (this.stepIndex === 1) {
+      this.ensureCreateLocaliteId();
       const c = this.model.centre;
-      return c.localiteId != null && c.iepId != null && c.natureCentreId != null;
+      return c.iepId != null && c.natureCentreId != null && c.localiteId != null;
     }
     if (this.stepIndex === 2) {
       return String(this.model.libelle ?? '').trim().length > 0 && !this.hasInvalidNiveauRows();
@@ -527,8 +557,21 @@ export class SimpleCentreTypePageComponent implements OnInit {
     return !this.saving && this.stepIndex === 3 && !this.wizardSavedSuccess;
   }
 
+  onEncadrerParMenaChange(value: boolean | null): void {
+    if (value !== false) {
+      this.model.centre.encadreurNonMena = '';
+    }
+  }
+
+  onEditEncadrerParMenaChange(value: boolean | null): void {
+    if (value !== false) {
+      this.editForm.encadreurNonMena = null;
+    }
+  }
+
   next(): void {
     if (!this.canGoNext()) return;
+    this.gpsHint = null;
     this.stepIndex = Math.min(3, this.stepIndex + 1);
   }
 
@@ -578,6 +621,7 @@ export class SimpleCentreTypePageComponent implements OnInit {
         nomPartenaire: '',
         localisationCentre: '',
         nomMilieuImplentation: '',
+        dateCreationDaaje: null,
       },
       niveaux: [],
     };
@@ -646,6 +690,8 @@ export class SimpleCentreTypePageComponent implements OnInit {
         boitePostale: '',
         niveauEtudes: '',
         civilite: '',
+        mail: '',
+        organisationFaitiere: '',
       },
       personneMorale: null,
     };
@@ -678,6 +724,8 @@ export class SimpleCentreTypePageComponent implements OnInit {
       boitePostale: '',
       niveauEtudes: '',
       civilite: '',
+      mail: '',
+      organisationFaitiere: '',
     };
     this.model.promoteur.personneMorale = null;
   }
@@ -814,6 +862,7 @@ export class SimpleCentreTypePageComponent implements OnInit {
     if (this.model.centre.localiteId != null && !this.filteredCreateLocalites().some((localite) => localite.id === this.model.centre.localiteId)) {
       this.model.centre.localiteId = null as any;
     }
+    this.ensureCreateLocaliteId();
   }
 
   onCreateLocaliteChange(): void {
@@ -821,7 +870,8 @@ export class SimpleCentreTypePageComponent implements OnInit {
     this.createCommuneId = localite?.commune?.id ?? this.createCommuneId;
     this.createDepartementId = localite ? this.localiteDepartementId(localite) : this.createDepartementId;
     this.createRegionId = this.createDepartementId != null ? this.departementRegionId(this.createDepartementId) : this.createRegionId;
-    this.model.centre.nomMilieuImplentation = this.localiteMilieuImplantationLabel(localite);
+    this.model.centre.nomMilieuImplentation =
+      this.localiteMilieuImplantationLabel(localite) || this.model.centre.nomMilieuImplentation;
   }
 
   onEditRegionChange(): void {
@@ -922,7 +972,11 @@ export class SimpleCentreTypePageComponent implements OnInit {
 
   addNiveau(): void {
     this.model.niveaux = this.model.niveaux ?? [];
-    this.model.niveaux.push({ anneeScolaireId: null, niveauId: null, nombreSalle: null });
+    this.model.niveaux.push({
+      anneeScolaireId: this.activeAnneeScolaireId,
+      niveauId: null,
+      nombreSalle: null,
+    });
   }
 
   removeNiveau(index: number): void {
@@ -931,11 +985,29 @@ export class SimpleCentreTypePageComponent implements OnInit {
 
   addEditNiveau(): void {
     this.editNiveaux = this.editNiveaux ?? [];
-    this.editNiveaux.push({ anneeScolaireId: null, niveauId: null, nombreSalle: null });
+    this.editNiveaux.push({
+      anneeScolaireId: this.activeAnneeScolaireId,
+      niveauId: null,
+      nombreSalle: null,
+    });
   }
 
   removeEditNiveau(index: number): void {
     this.editNiveaux = (this.editNiveaux ?? []).filter((_, i) => i !== index);
+  }
+
+  resolveActiveAnneeScolaireId(): number | null {
+    const active = this.anneesScolaires.find(
+      (a) => (a as RefOption & { etatAnneeScolaire?: boolean }).etatAnneeScolaire === true,
+    );
+    if (active?.id != null) {
+      return active.id;
+    }
+    return this.anneesScolaires.length === 1 ? this.anneesScolaires[0]?.id ?? null : null;
+  }
+
+  activeAnneeScolaireLabel(): string {
+    return this.anneeScolaireLabel(this.activeAnneeScolaireId) || 'Année scolaire en cours';
   }
 
   hasInvalidNiveauRows(): boolean {
@@ -1003,6 +1075,7 @@ export class SimpleCentreTypePageComponent implements OnInit {
           idPromoteur: d.promoteur?.idPromoteur ?? d.idPromoteur ?? null,
           ecoleTutrice: d.ecoleTutrice ?? null,
           anneeCreation: d.anneeCreation ?? null,
+          actif: d.actif !== false,
         };
         this.syncEditTotalApprenants();
         this.editRegionId = d.region?.id ?? null;
@@ -1050,9 +1123,11 @@ export class SimpleCentreTypePageComponent implements OnInit {
     this.saving = true;
     const payload = {
       ...this.editForm,
-      nomMilieuImplentation: this.localiteMilieuImplantationLabel(
-        this.localites.find((item) => item.id === this.editForm.idLocalite),
-      ),
+      nomMilieuImplentation:
+        this.trimToNull(this.editForm.nomMilieuImplentation) ??
+        this.localiteMilieuImplantationLabel(
+          this.localites.find((item) => item.id === this.editForm.idLocalite),
+        ),
       niveaux: this.buildEditNiveauxPayload(),
     };
     this.http.put(`${this.apiBaseUrl}${this.apiPath}/${id}/infos`, payload).subscribe({
@@ -1083,6 +1158,28 @@ export class SimpleCentreTypePageComponent implements OnInit {
     });
   }
 
+  toggleActif(row: Row): void {
+    const currentlyActive = row.actif !== false;
+    const nextActif = !currentlyActive;
+    const msg = nextActif
+      ? 'Réactiver ce centre ? Il sera de nouveau inclus dans les statistiques.'
+      : 'Désactiver ce centre ? Il sera exclu des statistiques.';
+    if (!confirm(msg)) return;
+    this.saving = true;
+    this.http
+      .put(`${this.apiBaseUrl}${this.apiPath}/${row.idCentre}/actif`, { actif: nextActif })
+      .subscribe({
+        next: () => {
+          this.saving = false;
+          this.loadAll();
+        },
+        error: (e) => {
+          this.errorMessage = this.formatError(e);
+          this.saving = false;
+        },
+      });
+  }
+
   submit(): void {
     if (!this.canSubmit()) return;
     this.syncWizardTotalApprenants();
@@ -1098,7 +1195,9 @@ export class SimpleCentreTypePageComponent implements OnInit {
       promoteur: promoteurPayload,
       centre: {
         ...this.model.centre,
-        nomMilieuImplentation: this.localiteMilieuImplantationLabel(selectedLocalite),
+        nomMilieuImplentation:
+          this.trimToNull(this.model.centre.nomMilieuImplentation) ??
+          this.localiteMilieuImplantationLabel(selectedLocalite),
       },
       niveaux: this.buildNiveauxPayload(),
     };
@@ -1136,8 +1235,20 @@ export class SimpleCentreTypePageComponent implements OnInit {
     if (s.idDrena != null && s.idIep == null) {
       this.createDrenaId = s.idDrena;
     }
-    if (s.idLocalite != null) {
-      this.model.centre.localiteId = s.idLocalite;
+    this.ensureCreateLocaliteId();
+    if (this.model.centre.localiteId != null) {
+      const loc = this.localites.find((l) => l.id === this.model.centre.localiteId);
+      if (loc && this.createCommuneId == null) {
+        this.createCommuneId = loc.commune?.id ?? null;
+        this.createDepartementId = this.localiteDepartementId(loc);
+        this.createRegionId =
+          this.createDepartementId != null ? this.departementRegionId(this.createDepartementId) : null;
+        if (this.createDrenaId == null && s.idDrena != null) {
+          this.createDrenaId = s.idDrena;
+        }
+      }
+    }
+    if (s.idLocalite != null && this.model.centre.localiteId === s.idLocalite) {
       const loc = this.localites.find((l) => l.id === s.idLocalite);
       if (loc) {
         this.createCommuneId = loc.commune?.id ?? null;
@@ -1152,6 +1263,49 @@ export class SimpleCentreTypePageComponent implements OnInit {
     if (s.idRegion != null && s.idIep == null && s.idDrena == null && s.idLocalite == null) {
       this.createRegionId = s.idRegion;
     }
+  }
+
+  fillGpsFromMyPosition(): void {
+    this.gpsHint = null;
+    if (!navigator.geolocation) {
+      this.gpsHint =
+        'Géolocalisation indisponible sur cet appareil. Les coordonnées GPS sont facultatives — vous pouvez continuer sans elles.';
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        this.model.centre.latitudeGps = String(pos.coords.latitude);
+        this.model.centre.longitudeGps = String(pos.coords.longitude);
+        this.gpsHint = null;
+      },
+      () => {
+        this.gpsHint =
+          'Position GPS non obtenue. Les coordonnées sont facultatives — saisissez-les manuellement ou continuez sans GPS.';
+      },
+      { enableHighAccuracy: true, timeout: 15000 },
+    );
+  }
+
+  /** Localité masquée à la saisie : injecte un id valide dès que le filtre géo le permet. */
+  private ensureCreateLocaliteId(): void {
+    const filtered = this.filteredCreateLocalites();
+    if (filtered.length === 0) return;
+    const current = this.model.centre.localiteId;
+    if (current != null && filtered.some((l) => l.id === current)) return;
+    const sessionLoc = this.auth.currentSession?.idLocalite ?? null;
+    if (sessionLoc != null && filtered.some((l) => l.id === sessionLoc)) {
+      this.model.centre.localiteId = sessionLoc;
+      return;
+    }
+    if (
+      this.createCommuneId == null &&
+      this.createDepartementId == null &&
+      this.createDrenaId == null &&
+      this.createRegionId == null
+    ) {
+      return;
+    }
+    this.model.centre.localiteId = filtered[0].id;
   }
 
   lockSessionGeoRegion(): boolean {
@@ -1220,6 +1374,11 @@ export class SimpleCentreTypePageComponent implements OnInit {
       p = p.set('idIep', String(this.listFilterIepId));
     } else if (this.listFilterDrenaId != null) {
       p = p.set('idDrena', String(this.listFilterDrenaId));
+    }
+    if (this.listFilterActif === 'yes') {
+      p = p.set('actif', 'true');
+    } else if (this.listFilterActif === 'no') {
+      p = p.set('actif', 'false');
     }
     for (const [key, val] of Object.entries(this.simpleListFilter)) {
       const s = String(val ?? '').trim();
@@ -1329,6 +1488,7 @@ export class SimpleCentreTypePageComponent implements OnInit {
       promoteur,
       ecoleTutrice: (x['ecoleTutrice'] as string | undefined) ?? null,
       anneeCreation: this.optionalPositiveInt(x['anneeCreation']),
+      actif: this.pickBool(x, 'actif') ?? true,
     };
   }
 
@@ -1662,6 +1822,13 @@ export class SimpleCentreTypePageComponent implements OnInit {
     return menaRefLibelleStringOptions(this.niveauxPersonnel);
   }
 
+  menaEcoleTutriceOptions() {
+    return menaRefLibelleStringOptions(this.ecolesTutrices, (o) => {
+      const label = (o.libelle ?? o.code ?? '').trim();
+      return label || (o.id != null ? `École #${o.id}` : '');
+    });
+  }
+
   private buildNiveauxPayload(): CentreTypeNiveauPayload[] {
     return (this.model.niveaux ?? [])
       .filter((row) => row.anneeScolaireId != null && row.niveauId != null)
@@ -1726,6 +1893,8 @@ export class SimpleCentreTypePageComponent implements OnInit {
             boitePostale: this.trimToNull(rawPp.boitePostale),
             niveauEtudes: this.trimToNull(rawPp.niveauEtudes),
             civilite: this.trimToNull(rawPp.civilite),
+            mail: this.trimToNull(rawPp.mail),
+            organisationFaitiere: this.trimToNull(rawPp.organisationFaitiere),
           }
         : null;
     return {
@@ -1745,6 +1914,7 @@ export class SimpleCentreTypePageComponent implements OnInit {
     this.searchQ = '';
     this.listFilterDrenaId = null;
     this.listFilterIepId = null;
+    this.listFilterActif = 'all';
     for (const k of Object.keys(this.simpleListFilter)) {
       this.simpleListFilter[k] = '';
     }
@@ -1787,6 +1957,10 @@ export class SimpleCentreTypePageComponent implements OnInit {
 
   isCecWizard(): boolean {
     return (this.apiPath ?? '').includes('/cec');
+  }
+
+  wizardPromoteurFonctionLabel(): string {
+    return this.isCecWizard() ? 'Profession' : 'Fonction';
   }
 
   onWizardGenreCountsChange(): void {

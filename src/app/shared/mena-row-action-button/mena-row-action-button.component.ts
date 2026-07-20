@@ -10,7 +10,9 @@ export type MenaRowActionVariant =
   | 'refuse'
   | 'return'
   | 'delete'
-  | 'activate';
+  | 'activate'
+  | 'deactivate'
+  | 'history';
 
 @Component({
   selector: 'app-mena-row-action',
@@ -54,6 +56,8 @@ export class MenaRowActionButtonComponent {
     switch (v) {
       case 'detail':
         return 'fas fa-eye';
+      case 'history':
+        return 'fas fa-history';
       case 'edit':
         return 'fas fa-pen';
       case 'submit':
@@ -67,7 +71,9 @@ export class MenaRowActionButtonComponent {
       case 'delete':
         return 'fas fa-trash-alt';
       case 'activate':
-        return 'fas fa-lock';
+        return 'fas fa-toggle-on';
+      case 'deactivate':
+        return 'fas fa-ban';
       default: {
         const _exhaustive: never = v;
         return _exhaustive;
@@ -79,6 +85,7 @@ export class MenaRowActionButtonComponent {
     const v = this.variant;
     switch (v) {
       case 'detail':
+      case 'history':
       case 'return':
         return 'btn btn-sm btn-outline-secondary mena-btn-action';
       case 'edit':
@@ -88,6 +95,8 @@ export class MenaRowActionButtonComponent {
       case 'validate':
       case 'activate':
         return 'btn btn-sm btn-outline-success mena-btn-action';
+      case 'deactivate':
+        return 'btn btn-sm btn-outline-warning mena-btn-action';
       case 'refuse':
       case 'delete':
         return 'btn btn-sm btn-outline-danger mena-btn-action';

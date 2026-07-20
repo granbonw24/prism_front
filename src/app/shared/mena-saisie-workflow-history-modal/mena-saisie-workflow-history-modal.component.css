@@ -1,0 +1,63 @@
+.mena-workflow-history {
+  position: relative;
+  padding-left: 0.25rem;
+}
+
+.mena-workflow-history__item {
+  display: flex;
+  gap: 0.85rem;
+  position: relative;
+  padding-bottom: 1rem;
+}
+
+.mena-workflow-history__item:last-child {
+  padding-bottom: 0;
+}
+
+.mena-workflow-history__item:not(:last-child)::before {
+  content: '';
+  position: absolute;
+  left: 0.4rem;
+  top: 1rem;
+  bottom: 0;
+  width: 2px;
+  background: #e3e6f0;
+}
+
+.mena-workflow-history__dot {
+  width: 0.85rem;
+  height: 0.85rem;
+  border-radius: 50%;
+  margin-top: 0.25rem;
+  flex: 0 0 auto;
+  background: #4e73df;
+  box-shadow: 0 0 0 3px rgba(78, 115, 223, 0.15);
+  z-index: 1;
+}
+
+.mena-workflow-history__dot[data-action='REJET'] {
+  background: #e74a3b;
+  box-shadow: 0 0 0 3px rgba(231, 74, 59, 0.15);
+}
+
+.mena-workflow-history__dot[data-action='RETOUR'] {
+  background: #f6c23e;
+  box-shadow: 0 0 0 3px rgba(246, 194, 62, 0.18);
+}
+
+.mena-workflow-history__dot[data-action^='VALIDATION'] {
+  background: #1cc88a;
+  box-shadow: 0 0 0 3px rgba(28, 200, 138, 0.15);
+}
+
+.mena-workflow-history__body {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.mena-workflow-history__detail {
+  padding: 0.35rem 0.55rem;
+  border-radius: 0.25rem;
+  background: #f8f9fc;
+  color: #5a5c69;
+}

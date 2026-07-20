@@ -13,8 +13,9 @@ html {
 }
 
 .mena-content-wrapper {
-  min-height: 100vh;
-  min-height: 100dvh;
+  min-height: 0;
+  height: 100%;
+  max-height: 100dvh;
   overflow-x: hidden;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
@@ -341,7 +342,7 @@ html {
     left: 0;
     height: 100dvh !important;
     max-height: 100dvh !important;
-    width: min(17.5rem, 88vw) !important;
+    width: min(19rem, 88vw) !important;
     max-width: 88vw !important;
     z-index: 1050 !important;
     transform: translateX(-100%);

@@ -75,6 +75,19 @@
         </div>
 
         <div class="form-row">
+          <div class="form-group col-md-6">
+            <label class="small text-muted">Autre diplôme du personnel</label>
+            <input
+              class="form-control"
+              [(ngModel)]="form.libelleAutreDiplome"
+              maxlength="150"
+              placeholder="Préciser un autre diplôme si nécessaire"
+              [disabled]="saving"
+            />
+          </div>
+        </div>
+
+        <div class="form-row">
           <div class="form-group col-md-3">
             <label class="small text-muted">Fonction <span class="mena-required-mark">*</span></label>
             <app-mena-searchable-select [(ngModel)]="form.idFonctionId" [options]="menaFonctionOptions()" nullLabel="Sélectionner…" [disabled]="saving" />

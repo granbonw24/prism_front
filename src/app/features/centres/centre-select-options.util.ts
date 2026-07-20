@@ -10,6 +10,7 @@ import {
   PeriodiciteOption,
   periodiciteSelectLabel,
   PromoteurOption,
+  promoteurSelectLabel,
   RefOption,
   refOptionLabel,
   refOptionLibelle,
@@ -35,7 +36,7 @@ export function menaRefSelectOptions(items: readonly RefOption[]): MenaSelectOpt
 }
 
 export function menaPromoteurSelectOptions(items: readonly PromoteurOption[]): MenaSelectOption<number>[] {
-  return toMenaSelectOptionsFromIds(items, refOptionLibelle);
+  return toMenaSelectOptionsFromIds(items, promoteurSelectLabel);
 }
 
 export function menaLocaliteSelectOptions(items: readonly LocaliteOption[]): MenaSelectOption<number>[] {

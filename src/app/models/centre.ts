@@ -14,6 +14,8 @@ export type PromoteurPersonnePhysique = {
   boitePostale?: string | null;
   niveauEtudes?: string | null;
   civilite?: string | null;
+  mail?: string | null;
+  organisationFaitiere?: string | null;
 };
 
 export type PromoteurPersonneMorale = {
@@ -37,6 +39,31 @@ export type PromoteurDetails = {
 };
 
 export type PromoteurOption = RefOption & { details?: PromoteurDetails | null };
+
+/** Libellé promoteur pour listes déroulantes (identification sans ouvrir la fiche). */
+export function promoteurSelectLabel(option: PromoteurOption): string {
+  const parts: string[] = [];
+  const libelle = (option.details?.libellePromoteur ?? option.libelle)?.trim();
+  if (libelle) {
+    parts.push(libelle);
+  }
+  const code = (option.details?.codePromoteur ?? option.code)?.trim();
+  if (code) {
+    parts.push(`code ${code}`);
+  }
+  const dn = option.details?.personnePhysique?.dateNaissance?.trim();
+  if (dn) {
+    parts.push(`né ${dn}`);
+  }
+  const pm = option.details?.personneMorale?.denomination?.trim();
+  if (pm) {
+    parts.push(pm);
+  }
+  if (parts.length > 0) {
+    return parts.join(' · ');
+  }
+  return `#${option.id}`;
+}
 
 function normalizeTypePromoteur(raw: unknown): TypePromoteur | null {
   if (raw === 'PHYSIQUE' || raw === 'MORALE') return raw;
@@ -197,6 +224,8 @@ export type CentreRow = {
   /** Présents sur le détail / liste CEC lorsque l’API les renvoie. */
   ecoleTutrice?: string | null;
   anneeCreation?: number | null;
+  /** {@code false} = exclu des statistiques. */
+  actif?: boolean | null;
 };
 
 /** Ligne liste Alpha (même forme que `CentreTypeListItem` côté API). */
@@ -296,6 +325,7 @@ export type AlphaFullCreatePayload = {
     nomPartenaire?: string | null;
     localisationCentre?: string | null;
     nomMilieuImplentation?: string | null;
+    dateCreationDaaje?: string | null;
   };
   niveaux?: AlphaNiveauPayload[];
 };
@@ -328,6 +358,7 @@ export type SimpleCentreFullCreatePayload = {
     nomPartenaire?: string | null;
     localisationCentre?: string | null;
     nomMilieuImplentation?: string | null;
+    dateCreationDaaje?: string | null;
   };
   niveaux?: CentreTypeNiveauPayload[];
 };
@@ -348,6 +379,8 @@ export type PromoteurUpsertPayload = {
     boitePostale?: string | null;
     niveauEtudes?: string | null;
     civilite?: string | null;
+    mail?: string | null;
+    organisationFaitiere?: string | null;
   } | null;
   personneMorale?: {
     denomination?: string | null;

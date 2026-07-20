@@ -21,7 +21,7 @@ import { COMPETENCE_CENTRE_CREATE_FIELDS } from './effectif-satellite-forms.data
 export class EffectifCompetenceCentrePageComponent {
   readonly title = 'Apprenant — Compétences par centre';
   readonly subtitle =
-    'Réservé aux centres Alpha : l’API `/api/competence-centre` lie une compétence à un centre Alpha.';
+    'Lie une compétence du catalogue à un centre (Alpha, CEC, CP ou SIE).';
   readonly apiPath = '/api/competence-centre';
   readonly fields = COMPETENCE_CENTRE_CREATE_FIELDS;
 }

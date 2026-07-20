@@ -305,11 +305,7 @@ type DossierSection = 'appuis' | 'documents' | string;
                   </div>
                 </div>
                 <div class="form-row">
-                  <div class="form-group col-md-6">
-                    <label>Code document</label>
-                    <input class="form-control" [(ngModel)]="documentForm.codeDocument" maxlength="50" />
-                  </div>
-                  <div class="form-group col-md-6">
+                  <div class="form-group col-md-4">
                     <label>Existe</label>
                     <select class="form-control" [(ngModel)]="documentForm.existe">
                       <option value="">Non renseigné</option>
@@ -375,7 +371,7 @@ type DossierSection = 'appuis' | 'documents' | string;
                     <tr *ngFor="let row of filteredDocuments">
                       <td>
                         <div>{{ refLabel(row.typeDocument) }}</div>
-                        <div class="small text-muted">{{ refLabel(row.natureDocument) }} {{ row.codeDocument || '' }}</div>
+                        <div class="small text-muted">{{ refLabel(row.natureDocument) }}</div>
                       </td>
                       <td>{{ row.existe || '-' }}</td>
                       <td>{{ row.ajour || '-' }}</td>
@@ -609,7 +605,7 @@ export class DossierCentreComponent implements OnInit {
       idCentre: this.selectedCentreId,
       idNatureDocument: this.documentForm.idNatureDocument,
       idTypeDocument: this.documentForm.idTypeDocument,
-      codeDocument: this.clean(this.documentForm.codeDocument),
+      codeDocument: null,
       existe: this.clean(this.documentForm.existe),
       ajour: this.clean(this.documentForm.ajour),
       bientenu: this.clean(this.documentForm.bientenu),

@@ -67,6 +67,16 @@ export function refEntityLabelForSelect(
   item: Record<string, unknown>,
   libelleKeys: string[] = [],
 ): string {
+  const debut = stringField(item['debutAnneeScolaire']);
+  const fin = stringField(item['finAnneeScolaire']);
+  if (debut && fin) {
+    const y1 = extractYearLabel(debut);
+    const y2 = extractYearLabel(fin);
+    if (y1 && y2) {
+      return `${y1} – ${y2}`;
+    }
+  }
+
   const libKeys = dedupeKeys(['libelle', ...libelleKeys]).filter((k) => !isCodeOrIdKey(k));
 
   for (const key of libKeys) {
@@ -160,4 +170,9 @@ function stringField(value: unknown): string | null {
   }
   const trimmed = value.trim();
   return trimmed.length > 0 ? trimmed : null;
+}
+
+function extractYearLabel(value: string): string | null {
+  const match = value.match(/\d{4}/);
+  return match?.[0] ?? null;
 }

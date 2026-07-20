@@ -49,6 +49,59 @@
   border-radius: 10px;
 }
 
+.mena-effectif-total-bar {
+  padding: 0.65rem 0.75rem;
+  border-radius: 10px;
+  border: 1px solid rgba(214, 111, 30, 0.22);
+  background: linear-gradient(180deg, #fff9f4 0%, #fff 100%);
+}
+
+.mena-effectif-live-sum {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  min-height: calc(1.5em + 0.5rem + 2px);
+  font-variant-numeric: tabular-nums;
+}
+
+.mena-effectif-live-sum__value {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--mena-ink, #2a2520);
+}
+
+.mena-effectif-live-sum.is-match {
+  border-color: rgba(40, 167, 69, 0.45);
+  background-color: #f4fff7;
+}
+
+.mena-effectif-live-sum.is-mismatch {
+  border-color: rgba(220, 53, 69, 0.4);
+  background-color: #fff8f8;
+}
+
+.mena-effectif-group {
+  margin-bottom: 0.85rem;
+}
+
+.mena-effectif-group:last-child {
+  margin-bottom: 0;
+}
+
+.mena-effectif-group__title {
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--mena-orange-800, #b54e10);
+  padding: 0.35rem 0.4rem;
+  margin-bottom: 0.35rem;
+  border-left: 3px solid var(--mena-orange-400, #f0a862);
+  background: rgba(214, 111, 30, 0.06);
+  border-radius: 0 6px 6px 0;
+}
+
 .mena-effectif-numeric-scroll {
   max-height: min(46vh, 22rem);
   overflow-y: auto;

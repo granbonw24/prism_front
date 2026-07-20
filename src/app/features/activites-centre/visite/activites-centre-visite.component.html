@@ -104,6 +104,7 @@
               <th style="width: 4rem">ID</th>
               <th>Niveau de validation</th>
               <th>Centre d'Alphabétisation</th>
+              <th *ngIf="showNiveauAlphaColumn">Niveau Alpha</th>
               <th>Période d’activité</th>
               <th *ngFor="let field of suiviFields">{{ field.label }}</th>
               <th *ngIf="showMaitriseColumns">Lecture</th>
@@ -120,6 +121,7 @@
                 <span [class]="validationIndicatorClass(row)">{{ validationIndicator(row) }}</span>
               </td>
               <td>{{ alphaLabel(row) }}</td>
+              <td *ngIf="showNiveauAlphaColumn">{{ niveauAlphaLabel(row) }}</td>
               <td>{{ periodeLabel(row) }}</td>
               <td *ngFor="let field of suiviFields">{{ fieldValue(row, field.key) }}</td>
               <td *ngIf="showMaitriseColumns">{{ maitriseValue(row, 'maitriseSeanceLecture') }}</td>
@@ -230,7 +232,7 @@
               [loading]="loading"
             />
           </div>
-          <div class="form-group col-md-6" *ngIf="formMode === 'points'">
+          <div class="form-group col-md-6" *ngIf="showNiveauAlphaField">
             <label class="small text-muted">Niveau Alpha *</label>
             <app-mena-searchable-select
               [(ngModel)]="form.idNiveauAlpha"
@@ -240,7 +242,7 @@
               [loading]="loading"
             />
           </div>
-          <div class="form-group col-md-6" [class.col-md-12]="formMode !== 'points'">
+          <div class="form-group col-md-6" [class.col-md-12]="!showNiveauAlphaField">
             <label class="small text-muted">Période d’activité *</label>
             <app-mena-searchable-select
               [(ngModel)]="form.idPeriodeActivite"

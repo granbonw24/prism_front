@@ -1,0 +1,45 @@
+<div *ngIf="open" class="modal fade show d-block" tabindex="-1" role="dialog" aria-modal="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable" role="document" (click)="$event.stopPropagation()">
+    <div class="modal-content mena-modal border-0 shadow">
+      <div class="modal-header border-0">
+        <div>
+          <h5 class="modal-title mb-0">{{ title }}</h5>
+          <p *ngIf="data?.workflowStatutLibelle" class="small text-muted mb-0 mt-1">
+            Statut actuel : {{ data?.workflowStatutLibelle }}
+          </p>
+        </div>
+        <button type="button" class="close" aria-label="Fermer" (click)="onClose()" [disabled]="loading">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body pt-0">
+        <app-mena-loading *ngIf="loading" message="Chargement de l’historique…" [centered]="true" />
+        <div *ngIf="!loading && errorMessage" class="alert alert-danger py-2 mb-0">{{ errorMessage }}</div>
+
+        <ul *ngIf="!loading && !errorMessage && etapes.length" class="mena-workflow-history list-unstyled mb-0">
+          <li *ngFor="let step of etapes" class="mena-workflow-history__item">
+            <div class="mena-workflow-history__dot" [attr.data-action]="step.action"></div>
+            <div class="mena-workflow-history__body">
+              <div class="font-weight-bold">{{ step.libelle || step.action || 'Étape' }}</div>
+              <div class="small text-muted">
+                <span>{{ step.acteur || '—' }}</span>
+                <span *ngIf="step.date"> · {{ formatDate(step.date) }}</span>
+              </div>
+              <div *ngIf="step.detail" class="small mt-1 mena-workflow-history__detail">{{ step.detail }}</div>
+            </div>
+          </li>
+        </ul>
+
+        <p *ngIf="!loading && !errorMessage && !etapes.length" class="text-muted mb-0">
+          Aucune étape de validation enregistrée pour cette ligne.
+        </p>
+      </div>
+      <div class="modal-footer border-0 pt-0">
+        <button type="button" class="btn btn-outline-secondary btn-sm" (click)="onClose()" [disabled]="loading">
+          Fermer
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+<div *ngIf="open" class="modal-backdrop fade show" (click)="onClose()"></div>

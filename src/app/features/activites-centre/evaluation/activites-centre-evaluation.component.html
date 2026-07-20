@@ -171,14 +171,36 @@
           <div *ngIf="form.idNiveauEvaluation && form.typeEvaluation && form.themesTaux.length === 0" class="alert alert-warning py-2 mb-0">
             Aucun thème compatible trouvé pour cette combinaison.
           </div>
-          <div *ngFor="let item of form.themesTaux" class="form-row align-items-center" [class.d-none]="!form.idNiveauEvaluation || !form.typeEvaluation">
-            <div class="form-group col-md-8 mb-2">
+          <div *ngFor="let item of form.themesTaux" class="form-row align-items-end" [class.d-none]="!form.idNiveauEvaluation || !form.typeEvaluation">
+            <div class="form-group col-md-4 mb-2">
               <label class="small text-muted mb-1">Thème</label>
               <div class="form-control-plaintext py-1">{{ themeOptionLabel(themeForForm(item)) }}</div>
             </div>
-            <div class="form-group col-md-4 mb-2">
-              <label class="small text-muted mb-1">Taux (%)</label>
-              <input class="form-control" type="number" min="0" max="100" [(ngModel)]="item.taux" placeholder="0 à 100" />
+            <div class="form-group col-md-2 mb-2">
+              <label class="small text-muted mb-1">Total évalué</label>
+              <input
+                class="form-control"
+                type="number"
+                min="0"
+                [(ngModel)]="item.nombreTotalEvalue"
+                (ngModelChange)="recalculateThemeTaux(item)"
+                placeholder="0"
+              />
+            </div>
+            <div class="form-group col-md-3 mb-2">
+              <label class="small text-muted mb-1">Résultat obtenu</label>
+              <input
+                class="form-control"
+                type="number"
+                min="0"
+                [(ngModel)]="item.nombreResultatObtenu"
+                (ngModelChange)="recalculateThemeTaux(item)"
+                placeholder="0"
+              />
+            </div>
+            <div class="form-group col-md-3 mb-2">
+              <label class="small text-muted mb-1">Taux calculé (%)</label>
+              <input class="form-control" type="number" [ngModel]="item.taux" readonly placeholder="—" />
             </div>
           </div>
         </div>
@@ -235,9 +257,21 @@
           </table>
         </div>
       </div>
-      <div class="card-footer bg-white d-flex justify-content-end mena-toolbar">
+      <div class="card-footer bg-white d-flex justify-content-between mena-toolbar">
+        <button type="button" class="btn btn-sm btn-outline-primary" (click)="openHistory()">
+          <i class="fas fa-history mr-1" aria-hidden="true"></i>
+          Historique
+        </button>
         <app-mena-toolbar-btn variant="cancel" label="Fermer" (clicked)="closeDetail()" />
       </div>
     </div>
   </div>
 </div>
+
+<app-mena-saisie-workflow-history-modal
+  [open]="historyOpen"
+  [resource]="'/api/evaluation'"
+  [recordId]="detailRow?.id ?? null"
+  title="Historique de validation — Évaluation"
+  (closed)="closeHistory()"
+/>

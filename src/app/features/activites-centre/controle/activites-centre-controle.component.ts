@@ -25,6 +25,7 @@ import { MenaRowActionButtonComponent } from '@shared/mena-row-action-button/men
 import { MenaLoadingComponent } from '@shared/mena-loading/mena-loading.component';
 import { MenaSearchableSelectComponent } from '@shared/mena-searchable-select/mena-searchable-select.component';
 import { MenaContextDashboardComponent } from '@shared/mena-context-dashboard/mena-context-dashboard.component';
+import { MenaSaisieWorkflowHistoryModalComponent } from '@shared/mena-saisie-workflow-history-modal/mena-saisie-workflow-history-modal.component';
 import { sortByLabel, toMenaSelectOptions } from '@shared/mena-searchable-select/mena-select-options.util';
 
 type Ref = {
@@ -108,6 +109,8 @@ const DAYS: Array<{ value: string; label: string }> = [
   { value: 'MERCREDI', label: 'Mercredi' },
   { value: 'JEUDI', label: 'Jeudi' },
   { value: 'VENDREDI', label: 'Vendredi' },
+  { value: 'SAMEDI', label: 'Samedi' },
+  { value: 'DIMANCHE', label: 'Dimanche' },
 ];
 
 @Component({
@@ -121,6 +124,7 @@ const DAYS: Array<{ value: string; label: string }> = [
     MenaSearchableSelectComponent,
     MenaWorkflowQueueToolbarComponent,
     MenaContextDashboardComponent,
+    MenaSaisieWorkflowHistoryModalComponent,
   ],
   templateUrl: './activites-centre-controle.component.html',
   styleUrl: './activites-centre-controle.component.css',
@@ -147,6 +151,8 @@ export class ActivitesCentreControleComponent implements OnInit {
   formOpen = false;
   formMode: 'create' | 'edit' = 'create';
   editingId: number | null = null;
+  historyOpen = false;
+  historyRecordId: number | null = null;
   form: ControleForm = this.emptyForm();
 
   constructor(
@@ -282,6 +288,19 @@ export class ActivitesCentreControleComponent implements OnInit {
   closeForm(): void {
     this.formOpen = false;
     this.saving = false;
+  }
+
+  openHistory(recordId: number | null): void {
+    if (recordId == null) {
+      return;
+    }
+    this.historyRecordId = recordId;
+    this.historyOpen = true;
+  }
+
+  closeHistory(): void {
+    this.historyOpen = false;
+    this.historyRecordId = null;
   }
 
   addKit(): void {
@@ -452,6 +471,18 @@ export class ActivitesCentreControleComponent implements OnInit {
     return menaActivitesRefOptions(this.manuels, (m) => m.id ?? null);
   }
 
+  kitIsAutreManuel(kit: KitForm): boolean {
+    if (kit.idManuel == null) {
+      return false;
+    }
+    const manuel = this.manuels.find((m) => m.id === kit.idManuel);
+    if (!manuel) {
+      return false;
+    }
+    const text = `${manuel.code ?? ''} ${manuel.libelle ?? ''}`.toLowerCase();
+    return /\bautre\b/.test(text);
+  }
+
   alphaLabel(row: ControleRow): string {
     return this.refLabel(row.alpha);
   }
@@ -614,7 +645,7 @@ export class ActivitesCentreControleComponent implements OnInit {
         .filter((k): k is KitForm & { idManuel: number } => k.idManuel != null)
         .map((k) => ({
           idManuel: k.idManuel,
-          nombreKit: Number(k.nombreKit ?? 0),
+          nombreKit: this.kitIsAutreManuel(k) ? 0 : Number(k.nombreKit ?? 0),
           precisionAutre: k.precisionAutre?.trim() || null,
         })),
     };

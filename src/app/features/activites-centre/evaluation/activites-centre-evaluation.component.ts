@@ -30,6 +30,7 @@ import {
 } from '@shared/mena-searchable-select/mena-select-options.util';
 import { MenaToolbarButtonComponent } from '@shared/mena-toolbar-button/mena-toolbar-button.component';
 import { MenaContextDashboardComponent } from '@shared/mena-context-dashboard/mena-context-dashboard.component';
+import { MenaSaisieWorkflowHistoryModalComponent } from '@shared/mena-saisie-workflow-history-modal/mena-saisie-workflow-history-modal.component';
 
 type Ref = {
   id?: number | null;
@@ -72,11 +73,15 @@ type ThemeTauxRow = {
   id?: number | null;
   themeEvaluation?: Ref | null;
   taux?: number | null;
+  nombreTotalEvalue?: number | null;
+  nombreResultatObtenu?: number | null;
 };
 
 type ThemeTauxForm = {
   idThemeEvaluation: number;
   taux: number | null;
+  nombreTotalEvalue: number | null;
+  nombreResultatObtenu: number | null;
 };
 
 type EvaluationForm = {
@@ -99,6 +104,7 @@ type EvaluationForm = {
     MenaWorkflowQueueToolbarComponent,
     MenaToolbarButtonComponent,
     MenaContextDashboardComponent,
+    MenaSaisieWorkflowHistoryModalComponent,
   ],
   templateUrl: './activites-centre-evaluation.component.html',
   styleUrl: './activites-centre-evaluation.component.css',
@@ -118,6 +124,7 @@ export class ActivitesCentreEvaluationComponent implements OnInit {
   workflowSubmittingId: number | null = null;
   formOpen = false;
   detailRow: EvaluationRow | null = null;
+  historyOpen = false;
   formMode: 'create' | 'edit' = 'create';
   editingId: number | null = null;
   searchText = '';
@@ -244,9 +251,12 @@ export class ActivitesCentreEvaluationComponent implements OnInit {
         row.themesTaux?.map((item) => ({
           idThemeEvaluation: item.themeEvaluation?.id ?? 0,
           taux: item.taux ?? null,
+          nombreTotalEvalue: item.nombreTotalEvalue ?? null,
+          nombreResultatObtenu: item.nombreResultatObtenu ?? null,
         })).filter((item) => item.idThemeEvaluation > 0) ?? [],
     };
     this.syncThemeTauxRows();
+    this.form.themesTaux.forEach((item) => this.recalculateThemeTaux(item));
     this.formOpen = true;
     this.errorMessage = null;
     this.successMessage = null;
@@ -262,6 +272,17 @@ export class ActivitesCentreEvaluationComponent implements OnInit {
 
   closeDetail(): void {
     this.detailRow = null;
+  }
+
+  openHistory(): void {
+    if (this.detailRow?.id == null) {
+      return;
+    }
+    this.historyOpen = true;
+  }
+
+  closeHistory(): void {
+    this.historyOpen = false;
   }
 
   onNiveauChange(): void {
@@ -292,9 +313,10 @@ export class ActivitesCentreEvaluationComponent implements OnInit {
       this.errorMessage = 'Aucun thème compatible avec ce niveau et ce type.';
       return;
     }
-    const invalidTheme = this.form.themesTaux.find((item) => item.taux == null || item.taux < 0 || item.taux > 100);
+    const invalidTheme = this.form.themesTaux.find((item) => !this.themeTauxIsValid(item));
     if (invalidTheme) {
-      this.errorMessage = 'Chaque thème doit avoir un taux compris entre 0 et 100.';
+      this.errorMessage =
+        'Chaque thème doit avoir un taux (0–100) ou un total évalué avec un résultat obtenu.';
       return;
     }
 
@@ -304,6 +326,8 @@ export class ActivitesCentreEvaluationComponent implements OnInit {
       themesTaux: this.form.themesTaux.map((item) => ({
         idThemeEvaluation: item.idThemeEvaluation,
         taux: item.taux,
+        nombreTotalEvalue: item.nombreTotalEvalue,
+        nombreResultatObtenu: item.nombreResultatObtenu,
       })),
     };
     const request =
@@ -540,15 +564,50 @@ export class ActivitesCentreEvaluationComponent implements OnInit {
     return true;
   }
 
+  recalculateThemeTaux(item: ThemeTauxForm): void {
+    const total = item.nombreTotalEvalue;
+    const obtenu = item.nombreResultatObtenu;
+    if (total == null || total <= 0 || obtenu == null) {
+      return;
+    }
+    item.taux = Math.round((100 * obtenu) / total);
+  }
+
+  private themeTauxIsValid(item: ThemeTauxForm): boolean {
+    const hasCounts =
+      item.nombreTotalEvalue != null &&
+      item.nombreResultatObtenu != null &&
+      item.nombreTotalEvalue > 0 &&
+      item.nombreResultatObtenu >= 0;
+    if (hasCounts) {
+      return true;
+    }
+    return item.taux != null && item.taux >= 0 && item.taux <= 100;
+  }
+
   private syncThemeTauxRows(): void {
-    const previous = new Map(this.form.themesTaux.map((item) => [item.idThemeEvaluation, item.taux]));
+    const previous = new Map(
+      this.form.themesTaux.map((item) => [
+        item.idThemeEvaluation,
+        {
+          taux: item.taux,
+          nombreTotalEvalue: item.nombreTotalEvalue,
+          nombreResultatObtenu: item.nombreResultatObtenu,
+        },
+      ]),
+    );
     this.form.themesTaux = this.filteredThemes
       .map((theme) => theme.id)
       .filter((id): id is number => id != null)
-      .map((id) => ({
-        idThemeEvaluation: id,
-        taux: previous.get(id) ?? null,
-      }));
+      .map((id) => {
+        const prev = previous.get(id);
+        return {
+          idThemeEvaluation: id,
+          taux: prev?.taux ?? null,
+          nombreTotalEvalue: prev?.nombreTotalEvalue ?? null,
+          nombreResultatObtenu: prev?.nombreResultatObtenu ?? null,
+        };
+      });
   }
 
   private asTypeEvaluation(type: TypeEvaluation | string | null | undefined): TypeEvaluation | null {

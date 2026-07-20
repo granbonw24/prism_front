@@ -145,6 +145,14 @@
               >Effectif apprenant</a
             >
             <a
+              *ngIf="canViewApprenantItem('APPRENANT_EFFECTIF')"
+              class="collapse-item"
+              routerLink="/apprenant/import"
+              routerLinkActive="active"
+              [routerLinkActiveOptions]="{ exact: true }"
+              >Import apprenants</a
+            >
+            <a
               *ngIf="canViewApprenantItem('APPRENANT_ABANDON')"
               class="collapse-item"
               routerLink="/apprenant/abandon"
@@ -168,9 +176,30 @@
               [routerLinkActiveOptions]="{ exact: true }"
               >Effectif handicap</a
             >
-            <!-- <a class="collapse-item" routerLink="/apprenant/competences" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Effectif competence aquise </a> -->
-            <!-- <a class="collapse-item" routerLink="/apprenant/promus" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Effectif promu (SIE, CEC)</a> -->
-            <!-- <a class="collapse-item" routerLink="/apprenant/reverse-formel-sie" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Effectif reversé formel (SIE)</a> -->
+            <a
+              *ngIf="canViewApprenantItem('APPRENANT_COMPETENCES')"
+              class="collapse-item"
+              routerLink="/apprenant/competences"
+              routerLinkActive="active"
+              [routerLinkActiveOptions]="{ exact: true }"
+              >Compétences acquises (Alpha)</a
+            >
+            <a
+              *ngIf="canViewApprenantItem('APPRENANT_PROMUS')"
+              class="collapse-item"
+              routerLink="/apprenant/promus"
+              routerLinkActive="active"
+              [routerLinkActiveOptions]="{ exact: true }"
+              >Effectif promu (SIE, CEC)</a
+            >
+            <a
+              *ngIf="canViewApprenantItem('APPRENANT_REVERSE_FORMEL_SIE')"
+              class="collapse-item"
+              routerLink="/apprenant/reverse-formel-sie"
+              routerLinkActive="active"
+              [routerLinkActiveOptions]="{ exact: true }"
+              >Effectif reversé formel (SIE)</a
+            >
             <a
               *ngIf="canViewApprenantItem('APPRENANT_ADMIS_CEPE')"
               class="collapse-item"

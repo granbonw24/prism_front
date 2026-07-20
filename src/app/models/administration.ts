@@ -30,6 +30,12 @@ export interface AppUserAdmin {
   username: string;
   email?: string;
   actif?: boolean;
+  nom?: string | null;
+  prenoms?: string | null;
+  dateNaissance?: string | null;
+  lieuNaissance?: string | null;
+  datePriseService?: string | null;
+  dateDepartRetraite?: string | null;
   roleIds: number[];
   idRegion?: number | null;
   idDrena?: number | null;
@@ -52,6 +58,12 @@ export interface AppUserAdminUpsertRequest {
   email?: string | null;
   actif?: boolean | null;
   password?: string | null;
+  nom?: string | null;
+  prenoms?: string | null;
+  dateNaissance?: string | null;
+  lieuNaissance?: string | null;
+  datePriseService?: string | null;
+  dateDepartRetraite?: string | null;
   roleIds?: number[] | null;
   idRegion?: number | null;
   idDrena?: number | null;
@@ -84,6 +96,7 @@ export interface PersonnelAdmin {
   structureFormationCertificationId: number | null;
   statutPersonnelId: number | null;
   diplomeId?: number | null;
+  libelleAutreDiplome?: string | null;
   codePersonnel?: string | null;
   certifierPersonnel?: boolean | null;
   nomPersonnel?: string | null;

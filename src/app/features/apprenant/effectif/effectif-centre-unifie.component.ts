@@ -28,16 +28,26 @@ const EFFECTIF_LIST_SUMMARY_COLUMNS: Record<CentreType, string[]> = {
     'periodeActivite',
     'centre',
     'niveauSie',
-    'effectifCecNiveauCec',
+    'effectifCecNiveauH',
+    'effectifCecNiveauF',
   ],
   cp: [
     'codeEffectifCp',
+    'periodeActivite',
     'anneeScolaire',
     'centre',
     'niveauCp',
-    'effectifCpNiveauCp',
+    'effectifCpNiveauH',
+    'effectifCpNiveauF',
   ],
-  sie: ['codeEffectifSie', 'anneeScolaire', 'niveauSie', 'effectifSieNiveauSie'],
+  sie: [
+    'codeEffectifSie',
+    'periodeActivite',
+    'anneeScolaire',
+    'niveauSie',
+    'effectifSieNiveauH',
+    'effectifSieNiveauF',
+  ],
 };
 
 @Component({
@@ -92,8 +102,8 @@ const EFFECTIF_COMMON_ALPHA: ReferentielFormField[] = [
   { key: 'idPeriodeActivite', label: 'Période activité', type: 'select', required: true, optionsApiPath: '/api/PeriodeActivites', optionValueKey: 'id', optionLabelKeys: ['code', 'libelle'] },
   { key: 'idCentre', label: 'Centre', type: 'select', required: true, optionsApiPath: '/api/alpha', optionValueKey: 'idCentre', optionLabelKeys: ['codeType', 'libelle', 'codeCentre'] },
   { key: 'idNiveauAlpha', label: 'Niveau Alpha', type: 'select', required: true, optionsApiPath: '/api/niveaualpha', optionValueKey: 'id', optionLabelKeys: ['codeNiveauAlpha', 'libelleNiveauAlpha'] },
-  { key: 'effectifAlphaNiveauH', label: 'Effectif niveau H', type: 'number' },
-  { key: 'effectifAlphaNiveauF', label: 'Effectif niveau F', type: 'number' },
+  { key: 'effectifAlphaNiveauH', label: 'Effectif total (H)', type: 'number', effectifRole: 'total' },
+  { key: 'effectifAlphaNiveauF', label: 'Effectif total (F)', type: 'number', effectifRole: 'total' },
   { key: 'effectifAlphaMoins15F', label: 'Moins 15 F', type: 'number' },
   { key: 'effectifAlphaMoins15H', label: 'Moins 15 H', type: 'number' },
   { key: 'effectifAlphaMoins15IvoirienH', label: 'Moins 15 Ivoirien H', type: 'number' },
@@ -124,6 +134,16 @@ const EFFECTIF_COMMON_CEC: ReferentielFormField[] = [
   { key: 'idPeriodeActivite', label: 'Période activité', type: 'select', required: true, optionsApiPath: '/api/PeriodeActivites', optionValueKey: 'id', optionLabelKeys: ['code', 'libelle'], payloadAsObjectId: true },
   { key: 'idNiveauSie', label: 'Niveau CEC/SIE', type: 'select', required: true, optionsApiPath: '/api/niveausiecec', optionValueKey: 'id', optionLabelKeys: ['libelleNiveauSie'], payloadAsObjectId: true },
   { key: 'idCentre', label: 'Centre', type: 'select', required: true, optionsApiPath: '/api/cec', optionValueKey: 'idCentre', optionLabelKeys: ['codeType', 'libelle', 'codeCentre'], payloadAsObjectId: true },
+  { key: 'effectifCecNiveauH', label: 'Effectif total (H)', type: 'number', effectifRole: 'total' },
+  { key: 'effectifCecNiveauF', label: 'Effectif total (F)', type: 'number', effectifRole: 'total' },
+  { key: 'effectifCecNiveauCec', label: 'Effectif total', type: 'number', hidden: true, effectifRole: 'legacyTotal' },
+
+  { key: 'effectifCecMoinsDe6H', label: 'Moins de 6 ans H', type: 'number' },
+  { key: 'effectifCecMoinsDe6F', label: 'Moins de 6 ans F', type: 'number' },
+  { key: 'effectifCecMoinsDe6IvoirienH', label: 'Moins de 6 ans Ivoirien H', type: 'number' },
+  { key: 'effectifCecMoinsDe6IvoirienF', label: 'Moins de 6 ans Ivoirien F', type: 'number' },
+  { key: 'effectifCecMoinsDe6HandicapH', label: 'Moins de 6 ans Handicap H', type: 'number' },
+  { key: 'effectifCecMoinsDe6HandicapF', label: 'Moins de 6 ans Handicap F', type: 'number' },
   { key: 'effectifCecMoins3F', label: 'Moins 3 F', type: 'number' },
   { key: 'effectifCecMoins3H', label: 'Moins 3 H', type: 'number' },
   { key: 'effectifCec35F', label: '3-5 F', type: 'number' },
@@ -154,13 +174,17 @@ const EFFECTIF_COMMON_CEC: ReferentielFormField[] = [
   { key: 'effectifCec1216IvoirienF', label: '12-16 Ivoirien F', type: 'number' },
   { key: 'effectifCec1216HandicapH', label: '12-16 Handicap H', type: 'number' },
   { key: 'effectifCec1216HandicapF', label: '12-16 Handicap F', type: 'number' },
-  { key: 'effectifCecNiveauCec', label: 'Effectif niveau CEC', type: 'number' },
 ];
 
 const EFFECTIF_COMMON_CP: ReferentielFormField[] = [
-  { key: 'idAnneeScolaire', label: 'Année scolaire', type: 'select', required: true, optionsApiPath: '/api/anneescolaire', optionValueKey: 'id', optionLabelKeys: ['debutAnneeScolaire', 'finAnneeScolaire'], payloadAsObjectId: true },
+  { key: 'idPeriodeActivite', label: 'Période activité', type: 'select', required: true, optionsApiPath: '/api/PeriodeActivites', optionValueKey: 'id', optionLabelKeys: ['code', 'libelle'], payloadAsObjectId: true },
+  { key: 'idAnneeScolaire', label: 'Année scolaire', type: 'select', required: true, optionsApiPath: '/api/anneescolaire', optionValueKey: 'id', optionLabelKeys: ['debutAnneeScolaire', 'finAnneeScolaire'], payloadAsObjectId: true, readOnly: true, autoSelectFlagKey: 'etatAnneeScolaire' },
   { key: 'idNiveauCp', label: 'Niveau CP', type: 'select', required: true, optionsApiPath: '/api/niveaucp', optionValueKey: 'id', optionLabelKeys: ['libelleNiveauCp'], payloadAsObjectId: true },
   { key: 'idCentre', label: 'Centre', type: 'select', required: true, optionsApiPath: '/api/cp', optionValueKey: 'idCentre', optionLabelKeys: ['codeType', 'libelle', 'codeCentre'], payloadAsObjectId: true },
+  { key: 'effectifCpNiveauH', label: 'Effectif total (H)', type: 'number', effectifRole: 'total' },
+  { key: 'effectifCpNiveauF', label: 'Effectif total (F)', type: 'number', effectifRole: 'total' },
+  { key: 'effectifCpNiveauCp', label: 'Effectif total', type: 'number', hidden: true, effectifRole: 'legacyTotal' },
+
   { key: 'effectifCp911IvoirienH', label: '9-11 Ivoirien Garçon', type: 'number' },
   { key: 'effectifCp911IvoirienF', label: '9-11 Ivoirienne Fille', type: 'number' },
   { key: 'effectifCp1213IvoirienH', label: '12-13 Ivoirien Garçon', type: 'number' },
@@ -179,13 +203,17 @@ const EFFECTIF_COMMON_CP: ReferentielFormField[] = [
   { key: 'effectifCp14HandicapF', label: '14 Handicap Fille', type: 'number' },
   { key: 'effectifCp14NonIvoirienF', label: '14 Non Ivoirienne Fille', type: 'number' },
   { key: 'effectifCp14NonIvoirienH', label: '14 Non Ivoirien Garçon', type: 'number' },
-  { key: 'effectifCpNiveauCp', label: 'Effectif total', type: 'number' },
 ];
 
 const EFFECTIF_COMMON_SIE: ReferentielFormField[] = [
-  { key: 'idAnneeScolaire', label: 'Année scolaire', type: 'select', required: true, optionsApiPath: '/api/anneescolaire', optionValueKey: 'id', optionLabelKeys: ['debutAnneeScolaire', 'finAnneeScolaire'], payloadAsObjectId: true },
+  { key: 'idPeriodeActivite', label: 'Période activité', type: 'select', required: true, optionsApiPath: '/api/PeriodeActivites', optionValueKey: 'id', optionLabelKeys: ['code', 'libelle'], payloadAsObjectId: true },
+  { key: 'idAnneeScolaire', label: 'Année scolaire', type: 'select', required: true, optionsApiPath: '/api/anneescolaire', optionValueKey: 'id', optionLabelKeys: ['debutAnneeScolaire', 'finAnneeScolaire'], payloadAsObjectId: true, readOnly: true, autoSelectFlagKey: 'etatAnneeScolaire' },
   { key: 'idNiveauSie', label: 'Niveau SIE', type: 'select', required: true, optionsApiPath: '/api/niveausiecec', optionValueKey: 'id', optionLabelKeys: ['libelleNiveauSie'], payloadAsObjectId: true },
   { key: 'idCentre', label: 'Centre', type: 'select', required: true, optionsApiPath: '/api/sie', optionValueKey: 'idCentre', optionLabelKeys: ['codeType', 'libelle', 'codeCentre'], payloadAsObjectId: true },
+  { key: 'effectifSieNiveauH', label: 'Effectif total (H)', type: 'number', effectifRole: 'total' },
+  { key: 'effectifSieNiveauF', label: 'Effectif total (F)', type: 'number', effectifRole: 'total' },
+  { key: 'effectifSieNiveauSie', label: 'Effectif total', type: 'number', hidden: true, effectifRole: 'legacyTotal' },
+
   { key: 'effectifSie3IvoirienH', label: '3 Ivoirien Garçon', type: 'number' },
   { key: 'effectifSie3IvoirienF', label: '3 Ivoirienne Fille', type: 'number' },
   { key: 'effectifSie46IvoirienH', label: '4-6 Ivoirien Garçon', type: 'number' },
@@ -214,7 +242,6 @@ const EFFECTIF_COMMON_SIE: ReferentielFormField[] = [
   { key: 'effectifSie1314EtPlusIvoirienH', label: '13-14+ Ivoirien Garçon', type: 'number' },
   { key: 'effectifSie1314EtPlusHandicapF', label: '13-14+ Handicap Fille', type: 'number' },
   { key: 'effectifSie1314EtPlusHandicapH', label: '13-14+ Handicap Garçon', type: 'number' },
-  { key: 'effectifSieNiveauSie', label: 'Effectif total', type: 'number' },
 ];
 
 const EFFECTIF_TYPE_CONFIG: Record<CentreType, EffectifTypeConfig> = {

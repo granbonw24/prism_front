@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 import { MENU_FEATURES } from '@core/config/menu-rbac.config';
 import { withMenuPermission } from '@core/routing/route-permissions';
+import { ApprenantImportPageComponent } from '@features/apprenant/apprenant-import-page.component';
 import { EffectifAbandonUnifieComponent } from '@features/apprenant/effectif/effectif-abandon-unifie.component';
 import { EffectifCentreUnifieComponent } from '@features/apprenant/effectif/effectif-centre-unifie.component';
 import { EffectifCompetenceCentrePageComponent } from '@features/apprenant/effectif/effectif-competence-centre-page.component';
@@ -11,6 +12,10 @@ import { EffectifPassageAlphaPageComponent } from '@features/apprenant/effectif/
 export const apprenantFeatureRoutes: Routes = [
   withMenuPermission(
     { path: 'apprenant/effectif', component: EffectifCentreUnifieComponent },
+    MENU_FEATURES.APPRENANT_EFFECTIF,
+  ),
+  withMenuPermission(
+    { path: 'apprenant/import', component: ApprenantImportPageComponent },
     MENU_FEATURES.APPRENANT_EFFECTIF,
   ),
   withMenuPermission(
@@ -27,7 +32,7 @@ export const apprenantFeatureRoutes: Routes = [
   ),
   withMenuPermission(
     { path: 'apprenant/competences', component: EffectifCompetenceCentrePageComponent },
-    MENU_FEATURES.APPRENANT_EFFECTIF,
+    MENU_FEATURES.APPRENANT_COMPETENCES,
   ),
   withMenuPermission(
     {
@@ -46,7 +51,7 @@ export const apprenantFeatureRoutes: Routes = [
         subtitle: 'Effectifs promus pour les centres SIE et CEC.',
       },
     },
-    MENU_FEATURES.APPRENANT_EFFECTIF,
+    MENU_FEATURES.APPRENANT_PROMUS,
   ),
   withMenuPermission(
     {
@@ -58,7 +63,7 @@ export const apprenantFeatureRoutes: Routes = [
         subtitle: 'Effectifs reversés dans le formel pour les centres SIE.',
       },
     },
-    MENU_FEATURES.APPRENANT_EFFECTIF,
+    MENU_FEATURES.APPRENANT_REVERSE_FORMEL_SIE,
   ),
   withMenuPermission(
     {

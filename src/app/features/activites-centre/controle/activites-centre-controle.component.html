@@ -114,6 +114,12 @@
               <td class="text-center text-nowrap mena-col-actions">
                 <div class="mena-row-actions justify-content-center">
                   <app-mena-row-action
+                    variant="history"
+                    title="Historique de validation"
+                    ariaLabel="Historique de validation"
+                    (clicked)="openHistory(row.id ?? null)"
+                  />
+                  <app-mena-row-action
                     *ngIf="canEdit"
                     variant="edit"
                     title="Modifier"
@@ -232,13 +238,13 @@
                   [disabled]="saving"
                 />
             </div>
-            <div class="form-group col-md-2">
+            <div class="form-group col-md-2" *ngIf="!kitIsAutreManuel(kit)">
               <label>Nombre</label>
               <input class="form-control form-control-sm" type="number" min="0" [(ngModel)]="kit.nombreKit" />
             </div>
-            <div class="form-group col-md-4">
-              <label>Précision autre</label>
-              <input class="form-control form-control-sm" type="text" [(ngModel)]="kit.precisionAutre" placeholder="Optionnel" />
+            <div class="form-group" [class.col-md-5]="kitIsAutreManuel(kit)" [class.col-md-4]="!kitIsAutreManuel(kit)" *ngIf="kitIsAutreManuel(kit)">
+              <label>Libellé</label>
+              <input class="form-control form-control-sm" type="text" [(ngModel)]="kit.precisionAutre" placeholder="Préciser le manuel" />
             </div>
             <div class="form-group col-md-1">
               <button type="button" class="btn btn-sm btn-outline-danger" (click)="removeKit(i)" [disabled]="form.kitsManuels.length === 1">
@@ -260,12 +266,32 @@
           </label>
         </div>
       </div>
-      <div class="card-footer bg-white d-flex justify-content-end">
-        <button type="button" class="btn btn-light mr-2" (click)="closeForm()" [disabled]="saving">Annuler</button>
-        <button type="button" class="btn btn-primary" (click)="save()" [disabled]="saving">
-          {{ saving ? 'Enregistrement...' : 'Enregistrer' }}
+      <div class="card-footer bg-white d-flex justify-content-between">
+        <button
+          *ngIf="editingId != null"
+          type="button"
+          class="btn btn-outline-primary btn-sm"
+          (click)="openHistory(editingId)"
+          [disabled]="saving"
+        >
+          <i class="fas fa-history mr-1" aria-hidden="true"></i>
+          Historique
         </button>
+        <div class="ml-auto">
+          <button type="button" class="btn btn-light mr-2" (click)="closeForm()" [disabled]="saving">Annuler</button>
+          <button type="button" class="btn btn-primary" (click)="save()" [disabled]="saving">
+            {{ saving ? 'Enregistrement...' : 'Enregistrer' }}
+          </button>
+        </div>
       </div>
     </div>
   </div>
 </div>
+
+<app-mena-saisie-workflow-history-modal
+  [open]="historyOpen"
+  [resource]="'/api/controle'"
+  [recordId]="historyRecordId"
+  title="Historique de validation — Contrôle"
+  (closed)="closeHistory()"
+/>

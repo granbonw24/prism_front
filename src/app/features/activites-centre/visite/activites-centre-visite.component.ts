@@ -241,8 +241,26 @@ export class ActivitesCentreVisiteComponent implements OnInit {
     return this.mode === 'conseiller';
   }
 
+  /** Niveau Alpha visible pour les suivis superviseur / IEPP (et agrégat centrale). */
+  get showNiveauAlphaColumn(): boolean {
+    return this.mode === 'superviseur' || this.mode === 'iepp' || this.mode === 'centrale';
+  }
+
+  /** Select niveau obligatoire en formulaire points ou suivi superviseur/IEPP. */
+  get showNiveauAlphaField(): boolean {
+    return (
+      this.formMode === 'points' ||
+      (this.formMode === 'suivi' && (this.mode === 'superviseur' || this.mode === 'iepp'))
+    );
+  }
+
   get tableColspan(): number {
-    return 5 + this.suiviFields.length + (this.showMaitriseColumns ? this.pointVisiteFields.length : 0);
+    return (
+      5 +
+      this.suiviFields.length +
+      (this.showMaitriseColumns ? this.pointVisiteFields.length : 0) +
+      (this.showNiveauAlphaColumn ? 1 : 0)
+    );
   }
 
   get maitriseOptions(): Array<{ value: MaitriseResponse; label: string; hint: string }> {
@@ -502,6 +520,14 @@ export class ActivitesCentreVisiteComponent implements OnInit {
       this.errorMessage = 'Le niveau Alpha est obligatoire.';
       return;
     }
+    if (
+      this.formMode === 'suivi' &&
+      (this.mode === 'superviseur' || this.mode === 'iepp') &&
+      !payload.idNiveauAlpha
+    ) {
+      this.errorMessage = 'Le niveau Alpha est obligatoire.';
+      return;
+    }
     if (this.formMode === 'points' && this.mode !== 'conseiller') {
       this.errorMessage = 'Les points des visites sont enregistrés uniquement dans le flux conseiller.';
       return;
@@ -695,6 +721,14 @@ export class ActivitesCentreVisiteComponent implements OnInit {
       return '—';
     }
     return [ref.code, ref.libelle].filter(Boolean).join(' — ') || `Période #${ref.id ?? '—'}`;
+  }
+
+  niveauAlphaLabel(row: VisiteRow): string {
+    const ref = row.niveauAlpha;
+    if (!ref) {
+      return '—';
+    }
+    return [ref.code, ref.libelle].filter(Boolean).join(' — ') || `Niveau #${ref.id ?? '—'}`;
   }
 
   periodeOptionLabel(p: VisiteRef): string {
@@ -1008,7 +1042,7 @@ export class ActivitesCentreVisiteComponent implements OnInit {
           this.rows = this.rows.map((row) => {
             const id = row.id;
             const st = id == null ? null : statuses[String(id)];
-            return st ? { ...row, ...st } : row;
+            return st ? { ...row, ...st, id: row.id } : row;
           });
         },
         error: () => {
@@ -1139,6 +1173,7 @@ export class ActivitesCentreVisiteComponent implements OnInit {
       return {
         idAlpha: payload.idAlpha,
         idPeriodeActivite: payload.idPeriodeActivite,
+        idNiveauAlpha: payload.idNiveauAlpha,
         nombreVisiteEffectueParIepp: payload.nombreVisiteEffectueParIepp,
         nombreReunionPointActiviteAlpha: payload.nombreReunionPointActiviteAlpha,
       };
@@ -1147,6 +1182,7 @@ export class ActivitesCentreVisiteComponent implements OnInit {
       return {
         idAlpha: payload.idAlpha,
         idPeriodeActivite: payload.idPeriodeActivite,
+        idNiveauAlpha: payload.idNiveauAlpha,
         nombreVisiteConseillerSuperviseurEffectue: payload.nombreVisiteConseillerSuperviseurEffectue,
         nombreReunionBilanConseillerSuperviseur: payload.nombreReunionBilanConseillerSuperviseur,
       };

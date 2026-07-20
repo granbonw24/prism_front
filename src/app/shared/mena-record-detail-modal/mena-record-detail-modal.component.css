@@ -1,3 +1,14 @@
 .mena-detail-table th {
   vertical-align: top;
 }
+
+.mena-detail-section__label {
+  background: linear-gradient(90deg, #fff5ed 0%, #f8f9fc 100%);
+  font-weight: 700;
+  font-size: 0.8rem;
+  color: #b54e10;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  padding-top: 0.65rem !important;
+  padding-bottom: 0.65rem !important;
+}

@@ -26,6 +26,8 @@ export interface ReferentielRouteData {
   createFields?: ReferentielFormField[];
   /** Surcharges de libellés de colonnes (clé JSON → libellé affiché). */
   columnLabels?: Record<string, string>;
+  /** Ordre / sous-ensemble de colonnes pour la liste (clés JSON API). */
+  listColumnKeys?: string[];
 }
 
 const F = (
@@ -271,6 +273,14 @@ export const REFERENTIEL_ROUTE_DATA: ReferentielRouteData[] = [
     apiPath: '/api/fonctions',
     createFields: [
       F('libelleFonction', 'Libellé', 'text', { required: true, maxLength: 100 }),
+      F('typeCentre', 'Type de centre', 'select', {
+        options: [
+          { value: 'ALPHA', label: 'ALPHA' },
+          { value: 'CP', label: 'CP' },
+          { value: 'CEC', label: 'CEC' },
+          { value: 'SIE', label: 'SIE' },
+        ],
+      }),
     ],
   },
   {
@@ -285,14 +295,14 @@ export const REFERENTIEL_ROUTE_DATA: ReferentielRouteData[] = [
   },
   {
     path: 'drena',
-    title: 'DRENA',
+    title: 'DRENAET',
     menuGroup: 'geographie',
     apiPath: '/api/drena',
     createFields: [
-      F('codeDrena', 'Code DRENA', 'text', { maxLength: 10 }),
-      F('nomDrena', 'Nom DRENA', 'text', { required: true, maxLength: 30 }),
-      F('mailDrena', 'Mail DRENA', 'text', { maxLength: 30 }),
-      F('telephoneDrena', 'Téléphone DRENA', 'text', { maxLength: 15 }),
+      F('codeDrena', 'Code DRENAET', 'text', { maxLength: 10 }),
+      F('nomDrena', 'Nom DRENAET', 'text', { required: true, maxLength: 30 }),
+      F('mailDrena', 'Mail DRENAET', 'text', { maxLength: 30 }),
+      F('telephoneDrena', 'Téléphone DRENAET', 'text', { maxLength: 15 }),
     ],
   },
   {
@@ -313,11 +323,11 @@ export const REFERENTIEL_ROUTE_DATA: ReferentielRouteData[] = [
   },
   {
     path: 'drena-departement',
-    title: 'Couverture DRENA / Départements',
+    title: 'Couverture DRENAET / Départements',
     menuGroup: 'geographie',
     apiPath: '/api/drena-departement',
     createFields: [
-      F('idDrena', 'DRENA', 'select', {
+      F('idDrena', 'DRENAET', 'select', {
         required: true,
         optionsApiPath: '/api/drena',
         optionValueKey: 'id',
@@ -339,7 +349,7 @@ export const REFERENTIEL_ROUTE_DATA: ReferentielRouteData[] = [
     menuGroup: 'geographie',
     apiPath: '/api/iep',
     createFields: [
-      F('idDrena', 'DRENA', 'select', {
+      F('idDrena', 'DRENAET', 'select', {
         required: true,
         optionsApiPath: '/api/drena',
         optionValueKey: 'id',
@@ -631,7 +641,27 @@ export const REFERENTIEL_ROUTE_DATA: ReferentielRouteData[] = [
         required: true,
         maxLength: 50,
       }),
+      F('dateDebut', 'Date début', 'date'),
+      F('dateFin', 'Date fin', 'date'),
     ],
+  },
+  {
+    path: 'ecole-tutrice',
+    title: 'Écoles tutrices',
+    menuGroup: 'others',
+    apiPath: '/api/ecole-tutrice',
+    createFields: [
+      F('libelleEcoleTutrice', 'Libellé école tutrice', 'text', {
+        required: true,
+        maxLength: 100,
+      }),
+    ],
+    columnLabels: {
+      libelleEcoleTutrice: 'École tutrice',
+      codeEcoleTutrice: 'Code',
+      libelle: 'École tutrice',
+    },
+    listColumnKeys: ['libelleEcoleTutrice'],
   },
   {
     path: 'periodicite',
@@ -720,6 +750,22 @@ export const REFERENTIEL_ROUTE_DATA: ReferentielRouteData[] = [
         maxLength: 100,
       }),
     ],
+  },
+  {
+    path: 'milieu-implantation',
+    title: 'Zones d’implantation',
+    menuGroup: 'geographie',
+    apiPath: '/api/milieu-implantation',
+    createFields: [
+      F('libelleTypeImplentation', 'Libellé (ex. RURAL, URBAIN)', 'text', {
+        required: true,
+        maxLength: 10,
+      }),
+    ],
+    columnLabels: {
+      libelleTypeImplentation: 'Zone d’implantation',
+    },
+    listColumnKeys: ['libelleTypeImplentation'],
   },
   {
     path: 'localite-d-implantation',
