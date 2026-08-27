@@ -4,11 +4,6 @@ import { apprenantFeatureRoutes } from '../../routing/apprenant.routes';
 describe('Apprenant effectifs intégration routes', () => {
   const expectedRoutes = [
     {
-      path: 'apprenant/promus',
-      initialKind: 'promuSie',
-      kinds: ['promuSie', 'promuCec'],
-    },
-    {
       path: 'apprenant/reverse-formel-sie',
       initialKind: 'reverseSie',
       kinds: ['reverseSie'],

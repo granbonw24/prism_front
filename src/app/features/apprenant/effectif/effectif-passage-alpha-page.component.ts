@@ -15,6 +15,7 @@ import { EFFECTIF_PASSAGE_ALPHA_CREATE_FIELDS } from './effectif-satellite-forms
       [inputWorkflowFeature]="'SAISIE_DONNEES'"
       [inputCreateFields]="fields"
       [inputEffectifDenseForm]="true"
+      [inputEffectifBreakdownReadOnlyOnCreate]="true"
       inputContextDashboardModule="APPRENANT"
       inputContextDashboardSubModule="passage"
       inputContextDashboardCentreType="ALPHA"

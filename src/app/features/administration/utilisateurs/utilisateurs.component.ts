@@ -23,6 +23,7 @@ import {
   sortByLabel,
   toMenaSelectOptions,
 } from '@shared/mena-searchable-select/mena-select-options.util';
+import { MenaListSearchDebouncer } from '@shared/mena-list-search-debounce';
 
 type ScopeKey =
   | 'idRegion'
@@ -140,7 +141,7 @@ export class UtilisateursComponent implements OnInit, OnDestroy {
   listSearchText = '';
   listFilterRoleId: number | null = null;
   listFilterActif: 'all' | 'yes' | 'no' = 'all';
-  private listSearchDebounceHandle: ReturnType<typeof setTimeout> | null = null;
+  private readonly listTextSearchDebouncer = new MenaListSearchDebouncer();
 
   constructor(
     private readonly admin: AdministrationService,
@@ -164,10 +165,7 @@ export class UtilisateursComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    if (this.listSearchDebounceHandle != null) {
-      clearTimeout(this.listSearchDebounceHandle);
-      this.listSearchDebounceHandle = null;
-    }
+    this.listTextSearchDebouncer.cancel();
   }
 
   async reload(): Promise<void> {
@@ -235,17 +233,11 @@ export class UtilisateursComponent implements OnInit, OnDestroy {
   }
 
   onListSearchChange(): void {
-    if (this.listSearchDebounceHandle != null) {
-      clearTimeout(this.listSearchDebounceHandle);
-    }
-    this.listSearchDebounceHandle = setTimeout(() => {
-      this.listSearchDebounceHandle = null;
-      void this.applyListFilters();
-    }, 400);
+    this.listTextSearchDebouncer.schedule(() => void this.runListFilters());
   }
 
   applyListFilters(): void {
-    void this.runListFilters();
+    this.listTextSearchDebouncer.runNow(() => void this.runListFilters());
   }
 
   private async runListFilters(): Promise<void> {
@@ -265,10 +257,7 @@ export class UtilisateursComponent implements OnInit, OnDestroy {
     this.listSearchText = '';
     this.listFilterRoleId = null;
     this.listFilterActif = 'all';
-    if (this.listSearchDebounceHandle != null) {
-      clearTimeout(this.listSearchDebounceHandle);
-      this.listSearchDebounceHandle = null;
-    }
+    this.listTextSearchDebouncer.cancel();
     this.applyListFilters();
   }
 

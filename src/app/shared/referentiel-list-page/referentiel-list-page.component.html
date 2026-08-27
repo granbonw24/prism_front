@@ -438,22 +438,27 @@
                   *ngIf="field.type === 'text'"
                   type="text"
                   class="form-control form-control-sm"
-                  [class.bg-light]="!!field.readOnly"
+                  [class.bg-light]="isFieldReadOnly(field)"
                   [id]="'cf-' + field.key"
                   [formControlName]="field.key"
                   [attr.maxlength]="field.maxLength ?? null"
-                  [readOnly]="!!field.readOnly"
+                  [readOnly]="isFieldReadOnly(field)"
                 />
                 <input
                   *ngIf="field.type === 'number'"
-                  type="number"
+                  type="text"
                   class="form-control form-control-sm"
-                  [class.bg-light]="!!field.readOnly"
+                  [class.bg-light]="isFieldReadOnly(field)"
                   [ngClass]="{ 'text-right mena-effectif-num-input': numberCompact }"
                   [id]="'cf-' + field.key"
                   [formControlName]="field.key"
                   inputmode="numeric"
-                  [readOnly]="!!field.readOnly"
+                  pattern="[0-9]*"
+                  autocomplete="off"
+                  [attr.readonly]="isFieldReadOnly(field) ? true : null"
+                  (keydown)="onIntegerFieldKeydown($event)"
+                  (input)="onIntegerFieldInput($event, field.key)"
+                  (paste)="onIntegerFieldPaste($event, field.key)"
                 />
                 <input
                   *ngIf="field.type === 'date'"
@@ -461,12 +466,12 @@
                   class="form-control form-control-sm"
                   [id]="'cf-' + field.key"
                   [formControlName]="field.key"
-                  [readOnly]="!!field.readOnly"
-                  [class.bg-light]="!!field.readOnly"
+                  [readOnly]="isFieldReadOnly(field)"
+                  [class.bg-light]="isFieldReadOnly(field)"
                 />
                 <ng-container *ngIf="field.type === 'select'">
                   <input
-                    *ngIf="field.readOnly; else editableSelect"
+                    *ngIf="isFieldReadOnly(field); else editableSelect"
                     type="text"
                     class="form-control form-control-sm bg-light"
                     [id]="'cf-' + field.key"
@@ -492,7 +497,7 @@
                     class="custom-control-input"
                     [id]="'cf-' + field.key"
                     [formControlName]="field.key"
-                    [disabled]="!!field.readOnly || formSubmitting"
+                    [disabled]="isFieldReadOnly(field) || formSubmitting"
                   />
                   <label class="custom-control-label small" [attr.for]="'cf-' + field.key">
                     Oui
@@ -512,7 +517,7 @@
                 <div class="card-body py-2 px-2">
                   <div class="mena-effectif-group__title mb-2">Informations générales</div>
                   <div class="form-row">
-                    <ng-container *ngFor="let field of formFieldsNonNumeric">
+                    <ng-container *ngFor="let field of cachedFormFieldsNonNumeric; trackBy: trackByFieldKey">
                       <ng-container
                         *ngTemplateOutlet="
                           refField;
@@ -524,16 +529,16 @@
                 </div>
               </div>
 
-              <div class="mena-effectif-total-bar mb-2" *ngIf="formFieldsNumericTotals.length">
+              <div class="mena-effectif-total-bar mb-2" *ngIf="cachedFormFieldsNumericTotals.length">
                 <div class="mena-effectif-group__title mb-2">Effectif total</div>
                 <div class="form-row align-items-end">
-                  <ng-container *ngFor="let field of formFieldsNumericTotals">
+                  <ng-container *ngFor="let field of cachedFormFieldsNumericTotals; trackBy: trackByFieldKey">
                     <ng-container
                       *ngTemplateOutlet="
                         refField;
                         context: {
                           field: field,
-                          colClass: formFieldsNumericTotals.length > 1 ? 'col-md-4' : 'col-md-6',
+                          colClass: cachedFormFieldsNumericTotals.length > 1 ? 'col-md-4' : 'col-md-6',
                           numberCompact: false
                         }
                       "
@@ -548,7 +553,7 @@
                         class="mena-effectif-live-sum form-control form-control-sm bg-white mb-1"
                         [class.is-match]="effectifSumMatchesH"
                         [class.is-mismatch]="!effectifSumMatchesH"
-                        aria-live="polite"
+                        aria-live="off"
                       >
                         <span class="mena-effectif-live-sum__value">H {{ effectifPartsSumH }}</span>
                         <span class="mena-effectif-live-sum__meta text-muted">
@@ -562,7 +567,7 @@
                         class="mena-effectif-live-sum form-control form-control-sm bg-white"
                         [class.is-match]="effectifSumMatchesF"
                         [class.is-mismatch]="!effectifSumMatchesF"
-                        aria-live="polite"
+                        aria-live="off"
                       >
                         <span class="mena-effectif-live-sum__value">F {{ effectifPartsSumF }}</span>
                         <span class="mena-effectif-live-sum__meta text-muted">
@@ -590,7 +595,7 @@
                         class="mena-effectif-live-sum form-control form-control-sm bg-white"
                         [class.is-match]="effectifSumMatches"
                         [class.is-mismatch]="!effectifSumMatches"
-                        aria-live="polite"
+                        aria-live="off"
                       >
                         <span class="mena-effectif-live-sum__value">{{ effectifPartsSum }}</span>
                         <span class="mena-effectif-live-sum__meta text-muted">
@@ -615,14 +620,14 @@
 
               <div
                 class="mena-effectif-numeric-scroll rounded-lg"
-                *ngIf="formFieldsNumericGroups.length"
+                *ngIf="cachedFormFieldsNumericGroups.length"
                 role="region"
                 aria-label="Effectifs par tranche"
               >
-                <div *ngFor="let group of formFieldsNumericGroups" class="mena-effectif-group">
+                <div *ngFor="let group of cachedFormFieldsNumericGroups; trackBy: trackByEffectifGroupId" class="mena-effectif-group">
                   <div class="mena-effectif-group__title">{{ group.title }}</div>
                   <div class="form-row">
-                    <ng-container *ngFor="let field of group.fields">
+                    <ng-container *ngFor="let field of group.fields; trackBy: trackByFieldKey">
                       <ng-container
                         *ngTemplateOutlet="
                           refField;
@@ -636,7 +641,7 @@
             </ng-container>
             <ng-template #classicReferentielFields>
               <div class="form-row">
-                <ng-container *ngFor="let field of formFieldsVisible">
+                <ng-container *ngFor="let field of formFieldsVisible; trackBy: trackByFieldKey">
                   <ng-container
                     *ngTemplateOutlet="refField; context: { field: field, colClass: 'col-md-6', numberCompact: false }"
                   ></ng-container>
@@ -654,7 +659,7 @@
               <button
                 type="submit"
                 class="btn btn-primary btn-sm mena-btn-add"
-                [disabled]="formSubmitting || (hasEffectifTotalControl && !effectifSumMatches)"
+                [disabled]="formSubmitting || effectifSubmitBlockedBySum"
               >
                 {{
                   formSubmitting

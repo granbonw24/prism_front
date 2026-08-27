@@ -65,6 +65,7 @@ export const REFERENTIEL_COLUMN_LABELS: Record<string, string> = {
   libelleStatutPersonnel: 'Libellé statut',
   libelleSupportDidactique: 'Libellé support',
   libelleTypeAlpha: 'Libellé type alpha',
+  libelleTypeSie: 'Libellé type SIE',
   libelleTypeDocument: 'Libellé type document',
   libelleEcoleTutrice: 'École tutrice',
   codeEcoleTutrice: 'Code école tutrice',

@@ -33,12 +33,11 @@
     </div>
 
     <div class="card-body pt-3">
-      <app-mena-loading *ngIf="loading" message="Chargement des utilisateurs…" [centered]="true" />
-      <div *ngIf="!loading && errorMessage" class="alert alert-danger">
+      <div *ngIf="errorMessage" class="alert alert-danger mb-3">
         {{ errorMessage }}
       </div>
 
-      <div *ngIf="!loading && !errorMessage">
+      <ng-container *ngIf="!errorMessage">
         <div class="card border bg-light mb-3 mena-users-filters">
           <div class="card-body py-3">
             <div class="form-row align-items-end">
@@ -55,6 +54,7 @@
                     placeholder="Username ou e-mail…"
                     [(ngModel)]="listSearchText"
                     (ngModelChange)="onListSearchChange()"
+                    (keyup.enter)="applyListFilters()"
                     [disabled]="saving"
                     autocomplete="off"
                   />
@@ -69,7 +69,7 @@
                   nullLabel="Tous les rôles"
                   placeholder="Rechercher…"
                   inputClass="form-control form-control-sm"
-                  [disabled]="saving || loading"
+                  [disabled]="saving"
                   [loading]="loading"
                 />
               </div>
@@ -102,6 +102,9 @@
           </div>
         </div>
 
+        <app-mena-loading *ngIf="loading" message="Chargement des utilisateurs…" [centered]="true" />
+
+        <ng-container *ngIf="!loading">
         <div class="table-responsive">
           <table class="table table-bordered align-middle">
             <thead class="thead-light">
@@ -216,9 +219,10 @@
           </div>
           <div class="text-muted">{{ totalElements }} résultat(s) au total</div>
         </div>
+        </ng-container>
 
         <div *ngIf="saving" class="small text-muted">Enregistrement en cours…</div>
-      </div>
+      </ng-container>
     </div>
   </div>
 </div>

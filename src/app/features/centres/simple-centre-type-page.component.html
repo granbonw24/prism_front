@@ -173,7 +173,13 @@
           </div>
           <div class="form-group col-md-6">
             <label class="small text-muted">Organisation faîtière</label>
-            <input class="form-control" [(ngModel)]="model.promoteur.personnePhysique!.organisationFaitiere" [disabled]="saving" />
+            <app-mena-searchable-select
+              [loading]="loading"
+              [(ngModel)]="model.promoteur.personnePhysique!.idOrganisationFaitiere"
+              [options]="menaOrganisationFaitiereOptions()"
+              nullLabel="—"
+              [disabled]="saving"
+            />
           </div>
         </div>
         <div class="form-row" *ngIf="promoteurMode === 'new' && model.promoteur.typePromoteur === 'MORALE'">
@@ -372,7 +378,7 @@
             <label class="small text-muted">Zone d’implantation</label>
             <app-mena-searchable-select
               [loading]="loading"
-              [(ngModel)]="model.centre.nomMilieuImplentation"
+              [(ngModel)]="model.centre.idMilieuImplentation"
               [options]="menaZoneImplantationOptions()"
               nullLabel="—"
               [disabled]="saving"
@@ -381,6 +387,23 @@
           <div class="form-group col-md-4">
             <label class="small text-muted">Date création DAAJE</label>
             <input type="date" class="form-control" [(ngModel)]="model.centre.dateCreationDaaje" [disabled]="saving" />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group col-md-6">
+            <label class="small text-muted">Structure partenaire</label>
+            <app-mena-searchable-select
+              [loading]="loading"
+              [(ngModel)]="model.centre.structurePartenaire"
+              [options]="menaPartenaireLibelleOptions()"
+              nullLabel="—"
+              [disabled]="saving"
+            />
+          </div>
+          <div class="form-group col-md-6">
+            <label class="small text-muted">Nom du partenaire</label>
+            <input class="form-control" [(ngModel)]="model.centre.nomPartenaire" [disabled]="saving" />
           </div>
         </div>
 
@@ -442,6 +465,9 @@
               nullLabel="—"
               [disabled]="saving"
             />
+            <div class="small text-muted mt-1" *ngIf="menaEcoleTutriceOptions().length === 0">
+              Aucune école tutrice en base — renseignez le référentiel Paramétrage → Écoles tutrices.
+            </div>
           </div>
           <div class="form-group col-md-6">
             <label class="small text-muted">Année de création</label>
@@ -451,6 +477,19 @@
               min="1800"
               max="2100"
               [(ngModel)]="model.anneeCreation"
+              [disabled]="saving"
+            />
+          </div>
+        </div>
+
+        <div class="form-row" *ngIf="isSieWizard()">
+          <div class="form-group col-md-6">
+            <label class="small text-muted">Type SIE<span class="mena-required-mark" aria-hidden="true"> *</span></label>
+            <app-mena-searchable-select
+              [loading]="loading"
+              [(ngModel)]="model.typeSieId"
+              [options]="menaTypeSieOptions()"
+              nullLabel="—"
               [disabled]="saving"
             />
           </div>
@@ -614,7 +653,7 @@
                 <dt>GPS</dt>
                 <dd>{{ model.centre.latitudeGps?.trim() || '—' }}, {{ model.centre.longitudeGps?.trim() || '—' }}</dd>
                 <dt>Repère géographique</dt><dd>{{ model.centre.localisationCentre || '—' }}</dd>
-                <dt>Milieu</dt><dd>{{ model.centre.nomMilieuImplentation || '—' }}</dd>
+                <dt>Zone d’implantation</dt><dd>{{ selectedCreateMilieuImplantationLabel() }}</dd>
               </dl>
             </section>
 
@@ -625,6 +664,9 @@
                 <ng-container *ngIf="isCecWizard()">
                   <dt>École tutrice</dt><dd>{{ model.ecoleTutrice?.trim() || '—' }}</dd>
                   <dt>Année création</dt><dd>{{ model.anneeCreation ?? '—' }}</dd>
+                </ng-container>
+                <ng-container *ngIf="isSieWizard()">
+                  <dt>Type SIE</dt><dd>{{ typeSieLabel(model.typeSieId) }}</dd>
                 </ng-container>
               </dl>
             </section>
@@ -705,6 +747,7 @@
               class="form-control form-control-sm"
               [(ngModel)]="searchQ"
               (ngModelChange)="onListSearchChange()"
+              (keyup.enter)="applyListFilters()"
               placeholder="Saisir un ou plusieurs critères…"
             />
           </div>
@@ -926,6 +969,10 @@
                 <th>Année de création</th>
                 <td>{{ d.anneeCreation ?? '—' }}</td>
               </tr>
+              <tr *ngIf="isSieWizard()">
+                <th>Type SIE</th>
+                <td>{{ detailTypeSieLabel(d) }}</td>
+              </tr>
               <tr>
                 <th>Niveaux</th>
                 <td>
@@ -1106,8 +1153,8 @@
                 <td>{{ d.localisationCentre ?? '—' }}</td>
               </tr>
               <tr>
-                <th>Milieu d’implantation</th>
-                <td>{{ d.nomMilieuImplentation ?? '—' }}</td>
+                <th>Zone d’implantation</th>
+                <td>{{ detailMilieuLabel(d) }}</td>
               </tr>
             </tbody>
           </table>
@@ -1169,6 +1216,19 @@
             <div class="form-group col-md-6">
               <label class="small text-muted">Année de création</label>
               <input type="number" class="form-control" min="1800" max="2100" [(ngModel)]="editForm.anneeCreation" [disabled]="saving" />
+            </div>
+          </div>
+
+          <div class="form-row" *ngIf="isSieWizard()">
+            <div class="form-group col-md-6">
+              <label class="small text-muted">Type SIE</label>
+              <app-mena-searchable-select
+                [loading]="loading"
+                [(ngModel)]="editForm.typeSieId"
+                [options]="menaTypeSieOptions()"
+                nullLabel="—"
+                [disabled]="saving"
+              />
             </div>
           </div>
 
@@ -1336,7 +1396,7 @@
               <label class="small text-muted">Zone d’implantation</label>
               <app-mena-searchable-select
                 [loading]="loading"
-                [(ngModel)]="editForm.nomMilieuImplentation"
+                [(ngModel)]="editForm.idMilieuImplentation"
                 [options]="menaZoneImplantationOptions()"
                 nullLabel="—"
                 [disabled]="saving"
@@ -1384,7 +1444,13 @@
           <div class="form-row">
             <div class="form-group col-md-6">
               <label class="small text-muted">Structure partenaire</label>
-              <input class="form-control" [(ngModel)]="editForm.structurePartenaire" [disabled]="saving" />
+              <app-mena-searchable-select
+                [loading]="loading"
+                [(ngModel)]="editForm.structurePartenaire"
+                [options]="menaPartenaireLibelleOptions()"
+                nullLabel="—"
+                [disabled]="saving"
+              />
             </div>
             <div class="form-group col-md-6">
               <label class="small text-muted">Nom du partenaire</label>

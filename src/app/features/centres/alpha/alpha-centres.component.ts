@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Component, Inject } from '@angular/core';
+import { Component, Inject, OnDestroy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { forkJoin } from 'rxjs';
@@ -46,6 +46,7 @@ import {
   centrePageModeFromRoute,
   displayOrDash,
   fetchPromoteurOptionDetails,
+  formatCampagnePeriodLabel,
   printCentreIdentificationFiche,
   wizardSavedFicheFromCreateResponse,
   WizardSavedFiche,
@@ -55,6 +56,7 @@ import {
   menaIepSelectOptions,
   menaLocaliteSelectOptions,
   menaNatureSelectOptions,
+  menaOrganisationFaitiereSelectOptions,
   menaPeriodiciteSelectOptions,
   menaPromoteurSelectOptions,
   menaRefLibelleStringOptions,
@@ -63,6 +65,7 @@ import {
   sortRefOptions,
 } from '@features/centres/centre-select-options.util';
 import { sortByLabel } from '@shared/mena-searchable-select/mena-select-options.util';
+import { MenaListSearchDebouncer } from '@shared/mena-list-search-debounce';
 
 type DrenaDepartementOption = RefOption & {
   drena?: CentreRefDetails | null;
@@ -84,7 +87,7 @@ type DrenaDepartementOption = RefOption & {
   ],
   templateUrl: './alpha-centres.component.html',
 })
-export class AlphaCentresComponent {
+export class AlphaCentresComponent implements OnDestroy {
   private static readonly NATIONAL_ROLES = new Set([
     'ADMIN',
     'SUPER_ADMIN',
@@ -129,6 +132,7 @@ export class AlphaCentresComponent {
   periodicites: PeriodiciteOption[] = [];
   autorites: AutoriteOption[] = [];
   milieuxImplantation: RefOption[] = [];
+  partenaires: RefOption[] = [];
   regions: RefOption[] = [];
   drenas: RefOption[] = [];
   departements: DepartementOption[] = [];
@@ -137,6 +141,7 @@ export class AlphaCentresComponent {
   sousPrefectures: SousPrefectureOption[] = [];
   promoteurs: PromoteurOption[] = [];
   typePersonneMoraleOptions: RefOption[] = [];
+  organisationsFaitieres: RefOption[] = [];
   civilites: RefOption[] = [];
   fonctions: RefOption[] = [];
   /** Référentiel `niveau_personnel` (libellé stocké dans promoteur.niveauEtudes). */
@@ -185,7 +190,7 @@ export class AlphaCentresComponent {
       structurePartenaire: '',
       nomPartenaire: '',
       localisationCentre: '',
-      nomMilieuImplentation: '',
+      idMilieuImplentation: null,
       dateCreationDaaje: null as string | null,
     },
     niveaux: [],
@@ -216,6 +221,7 @@ export class AlphaCentresComponent {
   listFilterDrenaId: number | null = null;
   listFilterIepId: number | null = null;
   listFilterActif: 'all' | 'yes' | 'no' = 'all';
+  private readonly listTextSearchDebouncer = new MenaListSearchDebouncer();
   private listGeoInitialized = false;
 
   /** Filtres liste (noms alignés sur l’API query). */
@@ -271,7 +277,7 @@ export class AlphaCentresComponent {
     structurePartenaire: string | null;
     nomPartenaire: string | null;
     localisationCentre: string | null;
-    nomMilieuImplentation: string | null;
+    idMilieuImplentation: number | null;
     encadreurNonMena: string | null;
     encadrerParMena: boolean | null;
     idPromoteur: number | null;
@@ -296,7 +302,7 @@ export class AlphaCentresComponent {
     structurePartenaire: null,
     nomPartenaire: null,
     localisationCentre: null,
-    nomMilieuImplentation: null,
+    idMilieuImplentation: null,
     encadreurNonMena: null,
     encadrerParMena: null,
     idPromoteur: null,
@@ -426,8 +432,10 @@ export class AlphaCentresComponent {
       periodicites: this.http.get<PeriodiciteOption[]>(`${this.apiBaseUrl}/api/Periodicites`),
       autorites: this.http.get<AutoriteOption[]>(`${this.apiBaseUrl}/api/autoriteautorisation`),
       milieuxImplantation: this.http.get<any[]>(`${this.apiBaseUrl}/api/milieu-implantation`),
+      partenaires: this.http.get<any[]>(`${this.apiBaseUrl}/api/Partenaires`),
       promoteurs: this.http.get<any[]>(`${this.apiBaseUrl}/api/promoteur`),
       typePersonneMorales: this.http.get<any[]>(`${this.apiBaseUrl}/api/type-personne-morale`),
+      organisationsFaitieres: this.http.get<any[]>(`${this.apiBaseUrl}/api/organisation-faitiere`),
       civilites: this.http.get<any[]>(`${this.apiBaseUrl}/api/civilite`),
       fonctions: this.http.get<any[]>(`${this.apiBaseUrl}/api/fonctions`),
       niveauxPersonnel: this.http.get<any[]>(`${this.apiBaseUrl}/api/niveau-personnel`),
@@ -459,8 +467,10 @@ export class AlphaCentresComponent {
     periodicites?: PeriodiciteOption[];
     autorites?: AutoriteOption[];
     milieuxImplantation?: any[];
+    partenaires?: any[];
     promoteurs?: any[];
     typePersonneMorales?: any[];
+    organisationsFaitieres?: any[];
     civilites?: any[];
     fonctions?: any[];
     niveauxPersonnel?: any[];
@@ -469,10 +479,7 @@ export class AlphaCentresComponent {
     this.campagnes = (res.campagnes ?? []).map((x: any) => ({
       id: x.id,
       code: x.codeCampagne ?? undefined,
-      libelle:
-        x.dateDebutCampagne != null && x.dateFinCampagne != null
-          ? `${x.dateDebutCampagne} → ${x.dateFinCampagne}`
-          : undefined,
+      libelle: formatCampagnePeriodLabel(x.dateDebutCampagne, x.dateFinCampagne),
     }));
     const activeCampagne = (res.campagnes ?? []).find(
       (x: { etatCampagne?: boolean }) => x.etatCampagne === true,
@@ -523,6 +530,11 @@ export class AlphaCentresComponent {
       code: x.codeMilieuImplentation ?? x.code ?? undefined,
       libelle: x.libelleTypeImplentation ?? x.libelle ?? undefined,
     }));
+    this.partenaires = (res.partenaires ?? []).map((x: any) => ({
+      id: Number(x.id ?? 0),
+      code: x.codePartenaire ?? x.code ?? undefined,
+      libelle: x.libellePartenaire ?? x.libelle ?? undefined,
+    }));
     this.promoteurs = (res.promoteurs ?? []).map((x: any) => ({
       id: x.id,
       code: x.codePromoteur ?? undefined,
@@ -533,6 +545,11 @@ export class AlphaCentresComponent {
       id: x.id,
       code: undefined,
       libelle: x.libelle ?? undefined,
+    }));
+    this.organisationsFaitieres = (res.organisationsFaitieres ?? []).map((x: any) => ({
+      id: x.id,
+      code: x.sigleOrganisationFaitiere ?? x.code ?? undefined,
+      libelle: x.libelleOrganisationFaitiere ?? x.libelle ?? undefined,
     }));
     this.civilites = (res.civilites ?? []).map((x: any) => this.refOptionFromApi(x));
     this.fonctions = (res.fonctions ?? []).map((x: any) => this.refOptionFromApi(x));
@@ -563,8 +580,10 @@ export class AlphaCentresComponent {
     this.periodicites = sortByLabel(this.periodicites, periodiciteOptionLabel);
     this.autorites = sortByLabel(this.autorites, autoriteOptionLabel);
     this.milieuxImplantation = sortRefOptions(this.milieuxImplantation);
+    this.partenaires = sortRefOptions(this.partenaires);
     this.promoteurs = sortPromoteurOptions(this.promoteurs);
     this.typePersonneMoraleOptions = sortRefOptions(this.typePersonneMoraleOptions);
+    this.organisationsFaitieres = sortRefOptions(this.organisationsFaitieres, true);
     this.civilites = sortRefOptions(this.civilites);
     this.fonctions = sortRefOptions(this.fonctions);
     this.niveauxPersonnel = sortRefOptions(this.niveauxPersonnel);
@@ -596,7 +615,11 @@ export class AlphaCentresComponent {
   }
 
   menaZoneImplantationOptions() {
-    return menaRefLibelleStringOptions(this.milieuxImplantation);
+    return menaRefSelectOptions(this.milieuxImplantation);
+  }
+
+  menaPartenaireLibelleOptions() {
+    return menaRefLibelleStringOptions(this.partenaires);
   }
 
   menaPeriodiciteOptions() {
@@ -625,6 +648,10 @@ export class AlphaCentresComponent {
 
   menaTypePersonneMoraleOptions() {
     return menaRefSelectOptions(this.typePersonneMoraleOptions);
+  }
+
+  menaOrganisationFaitiereOptions() {
+    return menaOrganisationFaitiereSelectOptions(this.organisationsFaitieres);
   }
 
   private isNationalScope(s: AuthSession | null): boolean {
@@ -962,9 +989,9 @@ export class AlphaCentresComponent {
     this.createCommuneId = localite?.commune?.id ?? this.createCommuneId;
     this.createDepartementId = localite ? this.localiteDepartementId(localite) : this.createDepartementId;
     this.createRegionId = this.createDepartementId != null ? this.departementRegionId(this.createDepartementId) : this.createRegionId;
-    const milieu = this.refCentreLabel(localite?.milieuImplantation, () => '');
-    if (milieu && !String(this.model.centre.nomMilieuImplentation ?? '').trim()) {
-      this.model.centre.nomMilieuImplentation = milieu;
+    const milieuId = localite?.milieuImplantation?.id ?? null;
+    if (milieuId != null && this.model.centre.idMilieuImplentation == null) {
+      this.model.centre.idMilieuImplentation = milieuId;
     }
   }
 
@@ -1006,6 +1033,38 @@ export class AlphaCentresComponent {
     this.editCommuneId = localite?.commune?.id ?? null;
     this.editDepartementId = localite ? this.localiteDepartementId(localite) : null;
     this.editRegionId = this.editDepartementId != null ? this.departementRegionId(this.editDepartementId) : null;
+    const milieuId = localite?.milieuImplantation?.id ?? null;
+    if (milieuId != null) {
+      this.editForm.idMilieuImplentation = milieuId;
+    }
+  }
+
+  milieuImplantationLabel(id: number | null | undefined, nomFallback?: string | null): string {
+    if (id != null) {
+      const found = this.milieuxImplantation.find((item) => item.id === id);
+      if (found) return this.refOptionLibelle(found);
+    }
+    const nom = nomFallback?.trim();
+    if (nom) return nom;
+    return '—';
+  }
+
+  detailMilieuLabel(d: CentreDetailRow | null | undefined): string {
+    if (!d) return '—';
+    const fromNom = d.nomMilieuImplentation?.trim();
+    if (fromNom) return fromNom;
+    const localite = this.localites.find((item) => item.id === d.idLocalite);
+    const fromLocalite = this.refCentreLabel(localite?.milieuImplantation, () => '');
+    return fromLocalite || '—';
+  }
+
+  private resolveMilieuIdFromNom(nom: string | null | undefined): number | null {
+    const label = nom?.trim();
+    if (!label) return null;
+    const found = this.milieuxImplantation.find(
+      (item) => this.refOptionLibelle(item) === label || item.libelle?.trim() === label,
+    );
+    return found?.id ?? null;
   }
 
   campagneLabel(id: number | null | undefined): string {
@@ -1088,7 +1147,7 @@ export class AlphaCentresComponent {
       regimeAlphaId: this.model.regimeAlphaId,
       libelleAlpha: this.model.libelleAlpha,
       promoteur: this.buildPromoteurPayload(),
-      centre: { ...this.model.centre },
+      centre: this.buildWizardCentrePayload(),
       niveaux: this.buildAlphaNiveauxPayload(),
     };
 
@@ -1159,7 +1218,10 @@ export class AlphaCentresComponent {
           structurePartenaire: d.structurePartenaire ?? null,
           nomPartenaire: d.nomPartenaire ?? null,
           localisationCentre: d.localisationCentre ?? null,
-          nomMilieuImplentation: d.nomMilieuImplentation ?? null,
+          idMilieuImplentation:
+            this.resolveMilieuIdFromNom(d.nomMilieuImplentation) ??
+            this.localites.find((localite) => localite.id === d.idLocalite)?.milieuImplantation?.id ??
+            null,
           encadreurNonMena: d.encadreurNonMena ?? null,
           encadrerParMena: d.encadrerParMena ?? null,
           idPromoteur: d.promoteur?.idPromoteur ?? d.idPromoteur ?? null,
@@ -1251,7 +1313,7 @@ export class AlphaCentresComponent {
         structurePartenaire: '',
         nomPartenaire: '',
         localisationCentre: '',
-        nomMilieuImplentation: '',
+        idMilieuImplentation: null,
         dateCreationDaaje: null,
       },
       niveaux: [],
@@ -1288,7 +1350,7 @@ export class AlphaCentresComponent {
         niveauEtudes: '',
         civilite: '',
         mail: '',
-        organisationFaitiere: '',
+        idOrganisationFaitiere: null,
       },
       personneMorale: null,
     };
@@ -1321,7 +1383,7 @@ export class AlphaCentresComponent {
       niveauEtudes: '',
       civilite: '',
       mail: '',
-      organisationFaitiere: '',
+      idOrganisationFaitiere: null,
     };
     this.model.promoteur.personneMorale = null;
   }
@@ -1720,18 +1782,13 @@ export class AlphaCentresComponent {
   }
 
   promoteurSummary(row: AlphaRow): string {
-    const p = row.promoteur;
-    if (p) {
-      const code = p.codePromoteur?.trim();
-      const libelle = p.libellePromoteur?.trim();
-      if (code && libelle) return `${code} — ${libelle}`;
-      if (code || libelle) return (code || libelle) as string;
-      if (p.idPromoteur != null) return `#${p.idPromoteur}`;
-    }
+    const code = row.promoteur?.codePromoteur?.trim();
+    if (code) return code;
     const id = row.idPromoteur;
     if (id != null) {
       const opt = this.promoteurs.find((x) => x.id === id);
-      return opt ? this.refOptionLabel(opt) : `#${id}`;
+      const optCode = (opt?.details?.codePromoteur ?? opt?.code)?.trim();
+      if (optCode) return optCode;
     }
     return '—';
   }
@@ -1881,6 +1938,39 @@ export class AlphaCentresComponent {
     return result;
   }
 
+  private buildWizardCentrePayload(): AlphaFullCreatePayload['centre'] {
+    const c = this.model.centre;
+    const localite = this.localites.find((item) => item.id === c.localiteId);
+    let idMilieuImplentation = c.idMilieuImplentation ?? null;
+    if (idMilieuImplentation == null) {
+      idMilieuImplentation = localite?.milieuImplantation?.id ?? null;
+    }
+    return {
+      localiteId: c.localiteId,
+      periodiciteId: c.periodiciteId,
+      iepId: c.iepId,
+      autoriteAutorisationId: c.autoriteAutorisationId,
+      natureCentreId: c.natureCentreId,
+      autorisation: c.autorisation,
+      encadreurNonMena: this.trimToNull(c.encadreurNonMena) ?? null,
+      encadrerParMena: c.encadrerParMena,
+      estElectrifie: c.estElectrifie,
+      aDeLeau: c.aDeLeau,
+      nombreVisite: c.nombreVisite,
+      totalApprenants: c.totalApprenants,
+      totalHommes: c.totalHommes,
+      totalFemmes: c.totalFemmes,
+      latitudeGps: this.trimToNull(c.latitudeGps) ?? null,
+      longitudeGps: this.trimToNull(c.longitudeGps) ?? null,
+      gpsValide: c.gpsValide,
+      structurePartenaire: this.trimToNull(c.structurePartenaire) ?? null,
+      nomPartenaire: this.trimToNull(c.nomPartenaire) ?? null,
+      localisationCentre: this.trimToNull(c.localisationCentre) ?? null,
+      idMilieuImplentation,
+      dateCreationDaaje: c.dateCreationDaaje ?? null,
+    };
+  }
+
   private buildPromoteurPayload(): PromoteurUpsertPayload {
     if (this.promoteurMode === 'existing') {
       return { id: this.model.promoteur.id ?? null };
@@ -1901,7 +1991,7 @@ export class AlphaCentresComponent {
             niveauEtudes: this.trimToNull(rawPp.niveauEtudes),
             civilite: this.trimToNull(rawPp.civilite),
             mail: this.trimToNull(rawPp.mail),
-            organisationFaitiere: this.trimToNull(rawPp.organisationFaitiere),
+            idOrganisationFaitiere: rawPp.idOrganisationFaitiere ?? null,
           }
         : null;
     return {
@@ -1970,11 +2060,25 @@ export class AlphaCentresComponent {
   }
 
   applyListFilters(): void {
-    this.pageIndex = 0;
-    this.loadAll();
+    this.listTextSearchDebouncer.runNow(() => {
+      this.pageIndex = 0;
+      this.loadAll();
+    });
+  }
+
+  onListSearchChange(): void {
+    this.listTextSearchDebouncer.schedule(() => {
+      this.pageIndex = 0;
+      this.loadAll();
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.listTextSearchDebouncer.cancel();
   }
 
   resetListFilters(): void {
+    this.listTextSearchDebouncer.cancel();
     this.searchQ = '';
     this.listFilterDrenaId = null;
     this.listFilterIepId = null;

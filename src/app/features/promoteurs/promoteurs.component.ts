@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
-import { Component, Inject, OnInit } from '@angular/core';
+import { Component, Inject, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { API_BASE_URL } from '@core/tokens/api-base-url.token';
 import { SpringPage } from '@models/centre';
@@ -15,6 +15,7 @@ import {
 import { toMenaSelectOptionsFromPairs } from '@shared/mena-searchable-select/mena-select-options.util';
 import { MenaSearchableSelectComponent } from '@shared/mena-searchable-select/mena-searchable-select.component';
 import { MenaRowActionButtonComponent } from '@shared/mena-row-action-button/mena-row-action-button.component';
+import { MenaListSearchDebouncer } from '@shared/mena-list-search-debounce';
 
 type Promoteur = {
   id: number;
@@ -41,7 +42,7 @@ type Promoteur = {
   templateUrl: './promoteurs.component.html',
   styleUrl: './promoteurs.component.css',
 })
-export class PromoteursComponent implements OnInit {
+export class PromoteursComponent implements OnInit, OnDestroy {
   loading = false;
   detailLoading = false;
   errorMessage: string | null = null;
@@ -58,6 +59,8 @@ export class PromoteursComponent implements OnInit {
     codePromoteur: '',
     libellePromoteur: '',
   };
+
+  private readonly listTextSearchDebouncer = new MenaListSearchDebouncer();
 
   detailModalOpen = false;
   detailFields: MenaRecordDetailField[] = [];
@@ -119,7 +122,9 @@ export class PromoteursComponent implements OnInit {
       const parts: string[] = [];
       const dn = this.raw(pp['dateNaissance']);
       if (dn) parts.push(`Né(e) le ${dn}`);
-      const org = this.raw(pp['organisationFaitiere']);
+      const org =
+        this.raw(pp['libelleOrganisationFaitiere']) ||
+        this.raw((pp['organisationFaitiere'] as Record<string, unknown> | null | undefined)?.['libelle']);
       if (org) parts.push(org);
       const fn = this.raw(pp['fonction']);
       if (fn) parts.push(fn);
@@ -174,11 +179,25 @@ export class PromoteursComponent implements OnInit {
   }
 
   applyListFilters(): void {
-    this.pageIndex = 0;
-    this.reload();
+    this.listTextSearchDebouncer.runNow(() => {
+      this.pageIndex = 0;
+      this.reload();
+    });
+  }
+
+  onListTextFilterChange(): void {
+    this.listTextSearchDebouncer.schedule(() => {
+      this.pageIndex = 0;
+      this.reload();
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.listTextSearchDebouncer.cancel();
   }
 
   resetListFilters(): void {
+    this.listTextSearchDebouncer.cancel();
     this.listFilter = { q: '', typePromoteur: '', codePromoteur: '', libellePromoteur: '' };
     this.pageIndex = 0;
     this.reload();
@@ -270,7 +289,12 @@ export class PromoteursComponent implements OnInit {
         { label: 'Boîte postale', value: this.str(pp['boitePostale']) },
         { label: 'Fonction', value: this.str(pp['fonction']) },
         { label: "Niveau d'études", value: this.str(pp['niveauEtudes']) },
-        { label: 'Organisation faîtière', value: this.str(pp['organisationFaitiere']) },
+        {
+          label: 'Organisation faîtière',
+          value:
+            this.str(pp['libelleOrganisationFaitiere']) ||
+            this.str((pp['organisationFaitiere'] as Record<string, unknown> | null | undefined)?.['libelle']),
+        },
       );
     }
 

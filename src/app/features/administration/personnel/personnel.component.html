@@ -131,6 +131,7 @@
             [(ngModel)]="listFilter.q"
             placeholder="Ex. nom ou fragment d’email…"
             [disabled]="loading || saving"
+            (ngModelChange)="onListTextSearchChange()"
             (keyup.enter)="applyListFilters()"
           />
         </div>

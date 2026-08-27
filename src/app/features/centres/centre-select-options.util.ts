@@ -35,6 +35,10 @@ export function menaRefSelectOptions(items: readonly RefOption[]): MenaSelectOpt
   return toMenaSelectOptionsFromIds(items, refOptionLibelle);
 }
 
+export function menaOrganisationFaitiereSelectOptions(items: readonly RefOption[]): MenaSelectOption<number>[] {
+  return toMenaSelectOptionsFromIds(items, refOptionLabel);
+}
+
 export function menaPromoteurSelectOptions(items: readonly PromoteurOption[]): MenaSelectOption<number>[] {
   return toMenaSelectOptionsFromIds(items, promoteurSelectLabel);
 }

@@ -176,7 +176,13 @@
           </div>
           <div class="form-group col-md-6">
             <label class="small text-muted">Organisation faîtière</label>
-            <input class="form-control" [(ngModel)]="model.promoteur.personnePhysique!.organisationFaitiere" [disabled]="saving" />
+            <app-mena-searchable-select
+              [loading]="loading"
+              [(ngModel)]="model.promoteur.personnePhysique!.idOrganisationFaitiere"
+              [options]="menaOrganisationFaitiereOptions()"
+              nullLabel="—"
+              [disabled]="saving"
+            />
           </div>
         </div>
         <div class="form-row" *ngIf="promoteurMode === 'new' && model.promoteur.typePromoteur === 'MORALE'">
@@ -375,7 +381,7 @@
             <label class="small text-muted">Zone d'implantation</label>
             <app-mena-searchable-select
               [loading]="refsSelectLoading"
-              [(ngModel)]="model.centre.nomMilieuImplentation"
+              [(ngModel)]="model.centre.idMilieuImplentation"
               [options]="menaZoneImplantationOptions()"
               nullLabel="—"
               [disabled]="saving"
@@ -384,6 +390,23 @@
           <div class="form-group col-md-4">
             <label class="small text-muted">Date création DAAJE</label>
             <input type="date" class="form-control" [(ngModel)]="model.centre.dateCreationDaaje" [disabled]="saving" />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group col-md-6">
+            <label class="small text-muted">Structure partenaire</label>
+            <app-mena-searchable-select
+              [loading]="refsSelectLoading"
+              [(ngModel)]="model.centre.structurePartenaire"
+              [options]="menaPartenaireLibelleOptions()"
+              nullLabel="—"
+              [disabled]="saving"
+            />
+          </div>
+          <div class="form-group col-md-6">
+            <label class="small text-muted">Nom du partenaire</label>
+            <input class="form-control" [(ngModel)]="model.centre.nomPartenaire" [disabled]="saving" />
           </div>
         </div>
 
@@ -684,6 +707,8 @@
             <input
               class="form-control form-control-sm"
               [(ngModel)]="searchQ"
+              (ngModelChange)="onListSearchChange()"
+              (keyup.enter)="applyListFilters()"
               placeholder="Ex. code centre, code Alpha, libellé…"
             />
           </div>
@@ -747,8 +772,8 @@
         <table class="table table-bordered align-middle">
           <thead class="thead-light">
             <tr>
-              <th>Libellé</th>
-              <th>Promoteur</th>
+              <th>Nom du centre</th>
+              <th>Code promoteur</th>
               <th>Localité</th>
               <th>IEPP</th>
               <th>Nature</th>
@@ -1093,8 +1118,8 @@
                 <td>{{ d.localisationCentre ?? '—' }}</td>
               </tr>
               <tr>
-                <th>Milieu d’implantation</th>
-                <td>{{ d.nomMilieuImplentation ?? '—' }}</td>
+                <th>Zone d’implantation</th>
+                <td>{{ detailMilieuLabel(d) }}</td>
               </tr>
             </tbody>
           </table>
@@ -1342,7 +1367,7 @@
               <label class="small text-muted">Zone d’implantation</label>
               <app-mena-searchable-select
                 [loading]="refsSelectLoading"
-                [(ngModel)]="editForm.nomMilieuImplentation"
+                [(ngModel)]="editForm.idMilieuImplentation"
                 [options]="menaZoneImplantationOptions()"
                 nullLabel="—"
                 [disabled]="saving"
@@ -1353,7 +1378,12 @@
           <div class="form-row">
             <div class="form-group col-md-6">
               <label class="small text-muted">Structure partenaire</label>
-              <input class="form-control" [(ngModel)]="editForm.structurePartenaire" [disabled]="saving" />
+              <app-mena-searchable-select [loading]="editLoading"
+                [(ngModel)]="editForm.structurePartenaire"
+                [options]="menaPartenaireLibelleOptions()"
+                nullLabel="—"
+                [disabled]="saving"
+              />
             </div>
             <div class="form-group col-md-6">
               <label class="small text-muted">Nom du partenaire</label>

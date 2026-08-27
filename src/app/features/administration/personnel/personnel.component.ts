@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { unwrapListBody } from '@core/http/unwrap-spring-page';
@@ -24,6 +24,7 @@ import {
   MenaRecordDetailField,
   MenaRecordDetailModalComponent,
 } from '@shared/mena-record-detail-modal/mena-record-detail-modal.component';
+import { MenaListSearchDebouncer } from '@shared/mena-list-search-debounce';
 
 export type CentreTypeFilter = '' | 'ALPHA' | 'CEC' | 'CP' | 'SIE';
 
@@ -52,7 +53,7 @@ type PersonnelCentreOption = {
   templateUrl: './personnel.component.html',
   styleUrl: './personnel.component.css',
 })
-export class PersonnelComponent implements OnInit {
+export class PersonnelComponent implements OnInit, OnDestroy {
   /** Filtre 1 : type de centre, puis centre. */
   centreTypeFilter: CentreTypeFilter = '';
 
@@ -81,6 +82,8 @@ export class PersonnelComponent implements OnInit {
     sexePersonnel: '',
     q: '',
   };
+
+  private readonly listTextSearchDebouncer = new MenaListSearchDebouncer();
 
   centres: PersonnelCentreOption[] = [];
   centresLoading = false;
@@ -285,6 +288,7 @@ export class PersonnelComponent implements OnInit {
 
   /** Réinitialise les critères de liste ; si {@code reloadList} recharge la grille. */
   resetListFilters(reloadList = true): void {
+    this.listTextSearchDebouncer.cancel();
     this.listFilter = {
       idFonction: null,
       idStatutPersonnel: null,
@@ -301,8 +305,22 @@ export class PersonnelComponent implements OnInit {
 
   applyListFilters(): void {
     if (this.centreId == null) return;
-    this.pageIndex = 0;
-    this.reload();
+    this.listTextSearchDebouncer.runNow(() => {
+      this.pageIndex = 0;
+      this.reload();
+    });
+  }
+
+  onListTextSearchChange(): void {
+    if (this.centreId == null) return;
+    this.listTextSearchDebouncer.schedule(() => {
+      this.pageIndex = 0;
+      this.reload();
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.listTextSearchDebouncer.cancel();
   }
 
   reload(): void {
@@ -410,9 +428,6 @@ export class PersonnelComponent implements OnInit {
           (s) => this.structureFormationLabel(s),
         ),
       },
-      { label: 'Dénomination', value: row.denominationPersonnel?.trim() || '—' },
-      { label: 'Programme', value: row.nomDuPrgramme?.trim() || '—' },
-      { label: 'Représentant légal', value: row.nomRepresentantLegalSturcture?.trim() || '—' },
     ];
   }
 

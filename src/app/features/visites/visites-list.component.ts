@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
-import { Component, Inject, OnInit } from '@angular/core';
+import { Component, Inject, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { forkJoin } from 'rxjs';
@@ -16,6 +16,7 @@ import {
 } from '@shared/mena-searchable-select/mena-select-options.util';
 import { MenaLoadingComponent } from '@shared/mena-loading/mena-loading.component';
 import { MenaToolbarButtonComponent } from '@shared/mena-toolbar-button/mena-toolbar-button.component';
+import { MenaListSearchDebouncer } from '@shared/mena-list-search-debounce';
 
 /**
  * Référentiels nature / type : l’API renvoie le format B (`{ id, libelle }`, `{ id, code, libelle }`),
@@ -54,7 +55,7 @@ type DocumentUpsertPayload = {
   templateUrl: './visites-list.component.html',
   styleUrl: './visites-list.component.css',
 })
-export class VisitesListComponent implements OnInit {
+export class VisitesListComponent implements OnInit, OnDestroy {
   pageTitle = 'Visites';
 
   loading = false;
@@ -71,6 +72,8 @@ export class VisitesListComponent implements OnInit {
   filterIdCentre: number | '' = '';
   filterIdNatureDocument: number | '' = '';
   filterIdTypeDocument: number | '' = '';
+
+  private readonly listTextSearchDebouncer = new MenaListSearchDebouncer();
 
   natures: NatureDoc[] = [];
   types: TypeDoc[] = [];
@@ -171,11 +174,25 @@ export class VisitesListComponent implements OnInit {
   }
 
   applyFilters(): void {
-    this.pageIndex = 0;
-    this.reload();
+    this.listTextSearchDebouncer.runNow(() => {
+      this.pageIndex = 0;
+      this.reload();
+    });
+  }
+
+  onListSearchChange(): void {
+    this.listTextSearchDebouncer.schedule(() => {
+      this.pageIndex = 0;
+      this.reload();
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.listTextSearchDebouncer.cancel();
   }
 
   clearFilters(): void {
+    this.listTextSearchDebouncer.cancel();
     this.searchQ = '';
     this.filterIdCentre = '';
     this.filterIdNatureDocument = '';

@@ -107,6 +107,11 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
    * avec zone interne défilante (voir menus Apprenant / effectif centre).
    */
   @Input() inputEffectifDenseForm = false;
+  /**
+   * En création, les rubriques détaillées (hors totaux H/F) sont en lecture seule ;
+   * seuls les totaux et les champs métadonnées sont saisisables (effectifs satellite / intégration).
+   */
+  @Input() inputEffectifBreakdownReadOnlyOnCreate = false;
   /** Menus multi-types (Alpha / CEC / CP / SIE) : sélecteur « Type de centre » visible dans la page. */
   @Input() inputShowToolbarCentreTypeFilter = false;
   /** Module métier pour le mini tableau de bord contextuel (API). */
@@ -122,6 +127,11 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
   permissionFeature: string | null = null;
   workflowFeature: string | null = null;
   createFields: ReferentielFormField[] = [];
+  /** Layout effectif mis en cache à l’ouverture du formulaire (évite de recréer les inputs à chaque frappe). */
+  private effectifFormLayoutKey = '';
+  cachedFormFieldsNonNumeric: ReferentielFormField[] = [];
+  cachedFormFieldsNumericTotals: ReferentielFormField[] = [];
+  cachedFormFieldsNumericGroups: EffectifFieldGroup[] = [];
   contextDashboardModule: MenuContextDashboardModule | null = null;
   contextDashboardSubModule = '';
   contextDashboardAlwaysVisible = false;
@@ -241,14 +251,19 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
     if (changes['inputApiPath']) {
       this.clearListFilter();
     }
-    if (changes['inputCreateFields']) {
-      this.fieldOptions = {};
-      this.fieldOptionsApiLoaded.clear();
-    }
-    if (this.formModalOpen && this.formMode === 'create' && this.hasCreateForm) {
-      this.recordForm = this.buildRecordForm();
-      // Si le contexte (ex: type de centre) change dans la modal, recharge les listes liées.
-      this.loadFieldOptions();
+    if (changes['inputCreateFields'] || changes['inputEffectifDenseForm']) {
+      if (changes['inputCreateFields']) {
+        this.fieldOptions = {};
+        this.fieldOptionsApiLoaded.clear();
+      }
+      this.effectifFormLayoutKey = '';
+      this.refreshEffectifFormLayout();
+      if (this.formModalOpen && this.hasCreateForm) {
+        const preserved = this.recordForm?.getRawValue() as Record<string, unknown> | undefined;
+        this.recordForm = this.buildRecordForm(preserved);
+        this.loadFieldOptions();
+        this.ensureAutoSelectedFields();
+      }
     }
     this.fetch();
   }
@@ -388,14 +403,6 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
     return this.formFieldsNumericTotalsH.length > 0 && this.formFieldsNumericTotalsF.length > 0;
   }
 
-  /** Rubriques regroupées par tranche d’âge / famille (formulaires Apprenant densés). */
-  get formFieldsNumericGroups(): EffectifFieldGroup[] {
-    if (!this.inputEffectifDenseForm) {
-      return [];
-    }
-    return groupEffectifNumericParts(this.formFieldsNumeric);
-  }
-
   /** Champs visibles du formulaire classique (hors champs auto / techniques). */
   get formFieldsVisible(): ReferentielFormField[] {
     return this.fieldsForForm.filter((f) => !f.hidden);
@@ -403,6 +410,35 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
 
   get hasEffectifTotalControl(): boolean {
     return this.inputEffectifDenseForm && this.formFieldsNumericTotals.length > 0 && this.formFieldsNumeric.length > 0;
+  }
+
+  /** Rubriques détaillées verrouillées à la création (effectifs satellite / intégration). */
+  isFieldReadOnly(field: ReferentielFormField): boolean {
+    if (field.readOnly) {
+      return true;
+    }
+    if (!this.inputEffectifBreakdownReadOnlyOnCreate || this.formMode !== 'create') {
+      return false;
+    }
+    if (field.effectifRole === 'part') {
+      return true;
+    }
+    return (
+      field.type === 'number' &&
+      !field.hidden &&
+      field.effectifRole !== 'legacyTotal' &&
+      !this.isEffectifTotalField(field)
+    );
+  }
+
+  get effectifSubmitBlockedBySum(): boolean {
+    if (!this.hasEffectifTotalControl) {
+      return false;
+    }
+    if (this.inputEffectifBreakdownReadOnlyOnCreate && this.formMode === 'create') {
+      return false;
+    }
+    return !this.effectifSumMatches;
   }
 
   /** Somme live des rubriques saisies. */
@@ -459,6 +495,77 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
       return this.effectifSumMatchesH && this.effectifSumMatchesF;
     }
     return this.effectifPartsSum === this.effectifTotalTarget;
+  }
+
+  trackByFieldKey(_index: number, field: ReferentielFormField): string {
+    return field.key;
+  }
+
+  trackByEffectifGroupId(_index: number, group: EffectifFieldGroup): string {
+    return group.id;
+  }
+
+  private static readonly INTEGER_FIELD_NAV_KEYS = new Set([
+    'Backspace',
+    'Delete',
+    'Tab',
+    'Escape',
+    'Enter',
+    'ArrowLeft',
+    'ArrowRight',
+    'ArrowUp',
+    'ArrowDown',
+    'Home',
+    'End',
+  ]);
+
+  /** Bloque toute touche non numérique (effectifs entiers). */
+  onIntegerFieldKeydown(event: KeyboardEvent): void {
+    if (event.ctrlKey || event.metaKey || event.altKey) {
+      return;
+    }
+    if (ReferentielListPageComponent.INTEGER_FIELD_NAV_KEYS.has(event.key)) {
+      return;
+    }
+    if (/^\d$/.test(event.key)) {
+      return;
+    }
+    event.preventDefault();
+  }
+
+  /** Nettoie saisie / collage (lettres, symboles interdits). */
+  onIntegerFieldInput(event: Event, fieldKey: string): void {
+    const input = event.target as HTMLInputElement;
+    const cleaned = input.value.replace(/\D/g, '');
+    if (input.value !== cleaned) {
+      this.patchIntegerFieldValue(fieldKey, cleaned);
+    }
+  }
+
+  onIntegerFieldPaste(event: ClipboardEvent, fieldKey: string): void {
+    event.preventDefault();
+    if (!this.recordForm) {
+      return;
+    }
+    const input = event.target as HTMLInputElement;
+    const pasted = (event.clipboardData?.getData('text') ?? '').replace(/\D/g, '');
+    const start = input.selectionStart ?? input.value.length;
+    const end = input.selectionEnd ?? input.value.length;
+    const merged = `${input.value.slice(0, start)}${pasted}${input.value.slice(end)}`.replace(/\D/g, '');
+    this.patchIntegerFieldValue(fieldKey, merged);
+  }
+
+  private patchIntegerFieldValue(fieldKey: string, raw: string): void {
+    const ctrl = this.recordForm?.get(fieldKey);
+    if (!ctrl) {
+      return;
+    }
+    if (raw === '') {
+      ctrl.setValue('');
+      return;
+    }
+    const n = Number(raw);
+    ctrl.setValue(Number.isFinite(n) ? n : '');
   }
 
   /** Carte actifs / inactifs : uniquement si une colonne d’état booléenne est détectée. */
@@ -944,6 +1051,7 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
     }
     // Construire le formulaire avant le chargement d’options, puis ré-appliquer les auto-sélections
     // (évite la course : options déjà en cache appliquées alors que recordForm est encore null).
+    this.refreshEffectifFormLayout();
     this.recordForm = this.buildRecordForm();
     this.loadFieldOptions();
     this.ensureAutoSelectedFields();
@@ -1156,6 +1264,7 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
     this.formMode = 'edit';
     this.editingId = id;
     this.captureOptionSeedsFromRow(row);
+    this.refreshEffectifFormLayout();
     this.loadFieldOptions();
     this.recordForm = this.buildRecordForm(this.rowToFormValues(row));
     this.formModalOpen = true;
@@ -1410,12 +1519,33 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
     let sum = 0;
     for (const f of fields) {
       const raw = this.recordForm.get(f.key)?.value;
+      if (raw === '' || raw === null || raw === undefined) {
+        continue;
+      }
       const n = typeof raw === 'number' ? raw : Number(raw);
       if (Number.isFinite(n)) {
         sum += n;
       }
     }
     return sum;
+  }
+
+  /** Figé à l’ouverture / changement de schéma — ne pas recalculer à chaque cycle CD. */
+  private refreshEffectifFormLayout(): void {
+    const key = `${this.inputEffectifDenseForm ? '1' : '0'}|${this.fieldsForForm.map((f) => f.key).join('|')}`;
+    if (key === this.effectifFormLayoutKey) {
+      return;
+    }
+    this.effectifFormLayoutKey = key;
+    this.cachedFormFieldsNonNumeric = this.fieldsForForm.filter((f) => f.type !== 'number' && !f.hidden);
+    this.cachedFormFieldsNumericTotals = this.fieldsForForm.filter(
+      (f) => f.type === 'number' && !f.hidden && this.isEffectifTotalField(f),
+    );
+    this.cachedFormFieldsNumericGroups = this.inputEffectifDenseForm
+      ? groupEffectifNumericParts(
+          this.fieldsForForm.filter((f) => f.type === 'number' && !f.hidden && !this.isEffectifTotalField(f)),
+        )
+      : [];
   }
 
   /**
@@ -1467,7 +1597,7 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
       if (initial && f.key in initial) {
         val = initial[f.key];
       } else {
-        val = f.type === 'checkbox' ? false : (f.type === 'number' || f.type === 'select') ? null : '';
+        val = f.type === 'checkbox' ? false : f.type === 'number' ? '' : f.type === 'select' ? null : '';
       }
       if (validators.length > 0) {
         controls[f.key] = [val, validators];
@@ -1539,7 +1669,14 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
       }
       if (f.type === 'checkbox') {
         out[f.key] = !!v;
-      } else if (f.type === 'number' || f.type === 'select') {
+      } else if (f.type === 'number') {
+        if (v === null || v === undefined || v === '') {
+          out[f.key] = '';
+        } else {
+          const n = typeof v === 'number' ? v : Number(v);
+          out[f.key] = Number.isNaN(n) ? '' : n;
+        }
+      } else if (f.type === 'select') {
         if (v === null || v === undefined || v === '') {
           out[f.key] = null;
         } else {
@@ -1917,12 +2054,16 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
         this.applyCachedAutoSelect(field);
         continue;
       }
-      const centreOptionsPaths = new Set(['/api/alpha', '/api/cec', '/api/cp', '/api/sie']);
+      const centreOptionsPathRoots = new Set(['/api/alpha', '/api/cec', '/api/cp', '/api/sie']);
       const optPath = field.optionsApiPath ?? '';
+      const pathRoot = optPath.split('?')[0] ?? optPath;
+      const extraParams = this.parseOptionsQueryParams(optPath);
       this.fieldOptionsLoadingKeys.add(cacheKey);
       const sub = this.http
-        .get<unknown>(`${this.apiBaseUrl}${optPath}`, {
-          params: centreOptionsPaths.has(optPath) ? CENTRE_OPTIONS_PAGE_PARAMS : undefined,
+        .get<unknown>(`${this.apiBaseUrl}${pathRoot}`, {
+          params: centreOptionsPathRoots.has(pathRoot)
+            ? { ...CENTRE_OPTIONS_PAGE_PARAMS, ...extraParams }
+            : Object.keys(extraParams).length ? extraParams : undefined,
         })
         .pipe(finalize(() => this.fieldOptionsLoadingKeys.delete(cacheKey)))
         .subscribe({
@@ -1955,6 +2096,21 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
 
   private optionsCacheKey(field: ReferentielFormField): string {
     return `${field.key}::${field.optionsApiPath ?? ''}`;
+  }
+
+  private parseOptionsQueryParams(path: string): Record<string, string> {
+    const qIndex = path.indexOf('?');
+    if (qIndex < 0) {
+      return {};
+    }
+    const out: Record<string, string> = {};
+    for (const part of path.slice(qIndex + 1).split('&')) {
+      const [rawKey, rawVal] = part.split('=');
+      if (rawKey) {
+        out[decodeURIComponent(rawKey)] = decodeURIComponent(rawVal ?? '');
+      }
+    }
+    return out;
   }
 
   /**

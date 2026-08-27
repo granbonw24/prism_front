@@ -15,7 +15,8 @@ export type PromoteurPersonnePhysique = {
   niveauEtudes?: string | null;
   civilite?: string | null;
   mail?: string | null;
-  organisationFaitiere?: string | null;
+  idOrganisationFaitiere?: number | null;
+  libelleOrganisationFaitiere?: string | null;
 };
 
 export type PromoteurPersonneMorale = {
@@ -191,6 +192,9 @@ export type CentreDetailRow = CentreRow & {
   /** Champs propres au détail CEC (API). */
   ecoleTutrice?: string | null;
   anneeCreation?: number | null;
+  /** Détail SIE : type (référentiel type_sie). */
+  idTypeSie?: number | null;
+  typeSie?: CentreRefDetails | null;
 };
 
 export type CentreRow = {
@@ -324,7 +328,7 @@ export type AlphaFullCreatePayload = {
     structurePartenaire?: string | null;
     nomPartenaire?: string | null;
     localisationCentre?: string | null;
-    nomMilieuImplentation?: string | null;
+    idMilieuImplentation?: number | null;
     dateCreationDaaje?: string | null;
   };
   niveaux?: AlphaNiveauPayload[];
@@ -357,10 +361,12 @@ export type SimpleCentreFullCreatePayload = {
     structurePartenaire?: string | null;
     nomPartenaire?: string | null;
     localisationCentre?: string | null;
-    nomMilieuImplentation?: string | null;
+    idMilieuImplentation?: number | null;
     dateCreationDaaje?: string | null;
   };
   niveaux?: CentreTypeNiveauPayload[];
+  /** SIE : type sélectionné à l’enregistrement (réf. niveau SIE/CEC). */
+  typeSieId?: number | null;
 };
 
 export type PromoteurUpsertPayload = {
@@ -380,7 +386,7 @@ export type PromoteurUpsertPayload = {
     niveauEtudes?: string | null;
     civilite?: string | null;
     mail?: string | null;
-    organisationFaitiere?: string | null;
+    idOrganisationFaitiere?: number | null;
   } | null;
   personneMorale?: {
     denomination?: string | null;

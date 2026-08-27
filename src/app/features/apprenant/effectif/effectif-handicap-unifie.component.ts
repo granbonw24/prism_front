@@ -52,6 +52,7 @@ const HANDICAP_TYPE_CONFIG: Record<HandicapCentreType, HandicapConfig> = {
       [inputWorkflowFeature]="'SAISIE_DONNEES'"
       [inputCreateFields]="activeConfig.createFields"
       [inputEffectifDenseForm]="true"
+      [inputEffectifBreakdownReadOnlyOnCreate]="true"
       [inputShowToolbarCentreTypeFilter]="true"
       inputContextDashboardModule="APPRENANT"
       inputContextDashboardSubModule="handicap"

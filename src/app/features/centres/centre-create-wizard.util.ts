@@ -92,3 +92,33 @@ export function displayOrDash(value: string | null | undefined): string {
   const v = value?.trim();
   return v ? v : '—';
 }
+
+/** Affiche une date au format J/M/A (ex. 15/7/2026). */
+export function formatDateFr(value: string | Date | null | undefined): string {
+  if (value == null || value === '') return '';
+  if (value instanceof Date) {
+    if (Number.isNaN(value.getTime())) return '';
+    return `${value.getDate()}/${value.getMonth() + 1}/${value.getFullYear()}`;
+  }
+  const raw = String(value).trim();
+  const iso = raw.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (iso) {
+    return `${Number(iso[3])}/${Number(iso[2])}/${iso[1]}`;
+  }
+  const parsed = new Date(raw.includes('T') ? raw : `${raw}T00:00:00`);
+  if (!Number.isNaN(parsed.getTime())) {
+    return `${parsed.getDate()}/${parsed.getMonth() + 1}/${parsed.getFullYear()}`;
+  }
+  return raw;
+}
+
+/** Libellé campagne : « début → fin » au format J/M/A. */
+export function formatCampagnePeriodLabel(
+  debut?: string | null,
+  fin?: string | null,
+): string | undefined {
+  const a = formatDateFr(debut);
+  const b = formatDateFr(fin);
+  if (a && b) return `${a} → ${b}`;
+  return a || b || undefined;
+}

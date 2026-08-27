@@ -25,6 +25,7 @@
             class="form-control form-control-sm"
             type="search"
             [(ngModel)]="searchQ"
+            (ngModelChange)="onListSearchChange()"
             (keyup.enter)="applyFilters()"
             placeholder="Code doc., centre, nature, type…"
             autocomplete="off"

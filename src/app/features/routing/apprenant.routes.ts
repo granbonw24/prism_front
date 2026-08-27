@@ -4,7 +4,7 @@ import { withMenuPermission } from '@core/routing/route-permissions';
 import { ApprenantImportPageComponent } from '@features/apprenant/apprenant-import-page.component';
 import { EffectifAbandonUnifieComponent } from '@features/apprenant/effectif/effectif-abandon-unifie.component';
 import { EffectifCentreUnifieComponent } from '@features/apprenant/effectif/effectif-centre-unifie.component';
-import { EffectifCompetenceCentrePageComponent } from '@features/apprenant/effectif/effectif-competence-centre-page.component';
+import { EffectifCentresPromusCpPageComponent } from '@features/apprenant/effectif/effectif-centres-promus-cp-page.component';
 import { EffectifHandicapUnifieComponent } from '@features/apprenant/effectif/effectif-handicap-unifie.component';
 import { EffectifIntegrationUnifieComponent } from '@features/apprenant/effectif/effectif-integration-unifie.component';
 import { EffectifPassageAlphaPageComponent } from '@features/apprenant/effectif/effectif-passage-alpha-page.component';
@@ -31,27 +31,11 @@ export const apprenantFeatureRoutes: Routes = [
     MENU_FEATURES.APPRENANT_HANDICAP,
   ),
   withMenuPermission(
-    { path: 'apprenant/competences', component: EffectifCompetenceCentrePageComponent },
-    MENU_FEATURES.APPRENANT_COMPETENCES,
-  ),
-  withMenuPermission(
     {
-      path: 'apprenant/integrations',
-      component: EffectifIntegrationUnifieComponent,
+      path: 'apprenant/centres-promus',
+      component: EffectifCentresPromusCpPageComponent,
     },
-    MENU_FEATURES.APPRENANT_EFFECTIF,
-  ),
-  withMenuPermission(
-    {
-      path: 'apprenant/promus',
-      component: EffectifIntegrationUnifieComponent,
-      data: {
-        initialKind: 'promuSie',
-        kinds: ['promuSie', 'promuCec'],
-        subtitle: 'Effectifs promus pour les centres SIE et CEC.',
-      },
-    },
-    MENU_FEATURES.APPRENANT_PROMUS,
+    MENU_FEATURES.APPRENANT_CENTRES_PROMUS,
   ),
   withMenuPermission(
     {

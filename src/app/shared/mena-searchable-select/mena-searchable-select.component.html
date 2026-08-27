@@ -8,13 +8,14 @@
     <input
       type="text"
       [class]="inputClass"
-      [value]="query"
+      [(ngModel)]="query"
+      [ngModelOptions]="{ standalone: true }"
       [placeholder]="displayPlaceholder"
       [disabled]="isControlDisabled"
       [readonly]="!searchable"
       autocomplete="off"
       (focus)="onInputFocus()"
-      (input)="onInputInput($any($event.target).value)"
+      (ngModelChange)="onInputInput($event)"
       (blur)="onInputBlur()"
     />
     <span *ngIf="loading" class="mena-searchable-select__spinner" aria-hidden="true">

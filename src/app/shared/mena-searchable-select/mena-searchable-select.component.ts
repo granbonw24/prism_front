@@ -52,9 +52,14 @@ export class MenaSearchableSelectComponent implements ControlValueAccessor, OnIn
   }
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (changes['options'] || changes['loading']) {
+    if (changes['options']) {
       this.refreshFilteredOptions();
-      this.syncQueryFromValue();
+      if (!this.isActiveSearch()) {
+        this.syncQueryFromValue();
+      }
+    }
+    if (changes['loading'] && !changes['loading'].firstChange) {
+      this.refreshFilteredOptions();
     }
   }
 
@@ -79,7 +84,7 @@ export class MenaSearchableSelectComponent implements ControlValueAccessor, OnIn
   }
 
   get isControlDisabled(): boolean {
-    return this.disabled || this.loading;
+    return this.disabled;
   }
 
   get displayPlaceholder(): string {
@@ -179,8 +184,7 @@ export class MenaSearchableSelectComponent implements ControlValueAccessor, OnIn
   }
 
   private syncQueryFromValue(): void {
-    if (this.loading) {
-      this.query = '';
+    if (this.isActiveSearch()) {
       return;
     }
     if (this.value == null) {
@@ -189,6 +193,10 @@ export class MenaSearchableSelectComponent implements ControlValueAccessor, OnIn
     }
     const found = this.options.find((o) => this.valuesEqual(o.value, this.value));
     this.query = found?.label ?? String(this.value);
+  }
+
+  private isActiveSearch(): boolean {
+    return this.searchable && this.open && this.query.trim() !== '';
   }
 
   private refreshFilteredOptions(): void {

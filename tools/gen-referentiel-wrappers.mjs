@@ -28,6 +28,7 @@ const folderByPath = {
   statutpersonnel: 'statut-personnel',
   supportdidactique: 'support-didactique',
   typealpha: 'type-alpha',
+  typesie: 'type-sie',
   typedocument: 'type-document',
 };
 
@@ -43,13 +44,14 @@ function classNameFromSlug(slug) {
 function readReferentiels() {
   const source = fs.readFileSync(configPath, 'utf8');
   const entries = [];
-  const rx = /\{\s*path:\s*'([^']+)',\s*title:\s*'([^']+)',\s*menuGroup:\s*'([^']+)',\s*apiPath:/g;
+  const rx =
+    /\{\s*path:\s*'([^']+)',\s*title:\s*(?:'((?:\\'|[^'])*)'|"((?:\\"|[^"])*)"),\s*menuGroup:\s*'([^']+)',\s*apiPath:/g;
   let match;
   while ((match = rx.exec(source)) !== null) {
     entries.push({
       path: match[1],
-      title: match[2],
-      menuGroup: match[3],
+      title: match[2] ?? match[3],
+      menuGroup: match[4],
     });
   }
   return entries.filter((entry) => entry.path !== 'anneescolaire');

@@ -177,20 +177,12 @@
               >Effectif handicap</a
             >
             <a
-              *ngIf="canViewApprenantItem('APPRENANT_COMPETENCES')"
+              *ngIf="canViewApprenantItem('APPRENANT_CENTRES_PROMUS')"
               class="collapse-item"
-              routerLink="/apprenant/competences"
+              routerLink="/apprenant/centres-promus"
               routerLinkActive="active"
               [routerLinkActiveOptions]="{ exact: true }"
-              >Compétences acquises (Alpha)</a
-            >
-            <a
-              *ngIf="canViewApprenantItem('APPRENANT_PROMUS')"
-              class="collapse-item"
-              routerLink="/apprenant/promus"
-              routerLinkActive="active"
-              [routerLinkActiveOptions]="{ exact: true }"
-              >Effectif promu (SIE, CEC)</a
+              >Les centres promus (CP)</a
             >
             <a
               *ngIf="canViewApprenantItem('APPRENANT_REVERSE_FORMEL_SIE')"
