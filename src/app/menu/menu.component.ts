@@ -1,8 +1,10 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive } from '@angular/router';
+import { Subscription } from 'rxjs';
 import { filter } from 'rxjs/operators';
 import { BRAND_CONFIG } from '@core/config/brand.config';
+import { isCentralAdmin } from '@core/auth/central-admin.util';
 import {
   ACTIVITES_CENTRE_MENU_PERMISSIONS,
   MENU_FEATURES,
@@ -33,25 +35,30 @@ import { AuthService } from '@services/auth.service';
   `,
 })
 export class MenuComponent implements OnInit, OnDestroy {
+  private readonly subs = new Subscription();
   private documentClickHandler?: (event: MouseEvent) => void;
   /** Sections ouvertes manuellement (en plus de l’ouverture automatique par URL). */
   private readonly menuExpanded = new Set<string>();
   /** Sections repliées explicitement par l’utilisateur (même si l’URL correspond). */
   private readonly menuCollapsed = new Set<string>();
+  /** Snapshot stable : un getter qui alloue un nouveau tableau à chaque CD fige le shell après login. */
+  visibleReferentielGroups: ReferentielMenuGroup[] = [];
 
   constructor(
     private readonly router: Router,
     private readonly auth: AuthService,
-  ) {
-    this.router.events
-      .pipe(filter((e): e is NavigationEnd => e instanceof NavigationEnd))
-      .subscribe(() => {
-        this.menuCollapsed.clear();
-        this.closeMobileSidebar();
-      });
-  }
+  ) {}
 
   ngOnInit(): void {
+    this.subs.add(
+      this.router.events
+        .pipe(filter((e): e is NavigationEnd => e instanceof NavigationEnd))
+        .subscribe(() => {
+          this.menuCollapsed.clear();
+          this.closeMobileSidebar();
+        }),
+    );
+    this.subs.add(this.auth.session.subscribe(() => this.refreshVisibleReferentielGroups()));
     this.unbindSbAdminMobileToggle();
     window.addEventListener('load', () => this.unbindSbAdminMobileToggle());
     setTimeout(() => this.unbindSbAdminMobileToggle(), 0);
@@ -90,6 +97,7 @@ export class MenuComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.subs.unsubscribe();
     if (this.documentClickHandler) {
       document.removeEventListener('click', this.documentClickHandler);
     }
@@ -313,8 +321,13 @@ export class MenuComponent implements OnInit, OnDestroy {
     return canViewMenuFeature(this.auth, MENU_FEATURES.ACTIVITES_CENTRE_INFOS);
   }
 
-  get visibleReferentielGroups(): ReferentielMenuGroup[] {
-    return this.referentielGroupsAll.filter((g) => this.canViewParametrageGroup(g));
+  private refreshVisibleReferentielGroups(): void {
+    this.visibleReferentielGroups = this.referentielGroupsAll
+      .map((group) => ({
+        ...group,
+        items: group.items.filter((item) => !item.centralAdminOnly || isCentralAdmin(this.auth)),
+      }))
+      .filter((group) => group.items.length > 0 && this.canViewParametrageGroup(group));
   }
 
   /** Ouverture sidebar sans dépendre du JS Bootstrap (Angular + classes `.show`). */
@@ -384,6 +397,8 @@ export class MenuComponent implements OnInit, OnDestroy {
   readonly referentielGroupsAll = groupReferentielsForMenu(REFERENTIEL_ROUTE_DATA);
   readonly brandMarkSrc = BRAND_CONFIG.markSrc;
   readonly brandAlt = BRAND_CONFIG.alt;
+  readonly platformName = BRAND_CONFIG.platformName;
+  readonly platformSubtitle = BRAND_CONFIG.platformSubtitle;
 
   groupCollapseId(prefix: string, title: string): string {
     const slug = title

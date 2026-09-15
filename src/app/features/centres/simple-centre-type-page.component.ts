@@ -31,6 +31,7 @@ import {
   SimpleCentreFullCreatePayload as SimpleFullCreatePayload,
   SpringPage,
   TypePromoteur,
+  conseillerDisplayName,
 } from '@models/centre';
 import { API_BASE_URL } from '@core/tokens/api-base-url.token';
 import { isNationalView } from '@core/circonscription/circonscription.util';
@@ -584,7 +585,6 @@ export class SimpleCentreTypePageComponent implements OnInit, OnDestroy {
       return true;
     }
     if (this.stepIndex === 1) {
-      this.ensureCreateLocaliteId();
       const c = this.model.centre;
       return c.iepId != null && c.natureCentreId != null && c.localiteId != null;
     }
@@ -841,6 +841,9 @@ export class SimpleCentreTypePageComponent implements OnInit, OnDestroy {
   }
 
   filteredCreateLocalites(): LocaliteOption[] {
+    if (this.createCommuneId == null && !this.lockSessionGeoLocalite()) {
+      return [];
+    }
     return this.filterLocalites(
       this.createRegionId,
       this.createDrenaId,
@@ -908,7 +911,6 @@ export class SimpleCentreTypePageComponent implements OnInit, OnDestroy {
     if (this.model.centre.localiteId != null && !this.filteredCreateLocalites().some((localite) => localite.id === this.model.centre.localiteId)) {
       this.model.centre.localiteId = null as any;
     }
-    this.ensureCreateLocaliteId();
   }
 
   onCreateLocaliteChange(): void {
@@ -1313,6 +1315,16 @@ export class SimpleCentreTypePageComponent implements OnInit, OnDestroy {
   private applySessionGeographyAnchors(): void {
     const s = this.auth.currentSession;
     if (!s || this.isNationalScope(s)) return;
+    if (s.idLocalite != null) {
+      const loc = this.localites.find((l) => l.id === s.idLocalite);
+      if (loc) {
+        this.model.centre.localiteId = s.idLocalite;
+        this.createCommuneId = loc.commune?.id ?? null;
+        this.createDepartementId = this.localiteDepartementId(loc);
+        this.createRegionId =
+          this.createDepartementId != null ? this.departementRegionId(this.createDepartementId) : null;
+      }
+    }
     if (s.idIep != null) {
       this.model.centre.iepId = s.idIep;
       const iep = this.ieps.find((i) => i.id === s.idIep);
@@ -1323,22 +1335,9 @@ export class SimpleCentreTypePageComponent implements OnInit, OnDestroy {
     if (s.idDrena != null && s.idIep == null) {
       this.createDrenaId = s.idDrena;
     }
-    this.ensureCreateLocaliteId();
-    if (this.model.centre.localiteId != null) {
+    if (this.model.centre.localiteId != null && s.idLocalite == null) {
       const loc = this.localites.find((l) => l.id === this.model.centre.localiteId);
       if (loc && this.createCommuneId == null) {
-        this.createCommuneId = loc.commune?.id ?? null;
-        this.createDepartementId = this.localiteDepartementId(loc);
-        this.createRegionId =
-          this.createDepartementId != null ? this.departementRegionId(this.createDepartementId) : null;
-        if (this.createDrenaId == null && s.idDrena != null) {
-          this.createDrenaId = s.idDrena;
-        }
-      }
-    }
-    if (s.idLocalite != null && this.model.centre.localiteId === s.idLocalite) {
-      const loc = this.localites.find((l) => l.id === s.idLocalite);
-      if (loc) {
         this.createCommuneId = loc.commune?.id ?? null;
         this.createDepartementId = this.localiteDepartementId(loc);
         this.createRegionId =
@@ -1372,28 +1371,6 @@ export class SimpleCentreTypePageComponent implements OnInit, OnDestroy {
       },
       { enableHighAccuracy: true, timeout: 15000 },
     );
-  }
-
-  /** Localité masquée à la saisie : injecte un id valide dès que le filtre géo le permet. */
-  private ensureCreateLocaliteId(): void {
-    const filtered = this.filteredCreateLocalites();
-    if (filtered.length === 0) return;
-    const current = this.model.centre.localiteId;
-    if (current != null && filtered.some((l) => l.id === current)) return;
-    const sessionLoc = this.auth.currentSession?.idLocalite ?? null;
-    if (sessionLoc != null && filtered.some((l) => l.id === sessionLoc)) {
-      this.model.centre.localiteId = sessionLoc;
-      return;
-    }
-    if (
-      this.createCommuneId == null &&
-      this.createDepartementId == null &&
-      this.createDrenaId == null &&
-      this.createRegionId == null
-    ) {
-      return;
-    }
-    this.model.centre.localiteId = filtered[0].id;
   }
 
   lockSessionGeoRegion(): boolean {
@@ -1573,6 +1550,8 @@ export class SimpleCentreTypePageComponent implements OnInit, OnDestroy {
       ecoleTutrice: (x['ecoleTutrice'] as string | undefined) ?? null,
       anneeCreation: this.optionalPositiveInt(x['anneeCreation']),
       actif: this.pickBool(x, 'actif') ?? true,
+      enregistrePar: (x['enregistrePar'] as string | undefined) ?? null,
+      conseillerNom: (x['conseillerNom'] as string | undefined) ?? null,
     };
   }
 
@@ -1845,6 +1824,10 @@ export class SimpleCentreTypePageComponent implements OnInit, OnDestroy {
     if (parent === 'region' || parent === 'departement') {
       return;
     }
+  }
+
+  conseillerLabel(row: Row): string {
+    return conseillerDisplayName(row);
   }
 
   promoteurSummary(row: Row): string {

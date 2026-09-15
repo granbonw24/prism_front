@@ -6,6 +6,7 @@ import { inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { catchError, throwError } from 'rxjs';
 import { NotificationService } from '@core/services/notification.service';
+import { AuthService } from '@services/auth.service';
 import { SessionStore } from '@services/session-store.service';
 import { TokenStorageService } from '@services/token-storage.service';
 
@@ -18,6 +19,7 @@ let unauthorizedFlowInProgress = false;
 export const unauthorizedInterceptor: HttpInterceptorFn = (req, next) => {
   const tokens = inject(TokenStorageService);
   const sessionStore = inject(SessionStore);
+  const auth = inject(AuthService);
   const router = inject(Router);
   const notification = inject(NotificationService);
 
@@ -25,6 +27,10 @@ export const unauthorizedInterceptor: HttpInterceptorFn = (req, next) => {
     catchError((err: HttpErrorResponse) => {
       const isLoginAttempt = req.url.includes('/api/auth/login');
       if (err.status === 401 && !isLoginAttempt) {
+        // Un GET /me expiré pendant POST /login ne doit pas provoquer de navigation (annule le XHR).
+        if (auth.isLoginInFlight) {
+          return throwError(() => err);
+        }
         if (unauthorizedFlowInProgress) {
           return throwError(() => err);
         }

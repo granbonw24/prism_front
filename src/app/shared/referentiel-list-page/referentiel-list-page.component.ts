@@ -47,6 +47,11 @@ import {
   groupEffectifNumericParts,
   type EffectifFieldGroup,
 } from '@features/apprenant/effectif/effectif-field-groups.util';
+import {
+  effectifFieldGender,
+  effectifSubsetViolations,
+  isEffectifGenderPartitionPart,
+} from '@features/apprenant/effectif/effectif-field-gender.util';
 
 /**
  * Paramètres pour les listes déroulantes « centre » (API paginée).
@@ -107,11 +112,6 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
    * avec zone interne défilante (voir menus Apprenant / effectif centre).
    */
   @Input() inputEffectifDenseForm = false;
-  /**
-   * En création, les rubriques détaillées (hors totaux H/F) sont en lecture seule ;
-   * seuls les totaux et les champs métadonnées sont saisisables (effectifs satellite / intégration).
-   */
-  @Input() inputEffectifBreakdownReadOnlyOnCreate = false;
   /** Menus multi-types (Alpha / CEC / CP / SIE) : sélecteur « Type de centre » visible dans la page. */
   @Input() inputShowToolbarCentreTypeFilter = false;
   /** Module métier pour le mini tableau de bord contextuel (API). */
@@ -202,6 +202,7 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
 
   private dataSub?: Subscription;
   private loadSub?: Subscription;
+  private effectifTotalsSub?: Subscription;
   private optionSubs: Subscription[] = [];
   /** Clés utilisées pour le filtre texte (toutes les colonnes « métier », pas seulement l’affichage). */
   private filterableKeys: string[] = [];
@@ -261,6 +262,7 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
       if (this.formModalOpen && this.hasCreateForm) {
         const preserved = this.recordForm?.getRawValue() as Record<string, unknown> | undefined;
         this.recordForm = this.buildRecordForm(preserved);
+        this.bindEffectifAutoTotals(this.recordForm);
         this.loadFieldOptions();
         this.ensureAutoSelectedFields();
       }
@@ -355,6 +357,7 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
   ngOnDestroy(): void {
     this.dataSub?.unsubscribe();
     this.loadSub?.unsubscribe();
+    this.effectifTotalsSub?.unsubscribe();
     for (const s of this.optionSubs) s.unsubscribe();
   }
 
@@ -383,19 +386,23 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
   }
 
   get formFieldsNumericTotalsH(): ReferentielFormField[] {
-    return this.formFieldsNumericTotals.filter((f) => this.effectifFieldGender(f) === 'H');
+    return this.formFieldsNumericTotals.filter((f) => effectifFieldGender(f.key) === 'H');
   }
 
   get formFieldsNumericTotalsF(): ReferentielFormField[] {
-    return this.formFieldsNumericTotals.filter((f) => this.effectifFieldGender(f) === 'F');
+    return this.formFieldsNumericTotals.filter((f) => effectifFieldGender(f.key) === 'F');
   }
 
   get formFieldsNumericPartsH(): ReferentielFormField[] {
-    return this.formFieldsNumeric.filter((f) => this.effectifFieldGender(f) === 'H');
+    return this.formFieldsNumeric.filter((f) =>
+      isEffectifGenderPartitionPart(f, this.fieldsForForm),
+    ).filter((f) => effectifFieldGender(f.key) === 'H');
   }
 
   get formFieldsNumericPartsF(): ReferentielFormField[] {
-    return this.formFieldsNumeric.filter((f) => this.effectifFieldGender(f) === 'F');
+    return this.formFieldsNumeric.filter((f) =>
+      isEffectifGenderPartitionPart(f, this.fieldsForForm),
+    ).filter((f) => effectifFieldGender(f.key) === 'F');
   }
 
   /** Contrôle séparé H / F lorsqu’il y a au moins un total de chaque. */
@@ -412,30 +419,21 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
     return this.inputEffectifDenseForm && this.formFieldsNumericTotals.length > 0 && this.formFieldsNumeric.length > 0;
   }
 
-  /** Rubriques détaillées verrouillées à la création (effectifs satellite / intégration). */
+  /** Rubriques détaillées (tranches d’âge, ivoirien/handicap, etc.) — saisissables à la création comme à l’édition. */
   isFieldReadOnly(field: ReferentielFormField): boolean {
-    if (field.readOnly) {
+    if (field.readOnly === true) {
       return true;
     }
-    if (!this.inputEffectifBreakdownReadOnlyOnCreate || this.formMode !== 'create') {
-      return false;
-    }
-    if (field.effectifRole === 'part') {
-      return true;
-    }
-    return (
-      field.type === 'number' &&
-      !field.hidden &&
-      field.effectifRole !== 'legacyTotal' &&
-      !this.isEffectifTotalField(field)
-    );
+    return this.inputEffectifDenseForm && this.hasAutoEffectifTotals && this.isEffectifTotalField(field);
+  }
+
+  /** Totaux H/F recalculés depuis les tranches (ou la nationalité si pas de tranche). */
+  get hasAutoEffectifTotals(): boolean {
+    return this.hasEffectifGenderTotals && (this.formFieldsNumericPartsH.length > 0 || this.formFieldsNumericPartsF.length > 0);
   }
 
   get effectifSubmitBlockedBySum(): boolean {
     if (!this.hasEffectifTotalControl) {
-      return false;
-    }
-    if (this.inputEffectifBreakdownReadOnlyOnCreate && this.formMode === 'create') {
       return false;
     }
     return !this.effectifSumMatches;
@@ -1053,6 +1051,7 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
     // (évite la course : options déjà en cache appliquées alors que recordForm est encore null).
     this.refreshEffectifFormLayout();
     this.recordForm = this.buildRecordForm();
+    this.bindEffectifAutoTotals(this.recordForm);
     this.loadFieldOptions();
     this.ensureAutoSelectedFields();
     this.formModalOpen = true;
@@ -1267,6 +1266,7 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
     this.refreshEffectifFormLayout();
     this.loadFieldOptions();
     this.recordForm = this.buildRecordForm(this.rowToFormValues(row));
+    this.bindEffectifAutoTotals(this.recordForm);
     this.formModalOpen = true;
   }
 
@@ -1295,10 +1295,23 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
           : 'Formulaire incomplet : vérifiez les champs obligatoires.';
       return;
     }
+    if (this.recordForm) {
+      this.syncEffectifAutoTotals(this.recordForm);
+    }
     if (this.hasEffectifTotalControl && !this.effectifSumMatches) {
       this.formError =
         `La somme des effectifs saisis (${this.effectifPartsSum}) doit être égale à l’effectif total (${this.effectifTotalTarget}).`;
       return;
+    }
+    if (this.inputEffectifDenseForm && this.recordForm) {
+      const subsetErrors = effectifSubsetViolations(
+        this.recordForm.getRawValue() as Record<string, unknown>,
+        this.fieldsForForm,
+      );
+      if (subsetErrors.length > 0) {
+        this.formError = subsetErrors[0];
+        return;
+      }
     }
     const payload = this.buildPayload(this.recordForm.getRawValue());
     this.formSubmitting = true;
@@ -1569,18 +1582,6 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
     return /(NiveauHomme|NiveauFemme|NiveauH|NiveauF|alphaNiveauFemme)$/i.test(field.key);
   }
 
-  /** Genre d’un champ d’effectif (H / F) à partir de la clé. */
-  private effectifFieldGender(field: ReferentielFormField): 'H' | 'F' | null {
-    const key = field.key;
-    if (/(Homme|Garcon|Garçon)$/i.test(key) || /H(?:Cp|Cec)?$/i.test(key) || /NiveauH$/i.test(key)) {
-      return 'H';
-    }
-    if (/(Femme|Fille)$/i.test(key) || /F(?:Cp|Cec)?$/i.test(key) || /NiveauF$/i.test(key) || /alphaNiveauFemme$/i.test(key)) {
-      return 'F';
-    }
-    return null;
-  }
-
   private buildRecordForm(
     initial?: Record<string, unknown> | null,
   ): FormGroup {
@@ -1606,6 +1607,45 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
       }
     }
     return this.fb.group(controls);
+  }
+
+  private bindEffectifAutoTotals(form: FormGroup): void {
+    this.effectifTotalsSub?.unsubscribe();
+    if (!this.inputEffectifDenseForm) {
+      return;
+    }
+    this.syncEffectifAutoTotals(form);
+    this.effectifTotalsSub = form.valueChanges.subscribe(() => this.syncEffectifAutoTotals(form));
+  }
+
+  private syncEffectifAutoTotals(form: FormGroup): void {
+    if (!this.hasAutoEffectifTotals) {
+      return;
+    }
+    const sumH = this.sumFormNumberFields(this.formFieldsNumericPartsH);
+    const sumF = this.sumFormNumberFields(this.formFieldsNumericPartsF);
+    for (const field of this.formFieldsNumericTotalsH) {
+      const ctrl = form.get(field.key);
+      if (ctrl && Number(ctrl.value || 0) !== sumH) {
+        ctrl.setValue(sumH, { emitEvent: false });
+      }
+    }
+    for (const field of this.formFieldsNumericTotalsF) {
+      const ctrl = form.get(field.key);
+      if (ctrl && Number(ctrl.value || 0) !== sumF) {
+        ctrl.setValue(sumF, { emitEvent: false });
+      }
+    }
+    for (const field of this.formFieldsNumericTotals) {
+      if (effectifFieldGender(field.key) != null) {
+        continue;
+      }
+      const ctrl = form.get(field.key);
+      const total = sumH + sumF;
+      if (ctrl && Number(ctrl.value || 0) !== total) {
+        ctrl.setValue(total, { emitEvent: false });
+      }
+    }
   }
 
   /**
@@ -1932,6 +1972,10 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
 
   private loadWorkflowStatuses(): void {
     if (!this.hasWorkflow || !this.apiPath || !this.rows.length) {
+      return;
+    }
+    if (this.rows.every((row) => typeof row['workflowStatut'] === 'string')) {
+      this.applyCommissionSaisieListFilter();
       return;
     }
     const ids = this.rows

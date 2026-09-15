@@ -93,7 +93,6 @@ const ABANDON_TYPE_CONFIG: Record<AbandonCentreType, AbandonConfig> = {
       [inputWorkflowFeature]="'SAISIE_DONNEES'"
       [inputCreateFields]="activeConfig.createFields"
       [inputEffectifDenseForm]="true"
-      [inputEffectifBreakdownReadOnlyOnCreate]="true"
       [inputListColumnKeys]="listColumnKeys"
       [inputShowToolbarCentreTypeFilter]="true"
       inputContextDashboardModule="APPRENANT"

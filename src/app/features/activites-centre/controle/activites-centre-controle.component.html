@@ -91,6 +91,7 @@
               <th>Kits par manuel</th>
               <th>Niveau</th>
               <th>Conforme</th>
+              <th>Commentaire</th>
               <th style="width: 10rem" class="text-center">Actions</th>
             </tr>
           </thead>
@@ -98,7 +99,7 @@
             <tr *ngFor="let row of filteredRows">
               <td class="text-muted">{{ row.id }}</td>
               <td>
-                <span class="badge" [ngClass]="validationClass(row)">{{ validationLabel(row) }}</span>
+                <span class="badge" [ngClass]="validationClass(row)" [title]="workflowDecisionTooltip(row)">{{ validationLabel(row) }}</span>
               </td>
               <td>{{ alphaLabel(row) }}</td>
               <td>{{ refLabel(row.periodeActivite) }}</td>
@@ -111,6 +112,7 @@
                   {{ conformiteLabel(row.conformiteProgramme) }}
                 </span>
               </td>
+              <td class="small">{{ row.commentaire?.trim() || '—' }}</td>
               <td class="text-center text-nowrap mena-col-actions">
                 <div class="mena-row-actions justify-content-center">
                   <app-mena-row-action
@@ -155,7 +157,7 @@
               </td>
             </tr>
             <tr *ngIf="filteredRows.length === 0">
-              <td colspan="10" class="text-center text-muted py-4">Aucun contrôle trouvé.</td>
+              <td colspan="11" class="text-center text-muted py-4">Aucun contrôle trouvé.</td>
             </tr>
           </tbody>
         </table>
@@ -254,7 +256,7 @@
           </div>
         </div>
 
-        <div class="section-box">
+        <div class="section-box mb-3">
           <h6>Conformité au programme</h6>
           <label class="mr-3">
             <input type="radio" name="conformiteProgramme" [checked]="form.conformiteProgramme === true" (change)="form.conformiteProgramme = true" />
@@ -264,6 +266,17 @@
             <input type="radio" name="conformiteProgramme" [checked]="form.conformiteProgramme === false" (change)="form.conformiteProgramme = false" />
             Non
           </label>
+        </div>
+
+        <div class="form-group mb-0">
+          <label>Commentaire</label>
+          <textarea
+            class="form-control"
+            rows="3"
+            maxlength="500"
+            [(ngModel)]="form.commentaire"
+            placeholder="Observations, remarques ou précisions sur ce contrôle…"
+          ></textarea>
         </div>
       </div>
       <div class="card-footer bg-white d-flex justify-content-between">

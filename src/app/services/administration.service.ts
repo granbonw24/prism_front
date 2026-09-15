@@ -151,6 +151,12 @@ export class AdministrationService {
     return this.http.put<AppUserAdmin>(`${this.apiBaseUrl}/api/app-users/${userId}`, payload);
   }
 
+  resetUserPassword(userId: number, newPassword: string): Observable<void> {
+    return this.http.put<void>(`${this.apiBaseUrl}/api/app-users/${userId}/password`, {
+      newPassword,
+    });
+  }
+
   deleteUser(userId: number): Observable<void> {
     return this.http.delete<void>(`${this.apiBaseUrl}/api/app-users/${userId}`);
   }

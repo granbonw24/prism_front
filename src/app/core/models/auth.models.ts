@@ -4,6 +4,19 @@ export interface AuthReference {
   libelle?: string | null;
 }
 
+export interface UpdateProfileRequest {
+  email?: string | null;
+  nom?: string | null;
+  prenoms?: string | null;
+  dateNaissance?: string | null;
+  lieuNaissance?: string | null;
+}
+
+export interface ChangePasswordRequest {
+  currentPassword: string;
+  newPassword: string;
+}
+
 export interface LoginRequest {
   username: string;
   password: string;
@@ -15,6 +28,10 @@ export interface LoginResponse {
   userId: number;
   username: string;
   email: string | null;
+  nom?: string | null;
+  prenoms?: string | null;
+  dateNaissance?: string | null;
+  lieuNaissance?: string | null;
   roles: string[];
   permissions: string[];
   idRegion?: number | null;
@@ -40,6 +57,10 @@ export interface AuthMeResponse {
   userId: number;
   username: string;
   email?: string | null;
+  nom?: string | null;
+  prenoms?: string | null;
+  dateNaissance?: string | null;
+  lieuNaissance?: string | null;
   roles?: string[];
   permissions: string[];
   idRegion?: number | null;
@@ -65,6 +86,10 @@ export interface AuthSession {
   userId: number;
   username: string;
   email?: string | null;
+  nom?: string | null;
+  prenoms?: string | null;
+  dateNaissance?: string | null;
+  lieuNaissance?: string | null;
   roles: string[];
   permissions: string[];
   idRegion?: number | null;

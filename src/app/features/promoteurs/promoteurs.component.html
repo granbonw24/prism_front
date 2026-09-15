@@ -72,10 +72,10 @@
                   {{ typeLabel(r.typePromoteur) }}
                 </span>
               </td>
-              <td>{{ identityLabel(r) }}</td>
-              <td>{{ contactLabel(r) }}</td>
-              <td class="text-break">{{ mailLabel(r) }}</td>
-              <td class="small text-muted">{{ complementLabel(r) }}</td>
+              <td [title]="identityLabel(r)">{{ identityLabel(r) }}</td>
+              <td class="text-nowrap" [title]="contactLabel(r)">{{ contactLabel(r) }}</td>
+              <td class="text-break" [title]="mailLabel(r)">{{ mailLabel(r) }}</td>
+              <td class="small text-muted" [title]="complementLabel(r)">{{ complementLabel(r) }}</td>
               <td class="text-center">
                 <div class="mena-row-actions justify-content-center">
                   <app-mena-row-action

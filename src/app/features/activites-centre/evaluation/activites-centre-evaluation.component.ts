@@ -13,6 +13,7 @@ import {
   readWorkflowQueueTab,
   resolveRowConseillerLogin,
   rowMatchesWorkflowTab,
+  workflowDecisionTooltip as decisionTooltip,
   type WorkflowQueueTab,
 } from '@core/workflow/workflow-queue.util';
 
@@ -62,6 +63,8 @@ type EvaluationRow = {
   workflowStatut?: string | null;
   workflowStatutLibelle?: string | null;
   workflowEditable?: boolean | null;
+  workflowMotifRejet?: string | null;
+  workflowCommentaireRetour?: string | null;
 };
 
 const WORKFLOW_RESOURCE = '/api/evaluation';
@@ -316,7 +319,7 @@ export class ActivitesCentreEvaluationComponent implements OnInit {
     const invalidTheme = this.form.themesTaux.find((item) => !this.themeTauxIsValid(item));
     if (invalidTheme) {
       this.errorMessage =
-        'Chaque thème doit avoir un taux (0–100) ou un total évalué avec un résultat obtenu.';
+        'Chaque thème doit avoir un taux (0–100) ou un total évalué > 0 avec un résultat obtenu entre 0 et le total évalué.';
       return;
     }
 
@@ -429,6 +432,10 @@ export class ActivitesCentreEvaluationComponent implements OnInit {
     if (type === 'SOMMATIVE') return 'Sommative';
     if (type === 'CERTIFICATIVE') return 'Certificative';
     return '-';
+  }
+
+  workflowDecisionTooltip(row: EvaluationRow): string {
+    return decisionTooltip(row, this.validationLabel(row));
   }
 
   validationLabel(row: EvaluationRow): string {
@@ -567,10 +574,15 @@ export class ActivitesCentreEvaluationComponent implements OnInit {
   recalculateThemeTaux(item: ThemeTauxForm): void {
     const total = item.nombreTotalEvalue;
     const obtenu = item.nombreResultatObtenu;
-    if (total == null || total <= 0 || obtenu == null) {
+    if (total != null && total > 0 && obtenu != null && obtenu > total) {
+      item.nombreResultatObtenu = total;
+    }
+    const adjustedTotal = item.nombreTotalEvalue;
+    const adjustedObtenu = item.nombreResultatObtenu;
+    if (adjustedTotal == null || adjustedTotal <= 0 || adjustedObtenu == null) {
       return;
     }
-    item.taux = Math.round((100 * obtenu) / total);
+    item.taux = Math.round((100 * adjustedObtenu) / adjustedTotal);
   }
 
   private themeTauxIsValid(item: ThemeTauxForm): boolean {
@@ -578,7 +590,8 @@ export class ActivitesCentreEvaluationComponent implements OnInit {
       item.nombreTotalEvalue != null &&
       item.nombreResultatObtenu != null &&
       item.nombreTotalEvalue > 0 &&
-      item.nombreResultatObtenu >= 0;
+      item.nombreResultatObtenu >= 0 &&
+      item.nombreResultatObtenu <= item.nombreTotalEvalue;
     if (hasCounts) {
       return true;
     }

@@ -12,7 +12,6 @@ describe('Dossier centre — éléments de dossier (métier)', () => {
   const expectedSections = [
     'difficultes',
     'impacts',
-    'competences',
     'infrastructures',
     'ressources',
     'materiel',

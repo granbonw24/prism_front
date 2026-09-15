@@ -15,7 +15,7 @@
   <div class="d-sm-flex align-items-center justify-content-between mb-4">
     <div>
       <h1 class="h3 mb-1 text-gray-800">Profil utilisateur</h1>
-      <p class="text-muted mb-0">Informations du compte connecté et périmètre de travail.</p>
+      <p class="text-muted mb-0">Mettre à jour vos informations personnelles et votre mot de passe.</p>
     </div>
   </div>
 
@@ -28,8 +28,8 @@
               <i class="fas fa-user"></i>
             </div>
             <div>
-              <div class="h5 mb-0 text-gray-900">{{ session.username }}</div>
-              <div class="text-muted small">{{ session.email || 'Email non renseigné' }}</div>
+              <div class="h5 mb-0 text-gray-900">{{ presentation.displayName(session) }}</div>
+              <div class="text-muted small">{{ session.username }}</div>
             </div>
           </div>
 
@@ -70,6 +70,99 @@
               Aucune circonscription spécifique n’est rattachée à ce compte.
             </div>
           </ng-template>
+          <p class="small text-muted mb-0 mt-3">
+            Le rôle et la circonscription sont gérés par un administrateur.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-lg-7 mb-4">
+      <div class="card shadow-sm border-0">
+        <div class="card-header bg-white border-0">
+          <h2 class="h6 mb-0 text-gray-800">Informations personnelles</h2>
+        </div>
+        <div class="card-body">
+          <div *ngIf="profileMessage" class="alert alert-success py-2">{{ profileMessage }}</div>
+          <div *ngIf="profileError" class="alert alert-danger py-2">{{ profileError }}</div>
+          <form [formGroup]="profileForm" (ngSubmit)="saveProfile()">
+            <div class="form-row">
+              <div class="form-group col-md-6">
+                <label class="small text-muted" for="profil-nom">Nom</label>
+                <input id="profil-nom" class="form-control" formControlName="nom" autocomplete="family-name" />
+              </div>
+              <div class="form-group col-md-6">
+                <label class="small text-muted" for="profil-prenoms">Prénoms</label>
+                <input id="profil-prenoms" class="form-control" formControlName="prenoms" autocomplete="given-name" />
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group col-md-6">
+                <label class="small text-muted" for="profil-email">E-mail</label>
+                <input id="profil-email" type="email" class="form-control" formControlName="email" autocomplete="email" />
+                <div class="small text-danger" *ngIf="profileForm.controls.email.touched && profileForm.controls.email.invalid">
+                  Adresse e-mail invalide.
+                </div>
+              </div>
+              <div class="form-group col-md-6">
+                <label class="small text-muted" for="profil-naissance">Date de naissance</label>
+                <input id="profil-naissance" type="date" class="form-control" formControlName="dateNaissance" />
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="small text-muted" for="profil-lieu">Lieu de naissance</label>
+              <input id="profil-lieu" class="form-control" formControlName="lieuNaissance" />
+            </div>
+            <button type="submit" class="btn btn-primary" [disabled]="savingProfile">
+              {{ savingProfile ? 'Enregistrement…' : 'Enregistrer le profil' }}
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-5 mb-4">
+      <div class="card shadow-sm border-0">
+        <div class="card-header bg-white border-0">
+          <h2 class="h6 mb-0 text-gray-800">Changer mon mot de passe</h2>
+        </div>
+        <div class="card-body">
+          <div *ngIf="passwordMessage" class="alert alert-success py-2">{{ passwordMessage }}</div>
+          <div *ngIf="passwordError" class="alert alert-danger py-2">{{ passwordError }}</div>
+          <form [formGroup]="passwordForm" (ngSubmit)="savePassword()">
+            <div class="form-group">
+              <label class="small text-muted">Mot de passe actuel</label>
+              <app-mena-password-field
+                formControlName="currentPassword"
+                autocomplete="current-password"
+                placeholder="Mot de passe actuel"
+              />
+            </div>
+            <div class="form-group">
+              <label class="small text-muted">Nouveau mot de passe</label>
+              <app-mena-password-field
+                formControlName="newPassword"
+                autocomplete="new-password"
+                placeholder="Au moins {{ passwordMinLength }} caractères"
+              />
+            </div>
+            <div class="form-group">
+              <label class="small text-muted">Confirmation</label>
+              <app-mena-password-field
+                formControlName="confirmPassword"
+                autocomplete="new-password"
+                placeholder="Confirmer le mot de passe"
+              />
+              <div class="small text-danger mt-1" *ngIf="passwordForm.touched && passwordForm.hasError('mismatch')">
+                Les deux saisies ne correspondent pas.
+              </div>
+            </div>
+            <button type="submit" class="btn btn-outline-primary" [disabled]="savingPassword">
+              {{ savingPassword ? 'Enregistrement…' : 'Mettre à jour le mot de passe' }}
+            </button>
+          </form>
         </div>
       </div>
     </div>

@@ -14,8 +14,8 @@
           decoding="async"
         />
         <div class="sidebar-brand-text mx-2 text-left">
-          PRISM
-          <div class="text-white-50" style="font-size: 0.65rem; font-weight: 600; letter-spacing: 0.04em">MENA · Côte d’Ivoire</div>
+          {{ platformName }}
+          <div class="text-white-50" style="font-size: 0.65rem; font-weight: 600; letter-spacing: 0.04em">{{ platformSubtitle }}</div>
         </div>
       </a>
 
@@ -69,32 +69,28 @@
               routerLink="/centres/alpha"
               routerLinkActive="active"
               [routerLinkActiveOptions]="{ exact: true }"
-              >Alpha</a
-            >
+              >Alpha</a>
             <a
               *ngIf="canViewCentre('CENTRES_CEC')"
               class="collapse-item"
               routerLink="/centres/cec"
               routerLinkActive="active"
               [routerLinkActiveOptions]="{ exact: true }"
-              >CEC</a
-            >
+              >CEC</a>
             <a
               *ngIf="canViewCentre('CENTRES_CP')"
               class="collapse-item"
               routerLink="/centres/cp"
               routerLinkActive="active"
               [routerLinkActiveOptions]="{ exact: true }"
-              >CP</a
-            >
+              >CP</a>
             <a
               *ngIf="canViewCentre('CENTRES_SIE')"
               class="collapse-item"
               routerLink="/centres/sie"
               routerLinkActive="active"
               [routerLinkActiveOptions]="{ exact: true }"
-              >SIE</a
-            >
+              >SIE</a>
 
           </div>
         </div>
@@ -142,80 +138,72 @@
               routerLink="/apprenant/effectif"
               routerLinkActive="active"
               [routerLinkActiveOptions]="{ exact: true }"
-              >Effectif apprenant</a
-            >
+              >Effectif apprenant</a>
+            <!-- Masqué (2026-09-02) — Import apprenants
             <a
               *ngIf="canViewApprenantItem('APPRENANT_EFFECTIF')"
               class="collapse-item"
               routerLink="/apprenant/import"
               routerLinkActive="active"
               [routerLinkActiveOptions]="{ exact: true }"
-              >Import apprenants</a
-            >
+              >Import apprenants</a>
+            -->
             <a
               *ngIf="canViewApprenantItem('APPRENANT_ABANDON')"
               class="collapse-item"
               routerLink="/apprenant/abandon"
               routerLinkActive="active"
               [routerLinkActiveOptions]="{ exact: true }"
-              >Effectif abandon</a
-            >
+              >Effectif abandon</a>
             <a
               *ngIf="canViewApprenantItem('APPRENANT_PASSAGE')"
               class="collapse-item"
               routerLink="/apprenant/passage"
               routerLinkActive="active"
               [routerLinkActiveOptions]="{ exact: true }"
-              >Effectif passage (Alpha)</a
-            >
+              >Effectif passage (Alpha)</a>
             <a
               *ngIf="canViewApprenantItem('APPRENANT_HANDICAP')"
               class="collapse-item"
               routerLink="/apprenant/handicap"
               routerLinkActive="active"
               [routerLinkActiveOptions]="{ exact: true }"
-              >Effectif handicap</a
-            >
+              >Effectif handicap</a>
             <a
               *ngIf="canViewApprenantItem('APPRENANT_CENTRES_PROMUS')"
               class="collapse-item"
               routerLink="/apprenant/centres-promus"
               routerLinkActive="active"
               [routerLinkActiveOptions]="{ exact: true }"
-              >Les centres promus (CP)</a
-            >
+              >Les centres promus (CP)</a>
             <a
               *ngIf="canViewApprenantItem('APPRENANT_REVERSE_FORMEL_SIE')"
               class="collapse-item"
               routerLink="/apprenant/reverse-formel-sie"
               routerLinkActive="active"
               [routerLinkActiveOptions]="{ exact: true }"
-              >Effectif reversé formel (SIE)</a
-            >
+              >Effectif reversé formel (SIE)</a>
             <a
               *ngIf="canViewApprenantItem('APPRENANT_ADMIS_CEPE')"
               class="collapse-item"
               routerLink="/apprenant/admis-cepe"
               routerLinkActive="active"
               [routerLinkActiveOptions]="{ exact: true }"
-              >Effectif admis CEPE (CEC, CP)</a
-            >
+              >Effectif admis CEPE (CEC, CP)</a>
             <a
               *ngIf="canViewApprenantItem('APPRENANT_INTEGRES_FORMEL_CP')"
               class="collapse-item"
               routerLink="/apprenant/integres-formel-cp"
               routerLinkActive="active"
               [routerLinkActiveOptions]="{ exact: true }"
-              >Effectif intégré formel (CP)</a
-            >
+              >Effectif intégré formel (CP)</a>
             <a
               *ngIf="canViewApprenantItem('APPRENANT_ADMIS_TEST_INTEGRATION_CP')"
               class="collapse-item"
               routerLink="/apprenant/admis-test-integration-cp"
               routerLinkActive="active"
               [routerLinkActiveOptions]="{ exact: true }"
-              >Effectif admis test intégration (CP)</a
-            >
+              >Effectif admis test intégration (CP)</a>
 
           </div>
         </div>
@@ -247,48 +235,42 @@
               routerLink="/activites-centre/dossier-centre"
               routerLinkActive="active"
               [routerLinkActiveOptions]="{ exact: true }"
-              >Dossier centre</a
-            >
+              >Dossier centre</a>
             <!-- <a
               *ngIf="canViewActivitesCentrePartenariat()"
               class="collapse-item"
               routerLink="/activites-centre/partenariat"
               routerLinkActive="active"
               [routerLinkActiveOptions]="{ exact: true }"
-              >Partenariat</a
-            > -->
+              >Partenariat</a> -->
             <a
               *ngIf="canViewActivitesCentrePerformance()"
               class="collapse-item"
               routerLink="/activites-centre/performance"
               routerLinkActive="active"
               [routerLinkActiveOptions]="{ exact: true }"
-              >Performance</a
-            >
+              >Performance</a>
             <a
               *ngIf="canViewActivitesCentreControle()"
               class="collapse-item"
               routerLink="/activites-centre/controle"
               routerLinkActive="active"
               [routerLinkActiveOptions]="{ exact: true }"
-              >Contrôle</a
-            >
+              >Contrôle</a>
             <a
               *ngIf="canViewActivitesCentreEvaluation()"
               class="collapse-item"
               routerLink="/activites-centre/evaluation-periodique"
               routerLinkActive="active"
               [routerLinkActiveOptions]="{ exact: true }"
-              >Évaluation périodique</a
-            >
+              >Évaluation périodique</a>
             <!-- <a
               *ngIf="canViewActivitesCentreInfos()"
               class="collapse-item"
               routerLink="/activites-centre/informations-centres"
               routerLinkActive="active"
               [routerLinkActiveOptions]="{ exact: true }"
-              >Informations centres</a
-            > -->
+              >Informations centres</a> -->
             <a
               *ngIf="canViewActivitesCentreVisite()"
               class="collapse-item mena-submenu-toggle"
@@ -297,8 +279,7 @@
               (click)="toggleMenuSection('activites-visite', $event, ['/activites-centre/visite', '/visites'])"
               [attr.aria-expanded]="activitesCentreVisiteSectionOpen()"
               aria-controls="activites-centre-visite"
-              >Visite</a
-            >
+              >Visite</a>
             <div
               *ngIf="canViewActivitesCentreVisite()"
               id="activites-centre-visite"
@@ -311,32 +292,28 @@
                 routerLink="/activites-centre/visite/conseiller"
                 routerLinkActive="active"
                 [routerLinkActiveOptions]="{ exact: true }"
-                >Suivi conseiller</a
-              >
+                >Suivi conseiller</a>
               <a
                 *ngIf="canViewSuiviSuperviseur()"
                 class="collapse-item pl-4"
                 routerLink="/activites-centre/visite/superviseur"
                 routerLinkActive="active"
                 [routerLinkActiveOptions]="{ exact: true }"
-                >Suivi par le superviseur</a
-              >
+                >Suivi par le superviseur</a>
               <a
                 *ngIf="canViewSuiviIepp()"
                 class="collapse-item pl-4"
                 routerLink="/activites-centre/visite/iepp"
                 routerLinkActive="active"
                 [routerLinkActiveOptions]="{ exact: true }"
-                >Suivi par l’IEPP</a
-              >
+                >Suivi par l’IEPP</a>
               <a
                 *ngIf="canViewSuiviCentrale()"
                 class="collapse-item pl-4"
                 routerLink="/activites-centre/visite/centrale"
                 routerLinkActive="active"
                 [routerLinkActiveOptions]="{ exact: true }"
-                >Suivi central AENF</a
-              >
+                >Suivi central AENF</a>
             </div>
           </div>
         </div>
@@ -382,8 +359,7 @@
               routerLink="/administration/utilisateurs"
               routerLinkActive="active"
               [routerLinkActiveOptions]="{ exact: true }"
-              >Utilisateurs</a
-            >
+              >Utilisateurs</a>
 
             <div class="dropdown-divider" *ngIf="canViewAdminUtilisateurs() && canViewAdminSecurite()"></div>
 
@@ -395,8 +371,7 @@
               (click)="toggleMenuSection('admin-securite', $event, ['/administration/acteurs', '/administration/role-permissions'])"
               [attr.aria-expanded]="isMenuSectionOpen('admin-securite', ['/administration/acteurs', '/administration/role-permissions'])"
               aria-controls="admin-securite"
-              >Sécurité</a
-            >
+              >Sécurité</a>
             <div
               id="admin-securite"
               class="collapse"
@@ -408,16 +383,14 @@
                 routerLink="/administration/acteurs"
                 routerLinkActive="active"
                 [routerLinkActiveOptions]="{ exact: true }"
-                >Acteurs (rôles)</a
-              >
+                >Acteurs (rôles)</a>
               <a
                 *ngIf="canViewAdminRolePermissions()"
                 class="collapse-item pl-4"
                 routerLink="/administration/role-permissions"
                 routerLinkActive="active"
                 [routerLinkActiveOptions]="{ exact: true }"
-                >Rôle permission</a
-              >
+                >Rôle permission</a>
             </div>
           </div>
         </div>
@@ -450,8 +423,7 @@
                 (click)="toggleMenuSection(groupCollapseId('ref', g.title), $event, refGroupPrefixes(g))"
                 [attr.aria-expanded]="isRefGroupOpen(g)"
                 [attr.aria-controls]="groupCollapseId('ref', g.title)"
-                >{{ g.title }}</a
-              >
+                >{{ g.title }}</a>
               <div [id]="groupCollapseId('ref', g.title)" class="collapse" [class.show]="isRefGroupOpen(g)">
                 <a
                   *ngFor="let r of g.items"
@@ -459,8 +431,7 @@
                   [routerLink]="r.path"
                   routerLinkActive="active"
                   [routerLinkActiveOptions]="{ exact: true }"
-                  >{{ r.title }}</a
-                >
+                  >{{ r.title }}</a>
               </div>
               <div class="dropdown-divider"></div>
             </ng-container>

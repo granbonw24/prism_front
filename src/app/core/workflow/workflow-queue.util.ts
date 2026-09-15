@@ -101,6 +101,21 @@ export function resolveRowCentreId(row: Record<string, unknown>): number | null 
   return Number.isFinite(n) ? n : null;
 }
 
+export function workflowDecisionTooltip(
+  row: { workflowMotifRejet?: string | null; workflowCommentaireRetour?: string | null },
+  fallback: string,
+): string {
+  const motif = row.workflowMotifRejet?.trim();
+  if (motif) {
+    return `Motif rejet : ${motif}`;
+  }
+  const commentaire = row.workflowCommentaireRetour?.trim();
+  if (commentaire) {
+    return `Commentaire retour : ${commentaire}`;
+  }
+  return fallback;
+}
+
 export function resolveRowConseillerLogin(row: Record<string, unknown>): string | null {
   const prop = row['workflowProprietaire'];
   const soum = row['workflowSoumisPar'];

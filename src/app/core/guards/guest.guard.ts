@@ -10,6 +10,9 @@ import { AuthService } from '@services/auth.service';
 export const guestGuard: CanActivateFn = () => {
   const auth = inject(AuthService);
   const router = inject(Router);
+  if (auth.isLoginInFlight) {
+    return true;
+  }
   if (!auth.isAuthenticated() || auth.currentSession == null) {
     return true;
   }

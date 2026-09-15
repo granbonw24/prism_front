@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Component, Inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { API_BASE_URL } from '@core/tokens/api-base-url.token';
+import { BRAND_CONFIG } from '@core/config/brand.config';
 import { formatHttpError } from '@core/utils/http-error.util';
 import { MenaToolbarButtonComponent } from '@shared/mena-toolbar-button/mena-toolbar-button.component';
 
@@ -16,7 +17,7 @@ import { MenaToolbarButtonComponent } from '@shared/mena-toolbar-button/mena-too
         <div>
           <h1 class="h4 mb-0 text-gray-800">Chargement liste des apprenants</h1>
           <p class="small text-muted mb-0 mt-1">
-            Importez le modèle officiel PRISM (Excel .xlsx ou CSV). Colonnes :
+            Importez le modèle officiel {{ platformName }} (Excel .xlsx ou CSV). Colonnes :
             <code>nom;prenom;sexe;dateNaissance</code>.
           </p>
         </div>
@@ -31,7 +32,7 @@ import { MenaToolbarButtonComponent } from '@shared/mena-toolbar-button/mena-too
         </div>
         <div class="card-body pt-0">
           <p class="small text-muted mb-3">
-            Le fichier Excel est généré par le serveur aux couleurs PRISM MENA (en-tête orange, exemples sur fond crème).
+            Le fichier Excel est généré par le serveur aux couleurs MENA (en-tête orange, exemples sur fond crème).
             Remplissez la feuille <strong>Apprenants</strong> puis importez-la ci-dessous.
           </p>
           <div class="mena-toolbar">
@@ -82,6 +83,9 @@ import { MenaToolbarButtonComponent } from '@shared/mena-toolbar-button/mena-too
   `,
 })
 export class ApprenantImportPageComponent {
+  readonly platformName = BRAND_CONFIG.platformName;
+  readonly importFilePrefix = BRAND_CONFIG.importFilePrefix;
+
   selectedFile: File | null = null;
   uploading = false;
   downloadingExcel = false;
@@ -118,8 +122,8 @@ export class ApprenantImportPageComponent {
       ? `${this.apiBaseUrl}/api/apprenants/import/modele`
       : `${this.apiBaseUrl}/api/apprenants/import/modele.csv`;
     const filename = isExcel
-      ? 'PRISM_modele_import_apprenants.xlsx'
-      : 'PRISM_modele_import_apprenants.csv';
+      ? `${this.importFilePrefix}_modele_import_apprenants.xlsx`
+      : `${this.importFilePrefix}_modele_import_apprenants.csv`;
     this.http.get(url, { responseType: 'blob' }).subscribe({
       next: (blob) => {
         this.triggerBrowserDownload(blob, filename);

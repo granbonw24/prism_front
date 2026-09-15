@@ -108,7 +108,8 @@ type DossierSection = 'appuis' | 'documents' | string;
         <div>
           <h1 class="h4 mb-1 text-gray-800">ACTIVITES CENTRE — Dossier centre</h1>
           <p class="small text-muted mb-0">
-            Centralise les appuis, partenariats et documents à jour pour tous les types de centre.
+            Saisie opérationnelle des appuis, partenariats et documents rattachés à un centre (emplacement métier).
+            La vue globale transversale est réservée au paramétrage admin central.
           </p>
         </div>
         <button class="btn btn-sm btn-outline-primary mt-2 mt-sm-0" type="button" (click)="reload()" [disabled]="loading || saving">

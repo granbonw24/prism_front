@@ -230,7 +230,22 @@ export type CentreRow = {
   anneeCreation?: number | null;
   /** {@code false} = exclu des statistiques. */
   actif?: boolean | null;
+  /** Login du conseiller qui a enregistré le centre. */
+  enregistrePar?: string | null;
+  /** Nom affiché du conseiller (prénoms + nom). */
+  conseillerNom?: string | null;
 };
+
+export function conseillerDisplayName(
+  row: Pick<CentreRow, 'conseillerNom' | 'enregistrePar'> | null | undefined,
+): string {
+  const nom = row?.conseillerNom?.trim();
+  if (nom) {
+    return nom;
+  }
+  const login = row?.enregistrePar?.trim();
+  return login || '—';
+}
 
 /** Ligne liste Alpha (même forme que `CentreTypeListItem` côté API). */
 export type AlphaRow = CentreRow;

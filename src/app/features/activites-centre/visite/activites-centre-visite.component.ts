@@ -25,6 +25,7 @@ import {
   readWorkflowQueueTab,
   resolveRowConseillerLogin,
   rowMatchesWorkflowTab,
+  workflowDecisionTooltip as decisionTooltip,
   type WorkflowQueueTab,
 } from '@core/workflow/workflow-queue.util';
 
@@ -686,6 +687,10 @@ export class ActivitesCentreVisiteComponent implements OnInit {
       return row.valideeSuperviseur ? 'Validé superviseur' : 'En attente superviseur';
     }
     return '—';
+  }
+
+  workflowDecisionTooltip(row: CentralRow): string {
+    return decisionTooltip(row, this.validationIndicator(row));
   }
 
   validationIndicatorClass(row: CentralRow): string {

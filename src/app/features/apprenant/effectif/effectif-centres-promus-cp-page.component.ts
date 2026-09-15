@@ -16,7 +16,6 @@ import { EFFECTIF_PROMU_CP_CREATE_FIELDS } from './effectif-promu-cp-forms.data'
       [inputWorkflowFeature]="'SAISIE_DONNEES'"
       [inputCreateFields]="createFields"
       [inputEffectifDenseForm]="true"
-      [inputEffectifBreakdownReadOnlyOnCreate]="true"
       [inputListColumnKeys]="listColumnKeys"
       inputContextDashboardModule="APPRENANT"
       inputContextDashboardSubModule="effectif-promu-cp"

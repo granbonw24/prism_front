@@ -4,7 +4,7 @@
       <h1 class="h4 mb-0 text-gray-800">Tableau de bord</h1>
       <p class="small text-muted mb-0 mt-1" *ngIf="summary$ | async as sum">{{ sum.scopeLabel }}</p>
     </div>
-    <span class="small text-muted">PRISM · MENA Côte d’Ivoire</span>
+    <span class="small text-muted">{{ platformBrandLabel }}</span>
   </div>
 
   <div

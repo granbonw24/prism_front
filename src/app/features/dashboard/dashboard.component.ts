@@ -1,14 +1,15 @@
 import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
-import { Component, OnInit, Inject } from '@angular/core';
+import { Component, Inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { BRAND_CONFIG } from '@core/config/brand.config';
 import { MENU_FEATURES, type MenuFeatureCode } from '@core/config/menu-rbac.config';
 import { canViewMenuFeature } from '@core/rbac/menu-rbac.util';
 import { API_BASE_URL } from '@core/tokens/api-base-url.token';
 import { AuthSession } from '@core/models/auth.models';
 import { AuthPresentationService } from '@services/auth-presentation.service';
 import { AuthService } from '@services/auth.service';
-import { Observable, shareReplay } from 'rxjs';
+import { Observable, catchError, of, shareReplay, timeout } from 'rxjs';
 
 export type DashboardSummary = {
   scopeMode: string;
@@ -44,7 +45,7 @@ type QuickLink = {
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.css',
 })
-export class DashboardComponent implements OnInit {
+export class DashboardComponent {
   constructor(
     private readonly auth: AuthService,
     private readonly http: HttpClient,
@@ -52,10 +53,33 @@ export class DashboardComponent implements OnInit {
     @Inject(API_BASE_URL) private readonly apiBaseUrl: string,
   ) {}
 
+  readonly platformBrandLabel = `${BRAND_CONFIG.platformName} · MENA Côte d’Ivoire`;
+
   readonly session$ = this.auth.session;
   readonly summary$: Observable<DashboardSummary> = this.http
     .get<DashboardSummary>(`${this.apiBaseUrl}/api/admin/dashboard`)
-    .pipe(shareReplay({ bufferSize: 1, refCount: true }));
+    .pipe(
+      timeout(20_000),
+      catchError(() =>
+        of({
+          scopeMode: this.auth.currentSession?.scopeMode ?? 'NATIONAL',
+          scopeLabel: this.auth.currentSession?.scopeLabel ?? 'Indicateurs indisponibles',
+          nationalView: this.auth.currentSession?.nationalView ?? true,
+          centresTotal: 0,
+          alphaTotal: 0,
+          cecTotal: 0,
+          cpTotal: 0,
+          sieTotal: 0,
+          personnelTotal: 0,
+          visitesTotal: 0,
+          controlesTotal: 0,
+          evaluationsTotal: 0,
+          usersTotal: null,
+          rolesTotal: null,
+        } satisfies DashboardSummary),
+      ),
+      shareReplay({ bufferSize: 1, refCount: true }),
+    );
 
   private readonly allQuickLinks: QuickLink[] = [
     {
@@ -128,10 +152,6 @@ export class DashboardComponent implements OnInit {
       action: 'LIRE',
     },
   ];
-
-  ngOnInit(): void {
-    this.auth.refreshMe().subscribe({ error: () => undefined });
-  }
 
   quickLinks(session: AuthSession | null): QuickLink[] {
     if (!session) {

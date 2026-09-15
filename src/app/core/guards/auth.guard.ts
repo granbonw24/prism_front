@@ -1,6 +1,6 @@
 import { inject } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, timeout } from 'rxjs';
 import { AuthService } from '@services/auth.service';
 
 /**
@@ -20,10 +20,12 @@ export const authGuard: CanActivateFn = async () => {
     return true;
   }
   try {
-    await firstValueFrom(auth.refreshMe());
+    await firstValueFrom(auth.refreshMe().pipe(timeout(8_000)));
     return true;
   } catch {
-    auth.logout();
+    if (!auth.isLoginInFlight) {
+      auth.clearLocalSession();
+    }
     return router.createUrlTree(['/login']);
   }
 };

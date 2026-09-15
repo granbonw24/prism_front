@@ -582,11 +582,16 @@
                         [class.text-success]="effectifSumMatches"
                         [class.text-danger]="!effectifSumMatches"
                       >
-                        <ng-container *ngIf="effectifSumMatches; else mismatchHintHf">
+                        <ng-container *ngIf="hasAutoEffectifTotals">
+                          Totaux H/F calculés automatiquement (tranches d’âge ; ivoirien / handicap = sous-ensembles).
+                        </ng-container>
+                        <ng-container *ngIf="!hasAutoEffectifTotals && effectifSumMatches; else mismatchHintHf">
                           Les rubriques H et F correspondent aux effectifs totaux.
                         </ng-container>
                         <ng-template #mismatchHintHf>
-                          La somme des rubriques H et F doit égaler chaque effectif total.
+                          <ng-container *ngIf="!hasAutoEffectifTotals">
+                            La somme des rubriques H et F doit égaler chaque effectif total.
+                          </ng-container>
                         </ng-template>
                       </div>
                     </ng-container>

@@ -28,6 +28,10 @@ export interface ReferentielRouteData {
   columnLabels?: Record<string, string>;
   /** Ordre / sous-ensemble de colonnes pour la liste (clés JSON API). */
   listColumnKeys?: string[];
+  /** Sous-titre affiché sous le titre de page (referentiel-list-page). */
+  subtitle?: string;
+  /** Accès réservé aux administrateurs centraux (SUPERVISEUR_AENF, DIRECTEUR, ADMIN). */
+  centralAdminOnly?: boolean;
 }
 
 const F = (
@@ -139,15 +143,16 @@ export const REFERENTIEL_ROUTE_DATA: ReferentielRouteData[] = [
       F('mail', 'Mail', 'text', { maxLength: 100 }),
     ],
   },
-  {
-    path: 'competence',
-    title: 'Compétences',
-    menuGroup: 'others',
-    apiPath: '/api/competence',
-    createFields: [
-      F('libelleCompetence', 'Libellé', 'text', { required: true, maxLength: 100 }),
-    ],
-  },
+  // Masqué (2026-09-02) — Compétences / compétences acquises
+  // {
+  //   path: 'competence',
+  //   title: 'Compétences',
+  //   menuGroup: 'others',
+  //   apiPath: '/api/competence',
+  //   createFields: [
+  //     F('libelleCompetence', 'Libellé', 'text', { required: true, maxLength: 100 }),
+  //   ],
+  // },
   {
     path: 'designation',
     title: 'Désignations',
@@ -211,11 +216,13 @@ export const REFERENTIEL_ROUTE_DATA: ReferentielRouteData[] = [
   },
   {
     path: 'document',
-    title: 'Documents',
+    title: 'Documents (vue globale)',
+    subtitle: 'Consultation et correction transversale de tous les documents de centres — réservé à l’administration centrale. La saisie terrain se fait dans Activités centre → Dossier centre.',
     menuGroup: 'documents',
     apiPath: '/api/documents',
     permissionFeature: 'SAISIE_DONNEES',
     workflowFeature: 'SAISIE_DONNEES',
+    centralAdminOnly: true,
     createFields: [
       F('idNatureDocument', 'Nature du document', 'select', {
         required: true,

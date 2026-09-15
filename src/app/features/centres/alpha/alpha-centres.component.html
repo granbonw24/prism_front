@@ -271,9 +271,9 @@
               [(ngModel)]="model.centre.localiteId"
               (ngModelChange)="onCreateLocaliteChange()"
               [options]="menaLocaliteOptions(filteredCreateLocalites())"
-              [disabled]="saving || lockSessionGeoLocalite()"
+              [disabled]="saving || lockSessionGeoLocalite() || createCommuneId == null"
             />
-            <div class="small text-muted mt-1">Préremplie selon la commune / le profil, modifiable.</div>
+            <div class="small text-muted mt-1">Sélectionnez d’abord une commune, puis la localité correspondante.</div>
           </div>
           <div class="form-group col-md-3">
             <label class="small text-muted">IEPP<span class="mena-required-mark" aria-hidden="true"> *</span></label>
@@ -773,6 +773,7 @@
           <thead class="thead-light">
             <tr>
               <th>Nom du centre</th>
+              <th>Conseiller</th>
               <th>Code promoteur</th>
               <th>Localité</th>
               <th>IEPP</th>
@@ -788,6 +789,7 @@
           <tbody>
             <tr *ngFor="let r of rows" [class.text-muted]="r.actif === false">
               <td>{{ r.libelle ?? '—' }}</td>
+              <td>{{ conseillerLabel(r) }}</td>
               <td>{{ promoteurSummary(r) }}</td>
               <td>{{ localiteLabel(r.idLocalite ?? null) }}</td>
               <td>{{ iepLabel(r.idIep ?? null) }}</td>
@@ -843,7 +845,7 @@
               </td>
             </tr>
             <tr *ngIf="rows.length === 0">
-              <td colspan="11" class="text-center text-muted py-4">Aucun centre Alpha.</td>
+              <td colspan="12" class="text-center text-muted py-4">Aucun centre Alpha.</td>
             </tr>
           </tbody>
         </table>
@@ -925,6 +927,10 @@
               <tr>
                 <th>Libellé</th>
                 <td>{{ d.libelle ?? '—' }}</td>
+              </tr>
+              <tr>
+                <th>Conseiller</th>
+                <td>{{ conseillerLabel(d) }}</td>
               </tr>
               <tr>
                 <th>Campagne</th>

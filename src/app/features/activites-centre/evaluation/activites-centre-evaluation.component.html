@@ -54,7 +54,7 @@
             <tr *ngFor="let row of filteredRows">
               <td class="text-muted">{{ row.id }}</td>
               <td>
-                <span class="badge" [ngClass]="validationClass(row)">{{ validationLabel(row) }}</span>
+                <span class="badge" [ngClass]="validationClass(row)" [title]="workflowDecisionTooltip(row)">{{ validationLabel(row) }}</span>
               </td>
               <td>{{ refLabel(row.alpha) }}</td>
               <td>{{ refLabel(row.periodeActivite) }}</td>
@@ -193,6 +193,7 @@
                 class="form-control"
                 type="number"
                 min="0"
+                [max]="item.nombreTotalEvalue ?? null"
                 [(ngModel)]="item.nombreResultatObtenu"
                 (ngModelChange)="recalculateThemeTaux(item)"
                 placeholder="0"
@@ -232,7 +233,7 @@
           <dd class="col-sm-8">{{ typeLabel(detailRow.typeEvaluation) }}</dd>
           <dt class="col-sm-4">Validation</dt>
           <dd class="col-sm-8">
-            <span class="badge" [ngClass]="validationClass(detailRow)">{{ validationLabel(detailRow) }}</span>
+            <span class="badge" [ngClass]="validationClass(detailRow)" [title]="workflowDecisionTooltip(detailRow)">{{ validationLabel(detailRow) }}</span>
           </dd>
         </dl>
 

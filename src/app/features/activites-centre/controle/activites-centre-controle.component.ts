@@ -13,6 +13,7 @@ import {
   readWorkflowQueueTab,
   resolveRowConseillerLogin,
   rowMatchesWorkflowTab,
+  workflowDecisionTooltip as decisionTooltip,
   type WorkflowQueueTab,
 } from '@core/workflow/workflow-queue.util';
 
@@ -66,6 +67,7 @@ type ControleRow = {
   niveauAlpha?: Ref | null;
   dateDemarrageAppren?: string | null;
   conformiteProgramme?: boolean | null;
+  commentaire?: string | null;
   valideeCoordonnateur?: boolean | null;
   valideeSuperviseur?: boolean | null;
   valideeCentrale?: boolean | null;
@@ -74,6 +76,8 @@ type ControleRow = {
   workflowStatut?: string | null;
   workflowStatutLibelle?: string | null;
   workflowEditable?: boolean | null;
+  workflowMotifRejet?: string | null;
+  workflowCommentaireRetour?: string | null;
 };
 
 const WORKFLOW_RESOURCE = '/api/controle';
@@ -99,6 +103,7 @@ type ControleForm = {
   dateDemarrageAppren: string;
   idNiveauAlpha: number | null;
   conformiteProgramme: boolean | null;
+  commentaire: string;
   horairesFormation: HoraireForm[];
   kitsManuels: KitForm[];
 };
@@ -493,6 +498,10 @@ export class ActivitesCentreControleComponent implements OnInit {
     return '-';
   }
 
+  workflowDecisionTooltip(row: ControleRow): string {
+    return decisionTooltip(row, this.validationLabel(row));
+  }
+
   validationLabel(row: ControleRow): string {
     if (row.valideeCentrale) return 'Validé central';
     if (row.valideeSuperviseur) return 'Validé superviseur';
@@ -585,6 +594,7 @@ export class ActivitesCentreControleComponent implements OnInit {
       dateDemarrageAppren: '',
       idNiveauAlpha: null,
       conformiteProgramme: null,
+      commentaire: '',
       horairesFormation: DAYS.map((d) => ({
         jourSemaine: d.value,
         label: d.label,
@@ -603,6 +613,7 @@ export class ActivitesCentreControleComponent implements OnInit {
     form.dateDemarrageAppren = row.dateDemarrageAppren ?? '';
     form.idNiveauAlpha = row.niveauAlpha?.id ?? null;
     form.conformiteProgramme = row.conformiteProgramme ?? null;
+    form.commentaire = row.commentaire ?? '';
     const horaires = row.horairesFormation ?? [];
     for (const h of horaires) {
       const target = form.horairesFormation.find((x) => x.jourSemaine === h.jourSemaine);
@@ -629,6 +640,7 @@ export class ActivitesCentreControleComponent implements OnInit {
     dateDemarrageAppren: string;
     idNiveauAlpha: number | null;
     conformiteProgramme: boolean | null;
+    commentaire: string | null;
     horairesFormation: Array<{ jourSemaine: string; heureDebut: string; heureFin: string }>;
     kitsManuels: Array<{ idManuel: number; nombreKit: number; precisionAutre: string | null }>;
   } {
@@ -638,6 +650,7 @@ export class ActivitesCentreControleComponent implements OnInit {
       dateDemarrageAppren: this.form.dateDemarrageAppren,
       idNiveauAlpha: this.form.idNiveauAlpha,
       conformiteProgramme: this.form.conformiteProgramme,
+      commentaire: this.form.commentaire.trim() || null,
       horairesFormation: this.form.horairesFormation
         .filter((h) => h.selected)
         .map((h) => ({ jourSemaine: h.jourSemaine, heureDebut: h.heureDebut, heureFin: h.heureFin })),

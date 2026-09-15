@@ -118,7 +118,7 @@
             <tr *ngFor="let row of filteredRows">
               <td class="text-muted">{{ row.id }}</td>
               <td>
-                <span [class]="validationIndicatorClass(row)">{{ validationIndicator(row) }}</span>
+                <span [class]="validationIndicatorClass(row)" [title]="workflowDecisionTooltip(row)">{{ validationIndicator(row) }}</span>
               </td>
               <td>{{ alphaLabel(row) }}</td>
               <td *ngIf="showNiveauAlphaColumn">{{ niveauAlphaLabel(row) }}</td>

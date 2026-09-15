@@ -22,6 +22,8 @@ type Promoteur = {
   codePromoteur?: string | null;
   libellePromoteur?: string | null;
   typePromoteur?: string | null;
+  contact?: string | null;
+  mail?: string | null;
   personnePhysique?: Record<string, unknown> | null;
   personneMorale?: Record<string, unknown> | null;
 };
@@ -95,25 +97,31 @@ export class PromoteursComponent implements OnInit, OnDestroy {
     if (pp) {
       const parts = [this.raw(pp['civilite']), this.raw(pp['nom']), this.raw(pp['prenom'])].filter(Boolean);
       if (parts.length) return parts.join(' ');
-      return this.raw(pp['libellePersonnePhysique']) || '—';
+      return this.raw(pp['libellePersonnePhysique']) || row.libellePromoteur?.trim() || '—';
     }
     const pm = row.personneMorale;
     if (pm) {
-      return this.raw(pm['denomination']) || this.raw(pm['nomProgramme']) || '—';
+      return this.raw(pm['denomination']) || this.raw(pm['nomProgramme']) || row.libellePromoteur?.trim() || '—';
     }
-    return '—';
+    return row.libellePromoteur?.trim() || '—';
   }
 
   contactLabel(row: Promoteur): string {
     return (
       this.raw(row.personnePhysique?.['contact']) ||
       this.raw(row.personneMorale?.['contact']) ||
+      this.raw(row.contact) ||
       '—'
     );
   }
 
   mailLabel(row: Promoteur): string {
-    return this.raw(row.personnePhysique?.['mail']) || this.raw(row.personneMorale?.['mail']) || '—';
+    return (
+      this.raw(row.personnePhysique?.['mail']) ||
+      this.raw(row.personneMorale?.['mail']) ||
+      this.raw(row.mail) ||
+      '—'
+    );
   }
 
   complementLabel(row: Promoteur): string {
@@ -326,7 +334,17 @@ export class PromoteursComponent implements OnInit, OnDestroy {
   }
 
   private raw(v: unknown): string {
-    return v == null ? '' : String(v).trim();
+    if (v == null) {
+      return '';
+    }
+    if (typeof v === 'string' || typeof v === 'number') {
+      return String(v).trim();
+    }
+    if (typeof v === 'object' && !Array.isArray(v)) {
+      const o = v as Record<string, unknown>;
+      return this.raw(o['libelle'] ?? o['code'] ?? o['contact'] ?? o['mail'] ?? o['label']);
+    }
+    return '';
   }
 
   private str(v: unknown): string {

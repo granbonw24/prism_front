@@ -10,6 +10,7 @@ import {
   AppUserAdmin,
   AppUserAdminUpsertRequest,
 } from '@models/administration';
+import { PASSWORD_MIN_LENGTH } from '@core/auth/password-policy';
 import { MENU_FEATURES } from '@core/config/menu-rbac.config';
 import { canViewMenuFeature } from '@core/rbac/menu-rbac.util';
 import { AdministrationService, type AppUsersListQuery } from '@services/administration.service';
@@ -35,9 +36,9 @@ type ScopeKey =
   | 'idLocalite';
 
 const SCOPE_DESCENDANTS: Record<ScopeKey, ScopeKey[]> = {
-  idRegion: ['idDepartement', 'idDrena', 'idIep'],
-  idDepartement: ['idDrena', 'idIep'],
-  idDrena: ['idIep'],
+  idRegion: ['idDepartement', 'idDrena', 'idIep', 'idSousPrefecture', 'idCommune', 'idLocalite'],
+  idDepartement: ['idDrena', 'idIep', 'idSousPrefecture', 'idCommune', 'idLocalite'],
+  idDrena: ['idIep', 'idDepartement', 'idSousPrefecture', 'idCommune', 'idLocalite'],
   idIep: [],
   idSousPrefecture: ['idCommune', 'idLocalite'],
   idCommune: ['idLocalite'],
@@ -136,6 +137,12 @@ export class UtilisateursComponent implements OnInit, OnDestroy {
 
   createSelectedRoleId: number | null = null;
   editSelectedRoleId: number | null = null;
+
+  resetUser: AppUserAdmin | null = null;
+  resetPassword = '';
+  resetPasswordConfirm = '';
+  resetError: string | null = null;
+  readonly passwordMinLength = PASSWORD_MIN_LENGTH;
 
   /** Recherche / filtres liste (requête serveur paginée). */
   listSearchText = '';
@@ -359,7 +366,7 @@ export class UtilisateursComponent implements OnInit, OnDestroy {
     return (
       !this.saving &&
       String(this.createForm.username ?? '').trim().length > 0 &&
-      String(this.createForm.password ?? '').trim().length > 0 &&
+      String(this.createForm.password ?? '').trim().length >= PASSWORD_MIN_LENGTH &&
       this.scopeSelectionsAreConsistent(this.createForm) &&
       this.scopeIsValid(this.createSelectedRoleId, this.createForm)
     );
@@ -434,7 +441,53 @@ export class UtilisateursComponent implements OnInit, OnDestroy {
     this.editUserId = null;
   }
 
+  openResetPassword(u: AppUserAdmin): void {
+    if (!this.canModify) return;
+    this.resetUser = u;
+    this.resetPassword = '';
+    this.resetPasswordConfirm = '';
+    this.resetError = null;
+  }
+
+  closeResetPassword(): void {
+    this.resetUser = null;
+    this.resetPassword = '';
+    this.resetPasswordConfirm = '';
+    this.resetError = null;
+  }
+
+  canSubmitResetPassword(): boolean {
+    const neu = String(this.resetPassword ?? '').trim();
+    const confirm = String(this.resetPasswordConfirm ?? '').trim();
+    return (
+      this.canModify &&
+      !this.saving &&
+      this.resetUser != null &&
+      neu.length >= PASSWORD_MIN_LENGTH &&
+      neu === confirm
+    );
+  }
+
+  async submitResetPassword(): Promise<void> {
+    if (!this.canSubmitResetPassword() || this.resetUser == null) return;
+    this.saving = true;
+    this.resetError = null;
+    this.errorMessage = null;
+    try {
+      await firstValueFrom(this.admin.resetUserPassword(this.resetUser.id, this.resetPassword.trim()));
+      this.closeResetPassword();
+    } catch (e) {
+      this.resetError = this.formatError(e);
+    } finally {
+      this.saving = false;
+    }
+  }
+
   canSaveEdit(): boolean {
+    const pwd = String(this.editForm.password ?? '').trim();
+    if (pwd.length > 0 && pwd.length < PASSWORD_MIN_LENGTH) {
+      return false;
+    }
     return (
       !this.saving &&
       this.editUserId != null &&

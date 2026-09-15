@@ -37,9 +37,15 @@ export class AuthPresentationService {
 
   headerLabel(session: AuthSession | null | undefined): string {
     if (!session) return 'Utilisateur';
-    return [session.username, this.roleLabel(session), this.scopeSummary(session)]
+    return [this.displayName(session), this.roleLabel(session), this.scopeSummary(session)]
       .filter(Boolean)
       .join(' · ');
+  }
+
+  displayName(session: AuthSession | null | undefined): string {
+    if (!session) return 'Utilisateur';
+    const full = [session.prenoms, session.nom].filter((p) => !!String(p ?? '').trim()).join(' ').trim();
+    return full || session.username;
   }
 
   allScopes(session: AuthSession | null | undefined): ScopeEntry[] {

@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 import { PARAMETRAGE_GROUP_FEATURE } from '@core/config/menu-rbac.config';
 import { REFERENTIEL_ROUTE_DATA } from '@core/config/referentiel-routes.data';
+import { centralAdminGuard } from '@core/guards/central-admin.guard';
 import { withMenuPermission } from '@core/routing/route-permissions';
 import { REFERENTIEL_LIST_PAGE_BY_PATH } from '@features/parametrage/referentiel-list-page.registry';
 
@@ -15,18 +16,22 @@ export const referentielFeatureRoutes: Routes = REFERENTIEL_ROUTE_DATA.filter((r
       throw new Error(`REFERENTIEL_LIST_PAGE_BY_PATH manquant pour path="${r.path}"`);
     }
     const menuPermission = PARAMETRAGE_GROUP_FEATURE[r.menuGroup];
+    const guards = r.centralAdminOnly ? [centralAdminGuard] : [];
     return withMenuPermission(
       {
         path: r.path,
         component,
+        canActivate: guards,
         data: {
           title: r.title,
+          subtitle: r.subtitle ?? '',
           apiPath: r.apiPath,
           permissionFeature: r.permissionFeature ?? menuPermission,
           workflowFeature: r.workflowFeature ?? null,
           createFields: r.createFields ?? [],
           columnLabels: r.columnLabels ?? {},
           listColumnKeys: r.listColumnKeys ?? null,
+          centralAdminOnly: r.centralAdminOnly ?? false,
         },
       },
       menuPermission,
