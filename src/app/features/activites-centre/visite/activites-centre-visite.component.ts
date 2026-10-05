@@ -19,6 +19,19 @@ import { API_BASE_URL } from '@core/tokens/api-base-url.token';
 import type { SpringPage } from '@models/centre';
 import type { VisitePayload, VisiteRef, VisiteRow, VisiteSuiviMode } from '@models/visite';
 import { AuthService } from '@services/auth.service';
+import {
+  auteurColumnCount,
+  canSeeCentralValidateur,
+  canSeeConseillerAuteur,
+  canSeeCoordonnateurAuteur,
+  canSeeSuperviseurValidateur,
+} from '@core/saisie/saisie-auteur-visibility.util';
+import {
+  validateurCentralDisplayName,
+  validateurCoordDisplayName,
+  validateurSupDisplayName,
+} from '@core/saisie/saisie-validateur.util';
+import { conseillerDisplayName } from '@models/centre';
 import { MenaWorkflowQueueToolbarComponent } from '@shared/mena-workflow-queue-toolbar/mena-workflow-queue-toolbar.component';
 import {
   collectConseillerFilterOptions,
@@ -28,6 +41,18 @@ import {
   workflowDecisionTooltip as decisionTooltip,
   type WorkflowQueueTab,
 } from '@core/workflow/workflow-queue.util';
+import {
+  canActAsCurrentWorkflowValidator,
+  workflowDecisionFeature,
+} from '@core/workflow/workflow-validator-gate.util';
+import {
+  actsAsWorkflowValidator,
+  canShowWorkflowMutatingActions,
+} from '@core/workflow/workflow-row-actions.util';
+import {
+  workflowStatusBadgeClass,
+  workflowStatusLabel,
+} from '@core/workflow/workflow-status-display.util';
 
 type AlphaOption = {
   idCentre?: number | null;
@@ -260,8 +285,41 @@ export class ActivitesCentreVisiteComponent implements OnInit {
       5 +
       this.suiviFields.length +
       (this.showMaitriseColumns ? this.pointVisiteFields.length : 0) +
-      (this.showNiveauAlphaColumn ? 1 : 0)
+      (this.showNiveauAlphaColumn ? 1 : 0) +
+      auteurColumnCount(this.auth.currentSession?.roles)
     );
+  }
+
+  get showConseillerAuteur(): boolean {
+    return canSeeConseillerAuteur(this.auth.currentSession?.roles);
+  }
+
+  get showCoordonnateurAuteur(): boolean {
+    return canSeeCoordonnateurAuteur(this.auth.currentSession?.roles);
+  }
+
+  get showSuperviseurValidateur(): boolean {
+    return canSeeSuperviseurValidateur(this.auth.currentSession?.roles);
+  }
+
+  get showCentralValidateur(): boolean {
+    return canSeeCentralValidateur(this.auth.currentSession?.roles);
+  }
+
+  conseillerLabel(row: CentralRow): string {
+    return conseillerDisplayName(row);
+  }
+
+  coordonnateurLabel(row: CentralRow): string {
+    return validateurCoordDisplayName(row);
+  }
+
+  superviseurLabel(row: CentralRow): string {
+    return validateurSupDisplayName(row);
+  }
+
+  centralLabel(row: CentralRow): string {
+    return validateurCentralDisplayName(row);
   }
 
   get maitriseOptions(): Array<{ value: MaitriseResponse; label: string; hint: string }> {
@@ -336,6 +394,10 @@ export class ActivitesCentreVisiteComponent implements OnInit {
         row.centralSource,
         row.alpha?.code,
         row.alpha?.libelle,
+        row.conseillerNom,
+        this.coordonnateurLabel(row),
+        this.superviseurLabel(row),
+        this.centralLabel(row),
         row.periodeActivite?.code,
         row.periodeActivite?.libelle,
         row.maitriseSeanceLecture,
@@ -672,13 +734,10 @@ export class ActivitesCentreVisiteComponent implements OnInit {
       return 'Validé';
     }
     if (this.mode === 'conseiller') {
-      if (row.valideeCoordonnateur) return 'Validé coordonnateur';
-      const st = this.readWorkflowStatut(row);
-      if (st === 'SOUMIS') return 'En attente coordonnateur';
-      if (st === 'RETOURNE') return 'Retourné pour correction';
-      if (st === 'REJETE') return 'Rejeté';
-      if (st === 'BROUILLON') return 'Brouillon (à soumettre)';
-      return 'En attente coordonnateur';
+      return workflowStatusLabel(row, {
+        username: this.auth.currentSession?.username,
+        validatorView: actsAsWorkflowValidator(this.auth.currentSession),
+      });
     }
     if (this.mode === 'iepp') {
       return row.valideeIepp ? 'Validé IEPP' : 'En attente IEPP';
@@ -703,11 +762,16 @@ export class ActivitesCentreVisiteComponent implements OnInit {
       return 'validation-badge validation-ok';
     }
     if (this.mode === 'conseiller') {
-      const st = this.readWorkflowStatut(row);
-      if (st === 'REJETE') return 'validation-badge validation-rejet';
-      if (st === 'RETOURNE') return 'validation-badge validation-brouillon';
-      if (st === 'BROUILLON') return 'validation-badge validation-brouillon';
-      if (st === 'SOUMIS') return 'validation-badge validation-pending';
+      const badge = workflowStatusBadgeClass(row, {
+        username: this.auth.currentSession?.username,
+        validatorView: actsAsWorkflowValidator(this.auth.currentSession),
+      });
+      if (badge === 'badge-danger') return 'validation-badge validation-rejet';
+      if (badge === 'badge-warning') return 'validation-badge validation-brouillon';
+      if (badge === 'badge-secondary') return 'validation-badge validation-pending';
+      if (badge === 'badge-info') return 'validation-badge validation-coordonnateur';
+      if (badge === 'badge-primary') return 'validation-badge validation-superviseur';
+      if (badge === 'badge-success') return 'validation-badge validation-ok';
     }
     return 'validation-badge validation-pending';
   }
@@ -797,7 +861,17 @@ export class ActivitesCentreVisiteComponent implements OnInit {
 
   isConseillerLocked(row: VisiteRow): boolean {
     const r = row as CentralRow;
-    return Boolean(row.valideeCoordonnateur) || !this.isPointsWorkflowEditable(r);
+    if (!this.canMutateVisiteRow(r)) {
+      return true;
+    }
+    if (!this.isPointsWorkflowEditable(r)) {
+      return true;
+    }
+    const st = this.readWorkflowStatut(r);
+    if (st === 'RETOURNE' || st === 'BROUILLON') {
+      return false;
+    }
+    return Boolean(row.valideeCoordonnateur);
   }
 
   isSuiviLocked(row: VisiteRow): boolean {
@@ -874,7 +948,14 @@ export class ActivitesCentreVisiteComponent implements OnInit {
     });
   }
 
+  private canMutateVisiteRow(row: CentralRow): boolean {
+    return canShowWorkflowMutatingActions(row as Record<string, unknown>);
+  }
+
   canValidateRow(row: VisiteRow): boolean {
+    if (!this.canMutateVisiteRow(row as CentralRow)) {
+      return false;
+    }
     if (!(this.canValidateCoordonnateur || this.canValidateSuivi) || this.isRowValidated(row)) {
       return false;
     }
@@ -915,7 +996,7 @@ export class ActivitesCentreVisiteComponent implements OnInit {
   }
 
   canSubmitVisiteWorkflow(row: CentralRow): boolean {
-    if (this.mode !== 'conseiller' || this.saving || row.id == null) {
+    if (this.mode !== 'conseiller' || this.saving || row.id == null || !this.canMutateVisiteRow(row)) {
       return false;
     }
     if (!this.auth.hasPermission(`${VISITE_WORKFLOW_FEATURE_SUBMIT}:MODIFIER`)) {
@@ -957,10 +1038,16 @@ export class ActivitesCentreVisiteComponent implements OnInit {
   }
 
   canRejectOrReturnVisiteWorkflow(row: CentralRow): boolean {
-    if (this.mode !== 'conseiller' || !this.canValidateCoordonnateur || this.workflowSubmittingId != null) {
+    if (this.mode !== 'conseiller' || this.workflowSubmittingId != null || !this.canMutateVisiteRow(row)) {
       return false;
     }
-    return this.readWorkflowStatut(row) === 'SOUMIS';
+    const status = this.readWorkflowStatut(row);
+    const feature = workflowDecisionFeature(status, 'SAISIE_DONNEES', VISITE_WORKFLOW_FEATURE_COORD);
+    return canActAsCurrentWorkflowValidator(
+      status,
+      this.auth.currentSession?.roles,
+      this.auth.hasPermission(`${feature}:VALIDER`),
+    );
   }
 
   openWorkflowDecisionVisite(row: CentralRow, action: WorkflowDecisionAction): void {
@@ -1001,12 +1088,18 @@ export class ActivitesCentreVisiteComponent implements OnInit {
     this.workflowSubmittingId = id;
     this.workflowDecisionError = null;
     const actionPath = this.workflowDecisionAction === 'rejeter' ? 'rejeter' : 'retourner';
+    const status = this.readWorkflowStatut(this.workflowDecisionTarget);
+    const feature = workflowDecisionFeature(
+      status,
+      'SAISIE_DONNEES',
+      VISITE_WORKFLOW_FEATURE_COORD,
+    );
     this.http
       .put<unknown>(`${this.apiBaseUrl}/api/saisie-workflows/${actionPath}`, payload, {
         params: {
           resource: VISITE_WORKFLOW_RESOURCE,
           recordId: String(id),
-          feature: VISITE_WORKFLOW_FEATURE_COORD,
+          feature,
         },
       })
       .subscribe({

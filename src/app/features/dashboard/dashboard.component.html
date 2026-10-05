@@ -24,6 +24,13 @@
     </ng-container>
   </div>
 
+  <ng-container *ngIf="summary$ | async as sum">
+    <app-mena-workflow-returns-alert
+      *ngIf="sum.workflowReturns as returns"
+      [alert]="returns"
+    />
+  </ng-container>
+
   <div class="row mena-mini-dash mb-4">
     <div class="col-sm-6 col-lg-3 mb-3">
       <div class="card mena-mini-card h-100 border-0 shadow-sm">

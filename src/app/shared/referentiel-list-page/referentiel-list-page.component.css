@@ -85,8 +85,19 @@
   margin-bottom: 0.85rem;
 }
 
-.mena-effectif-group:last-child {
-  margin-bottom: 0;
+.mena-effectif-group--nested {
+  margin-left: 0.35rem;
+  margin-bottom: 0.55rem;
+}
+
+.mena-effectif-group--nested .mena-effectif-group__title {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0;
+  color: #5a4638;
+  background: transparent;
+  border-left-color: rgba(181, 78, 16, 0.35);
 }
 
 .mena-effectif-group__title {

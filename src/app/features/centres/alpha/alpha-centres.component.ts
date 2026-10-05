@@ -32,9 +32,15 @@ import {
   SpringPage,
   TypePromoteur,
   conseillerDisplayName,
+  coordonnateurDisplayName,
 } from '@models/centre';
 import { API_BASE_URL } from '@core/tokens/api-base-url.token';
 import { isNationalView } from '@core/circonscription/circonscription.util';
+import {
+  auteurColumnCount,
+  canSeeConseillerAuteur,
+  canSeeCoordonnateurAuteur,
+} from '@core/saisie/saisie-auteur-visibility.util';
 import { AuthSession } from '@core/models/auth.models';
 import { AuthService } from '@services/auth.service';
 import { MenaRowActionButtonComponent } from '@shared/mena-row-action-button/mena-row-action-button.component';
@@ -1472,6 +1478,7 @@ export class AlphaCentresComponent implements OnDestroy {
       actif: this.pickBool(x, 'actif') ?? true,
       enregistrePar: (x['enregistrePar'] as string | undefined) ?? null,
       conseillerNom: (x['conseillerNom'] as string | undefined) ?? null,
+      coordonnateurNom: (x['coordonnateurNom'] as string | undefined) ?? null,
     };
   }
 
@@ -1758,8 +1765,24 @@ export class AlphaCentresComponent implements OnDestroy {
     }
   }
 
+  get showConseillerAuteur(): boolean {
+    return canSeeConseillerAuteur(this.auth.currentSession?.roles);
+  }
+
+  get showCoordonnateurAuteur(): boolean {
+    return canSeeCoordonnateurAuteur(this.auth.currentSession?.roles);
+  }
+
+  get listTableColspan(): number {
+    return 11 + auteurColumnCount(this.auth.currentSession?.roles);
+  }
+
   conseillerLabel(row: AlphaRow): string {
     return conseillerDisplayName(row);
+  }
+
+  coordonnateurLabel(row: AlphaRow): string {
+    return coordonnateurDisplayName(row);
   }
 
   promoteurSummary(row: AlphaRow): string {

@@ -165,6 +165,11 @@ export const REFERENTIEL_COLUMN_LABELS: Record<string, string> = {
   causeAbandonCec: 'Cause abandon',
   causeAbandonSie: 'Cause abandon',
   codeAbandonEffectifSie: 'Code fiche',
+  conseillerNom: 'Conseiller',
+  coordonnateurNom: 'Coordonnateur IEP',
+  valideCoordNom: 'Coordonnateur',
+  valideSupNom: 'Superviseur',
+  valideCentralNom: 'Central',
 };
 
 /**

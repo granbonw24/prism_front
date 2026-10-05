@@ -7,6 +7,19 @@ import { Component, Inject, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { forkJoin } from 'rxjs';
 import { AuthService } from '@services/auth.service';
+import {
+  auteurColumnCount,
+  canSeeCentralValidateur,
+  canSeeConseillerAuteur,
+  canSeeCoordonnateurAuteur,
+  canSeeSuperviseurValidateur,
+} from '@core/saisie/saisie-auteur-visibility.util';
+import {
+  validateurCentralDisplayName,
+  validateurCoordDisplayName,
+  validateurSupDisplayName,
+} from '@core/saisie/saisie-validateur.util';
+import { conseillerDisplayName } from '@models/centre';
 import { MenaWorkflowQueueToolbarComponent } from '@shared/mena-workflow-queue-toolbar/mena-workflow-queue-toolbar.component';
 import {
   collectConseillerFilterOptions,
@@ -16,6 +29,19 @@ import {
   workflowDecisionTooltip as decisionTooltip,
   type WorkflowQueueTab,
 } from '@core/workflow/workflow-queue.util';
+import {
+  canActAsCurrentWorkflowValidator,
+  workflowDecisionFeature,
+} from '@core/workflow/workflow-validator-gate.util';
+import {
+  actsAsWorkflowValidator,
+  canShowWorkflowMutatingActions,
+  isSubordinateWorkflowEditable,
+} from '@core/workflow/workflow-row-actions.util';
+import {
+  workflowStatusBadgeClass,
+  workflowStatusLabel,
+} from '@core/workflow/workflow-status-display.util';
 
 import {
   menaActivitesRefOptions,
@@ -75,13 +101,24 @@ type ControleRow = {
   kitsManuels?: KitRow[] | null;
   workflowStatut?: string | null;
   workflowStatutLibelle?: string | null;
+  workflowDecidePar?: string | null;
   workflowEditable?: boolean | null;
   workflowMotifRejet?: string | null;
   workflowCommentaireRetour?: string | null;
+  conseillerNom?: string | null;
+  enregistrePar?: string | null;
+  valideCoordNom?: string | null;
+  workflowValideCoordPar?: string | null;
+  valideSupNom?: string | null;
+  workflowValideSupPar?: string | null;
+  valideCentralNom?: string | null;
+  workflowValideCentralPar?: string | null;
 };
 
 const WORKFLOW_RESOURCE = '/api/controle';
 const WORKFLOW_FEATURE = 'ACTIVITES_CENTRE_CONTROLE';
+
+type WorkflowDecisionAction = 'rejeter' | 'retourner';
 
 type HoraireForm = {
   jourSemaine: string;
@@ -145,6 +182,11 @@ export class ActivitesCentreControleComponent implements OnInit {
   saving = false;
   validatingId: number | null = null;
   workflowSubmittingId: number | null = null;
+  workflowDecisionOpen = false;
+  workflowDecisionAction: WorkflowDecisionAction | null = null;
+  workflowDecisionTarget: ControleRow | null = null;
+  workflowDecisionText = '';
+  workflowDecisionError: string | null = null;
   errorMessage: string | null = null;
   successMessage: string | null = null;
   searchText = '';
@@ -198,6 +240,42 @@ export class ActivitesCentreControleComponent implements OnInit {
     return this.auth.hasPermission('ACTIVITES_CENTRE_CONTROLE:VALIDER');
   }
 
+  get showConseillerAuteur(): boolean {
+    return canSeeConseillerAuteur(this.auth.currentSession?.roles);
+  }
+
+  get showCoordonnateurAuteur(): boolean {
+    return canSeeCoordonnateurAuteur(this.auth.currentSession?.roles);
+  }
+
+  get showSuperviseurValidateur(): boolean {
+    return canSeeSuperviseurValidateur(this.auth.currentSession?.roles);
+  }
+
+  get showCentralValidateur(): boolean {
+    return canSeeCentralValidateur(this.auth.currentSession?.roles);
+  }
+
+  get listTableColspan(): number {
+    return 11 + auteurColumnCount(this.auth.currentSession?.roles);
+  }
+
+  conseillerLabel(row: ControleRow): string {
+    return conseillerDisplayName(row);
+  }
+
+  coordonnateurLabel(row: ControleRow): string {
+    return validateurCoordDisplayName(row);
+  }
+
+  superviseurLabel(row: ControleRow): string {
+    return validateurSupDisplayName(row);
+  }
+
+  centralLabel(row: ControleRow): string {
+    return validateurCentralDisplayName(row);
+  }
+
   get filteredRows(): ControleRow[] {
     const q = this.searchText.trim().toLowerCase();
     return this.rows.filter((row) => {
@@ -225,6 +303,10 @@ export class ActivitesCentreControleComponent implements OnInit {
       return [
         row.id,
         this.alphaLabel(row),
+        this.conseillerLabel(row),
+        this.coordonnateurLabel(row),
+        this.superviseurLabel(row),
+        this.centralLabel(row),
         row.niveauAlpha?.code ?? row.niveauAlpha?.codeNiveauAlpha,
         row.niveauAlpha?.libelle ?? row.niveauAlpha?.libelleNiveauAlpha,
         row.dateDemarrageAppren,
@@ -503,29 +585,26 @@ export class ActivitesCentreControleComponent implements OnInit {
   }
 
   validationLabel(row: ControleRow): string {
-    if (row.valideeCentrale) return 'Validé central';
-    if (row.valideeSuperviseur) return 'Validé superviseur';
-    if (row.valideeCoordonnateur) return 'Validé coordonnateur';
-    const st = this.readWorkflowStatut(row);
-    if (st === 'SOUMIS') return 'En attente coordonnateur';
-    if (st === 'RETOURNE') return 'Retourné pour correction';
-    if (st === 'REJETE') return 'Rejeté';
-    if (st === 'BROUILLON') return 'Brouillon (à soumettre)';
-    return 'En attente coordonnateur';
+    return workflowStatusLabel(row, {
+      username: this.auth.currentSession?.username,
+      validatorView: actsAsWorkflowValidator(this.auth.currentSession),
+    });
   }
 
   validationClass(row: ControleRow): string {
-    if (row.valideeCentrale) return 'badge-success';
-    if (row.valideeSuperviseur) return 'badge-primary';
-    if (row.valideeCoordonnateur) return 'badge-info';
-    const st = this.readWorkflowStatut(row);
-    if (st === 'REJETE') return 'badge-danger';
-    if (st === 'RETOURNE' || st === 'BROUILLON') return 'badge-warning';
-    if (st === 'SOUMIS') return 'badge-secondary';
-    return 'badge-secondary';
+    return workflowStatusBadgeClass(row, {
+      username: this.auth.currentSession?.username,
+      validatorView: actsAsWorkflowValidator(this.auth.currentSession),
+    });
   }
 
   isLocked(row: ControleRow): boolean {
+    if (!this.canMutateRow(row)) {
+      return true;
+    }
+    if (isSubordinateWorkflowEditable(row as Record<string, unknown>)) {
+      return false;
+    }
     if (Boolean(row.valideeCoordonnateur || row.valideeSuperviseur || row.valideeCentrale)) {
       return true;
     }
@@ -533,6 +612,7 @@ export class ActivitesCentreControleComponent implements OnInit {
   }
 
   canSubmitWorkflow(row: ControleRow): boolean {
+    if (!this.canMutateRow(row)) return false;
     if (row.id == null || this.workflowSubmittingId != null) return false;
     if (!this.auth.hasPermission(`${WORKFLOW_FEATURE}:MODIFIER`)) return false;
     const st = this.readWorkflowStatut(row);
@@ -566,7 +646,86 @@ export class ActivitesCentreControleComponent implements OnInit {
   }
 
   canValidateRow(row: ControleRow): boolean {
-    return this.nextValidationStep(row) !== null;
+    return this.canMutateRow(row) && this.nextValidationStep(row) !== null;
+  }
+
+  canRejectOrReturnWorkflow(row: ControleRow): boolean {
+    if (!this.canMutateRow(row)) {
+      return false;
+    }
+    if (row.id == null || this.workflowSubmittingId != null) {
+      return false;
+    }
+    const status = this.readWorkflowStatut(row);
+    const feature = workflowDecisionFeature(status, WORKFLOW_FEATURE);
+    return canActAsCurrentWorkflowValidator(
+      status,
+      this.auth.currentSession?.roles,
+      this.auth.hasPermission(`${feature}:VALIDER`),
+    );
+  }
+
+  openWorkflowDecision(row: ControleRow, action: WorkflowDecisionAction): void {
+    if (!this.canRejectOrReturnWorkflow(row)) {
+      return;
+    }
+    this.workflowDecisionOpen = true;
+    this.workflowDecisionAction = action;
+    this.workflowDecisionTarget = row;
+    this.workflowDecisionText = '';
+    this.workflowDecisionError = null;
+  }
+
+  closeWorkflowDecision(): void {
+    this.workflowDecisionOpen = false;
+    this.workflowDecisionAction = null;
+    this.workflowDecisionTarget = null;
+    this.workflowDecisionText = '';
+    this.workflowDecisionError = null;
+  }
+
+  confirmWorkflowDecision(): void {
+    if (!this.workflowDecisionTarget || !this.workflowDecisionAction) {
+      return;
+    }
+    const text = this.workflowDecisionText.trim();
+    if (this.workflowDecisionAction === 'rejeter' && !text) {
+      this.workflowDecisionError = 'Le motif de rejet est obligatoire.';
+      return;
+    }
+    const id = this.workflowDecisionTarget.id;
+    if (id == null) {
+      return;
+    }
+    const payload =
+      this.workflowDecisionAction === 'rejeter' ? { motif: text } : { commentaire: text || null };
+    const actionKind = this.workflowDecisionAction;
+    const actionPath = actionKind === 'rejeter' ? 'rejeter' : 'retourner';
+    const status = this.readWorkflowStatut(this.workflowDecisionTarget);
+    const feature = workflowDecisionFeature(status, WORKFLOW_FEATURE);
+    this.workflowSubmittingId = id;
+    this.workflowDecisionError = null;
+    this.http
+      .put<unknown>(`${this.apiBaseUrl}/api/saisie-workflows/${actionPath}`, payload, {
+        params: {
+          resource: WORKFLOW_RESOURCE,
+          recordId: String(id),
+          feature,
+        },
+      })
+      .subscribe({
+        next: () => {
+          this.workflowSubmittingId = null;
+          this.closeWorkflowDecision();
+          this.successMessage =
+            actionKind === 'rejeter' ? 'Donnée rejetée.' : 'Donnée retournée pour correction.';
+          this.reload();
+        },
+        error: (err: unknown) => {
+          this.workflowSubmittingId = null;
+          this.workflowDecisionError = formatHttpError(err, 'Action refusée.');
+        },
+      });
   }
 
   horairesLabel(row: ControleRow): string {
@@ -727,6 +886,10 @@ export class ActivitesCentreControleComponent implements OnInit {
         next: () => this.reload(),
         error: () => this.reload(),
       });
+  }
+
+  private canMutateRow(row: ControleRow): boolean {
+    return canShowWorkflowMutatingActions(row as Record<string, unknown>);
   }
 
   private readWorkflowStatut(row: ControleRow): string | null {

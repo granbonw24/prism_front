@@ -12,7 +12,7 @@
           <span aria-hidden="true">&times;</span>
         </button>
       </div>
-      <div class="modal-body pt-0">
+      <div class="modal-body pt-0 mena-modal-body-scroll">
         <app-mena-loading *ngIf="loading" message="Chargement de l’historique…" [centered]="true" />
         <div *ngIf="!loading && errorMessage" class="alert alert-danger py-2 mb-0">{{ errorMessage }}</div>
 

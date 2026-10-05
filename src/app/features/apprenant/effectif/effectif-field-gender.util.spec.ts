@@ -1,4 +1,9 @@
-import { effectifFieldGender, isEffectifGenderPartitionPart } from './effectif-field-gender.util';
+import {
+  effectifCoherenceViolations,
+  effectifFieldGender,
+  isEffectifGenderPartitionPart,
+  isNationalityPairForm,
+} from './effectif-field-gender.util';
 import { EFFECTIF_CEPE_CEC_CREATE_FIELDS, EFFECTIF_CEPE_CP_CREATE_FIELDS } from './effectif-integration-forms.data';
 
 const ALPHA_FIELDS = [
@@ -66,5 +71,36 @@ describe('isEffectifGenderPartitionPart — Alpha / CP', () => {
   it('CP : ivoirien + non-ivoirien partitionnent, handicap est un sous-ensemble', () => {
     const parts = CP_FIELDS.filter((f) => isEffectifGenderPartitionPart(f, CP_FIELDS)).map((f) => f.key);
     expect(parts).toEqual(['effectifCp911IvoirienH', 'effectifCp911NonIvoirienH']);
+    expect(isNationalityPairForm(CP_FIELDS)).toBe(true);
+  });
+});
+
+describe('effectifCoherenceViolations', () => {
+  it('refuse ivoirien + non-ivoirien tous deux à 0 si le total H n’est pas 0', () => {
+    const messages = effectifCoherenceViolations(
+      {
+        effectifCpNiveauH: 25,
+        effectifCpNiveauF: 0,
+        effectifCp911IvoirienH: 0,
+        effectifCp911NonIvoirienH: 0,
+        effectifCp911HandicapH: 0,
+      },
+      CP_FIELDS.map((f) => ({ ...f, label: f.key })),
+    );
+    expect(messages.some((m) => m.includes('tous les deux à 0'))).toBe(true);
+  });
+
+  it('accepte tous ivoiriens (non-ivoirien = 0)', () => {
+    const messages = effectifCoherenceViolations(
+      {
+        effectifCpNiveauH: 25,
+        effectifCpNiveauF: 0,
+        effectifCp911IvoirienH: 25,
+        effectifCp911NonIvoirienH: 0,
+        effectifCp911HandicapH: 3,
+      },
+      CP_FIELDS.map((f) => ({ ...f, label: f.key })),
+    );
+    expect(messages).toEqual([]);
   });
 });

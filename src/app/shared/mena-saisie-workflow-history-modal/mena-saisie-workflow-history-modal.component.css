@@ -56,8 +56,13 @@
 }
 
 .mena-workflow-history__detail {
-  padding: 0.35rem 0.55rem;
-  border-radius: 0.25rem;
+  padding: 0.5rem 0.7rem;
+  border-radius: 0.35rem;
   background: #f8f9fc;
-  color: #5a5c69;
+  color: #3a3b45;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  max-width: 100%;
+  line-height: 1.45;
 }

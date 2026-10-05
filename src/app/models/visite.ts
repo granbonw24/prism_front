@@ -33,6 +33,14 @@ export type VisiteRow = {
   workflowCommentaireRetour?: string | null;
   workflowSoumisPar?: string | null;
   workflowProprietaire?: string | null;
+  conseillerNom?: string | null;
+  enregistrePar?: string | null;
+  valideCoordNom?: string | null;
+  workflowValideCoordPar?: string | null;
+  valideSupNom?: string | null;
+  workflowValideSupPar?: string | null;
+  valideCentralNom?: string | null;
+  workflowValideCentralPar?: string | null;
 };
 
 export type VisitePayload = {

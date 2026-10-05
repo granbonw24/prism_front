@@ -234,6 +234,8 @@ export type CentreRow = {
   enregistrePar?: string | null;
   /** Nom affiché du conseiller (prénoms + nom). */
   conseillerNom?: string | null;
+  /** Nom affiché du coordonnateur de l’IEP (référent géographique, listes centres). */
+  coordonnateurNom?: string | null;
 };
 
 export function conseillerDisplayName(
@@ -245,6 +247,12 @@ export function conseillerDisplayName(
   }
   const login = row?.enregistrePar?.trim();
   return login || '—';
+}
+
+export function coordonnateurDisplayName(
+  row: Pick<CentreRow, 'coordonnateurNom'> | null | undefined,
+): string {
+  return row?.coordonnateurNom?.trim() || '—';
 }
 
 /** Ligne liste Alpha (même forme que `CentreTypeListItem` côté API). */

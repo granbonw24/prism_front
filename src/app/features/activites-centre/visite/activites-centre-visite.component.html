@@ -104,6 +104,10 @@
               <th style="width: 4rem">ID</th>
               <th>Niveau de validation</th>
               <th>Centre d'Alphabétisation</th>
+              <th *ngIf="showConseillerAuteur">Conseiller</th>
+              <th *ngIf="showCoordonnateurAuteur" title="Validé par le coordonnateur">Coordonnateur</th>
+              <th *ngIf="showSuperviseurValidateur" title="Validé par le superviseur">Superviseur</th>
+              <th *ngIf="showCentralValidateur" title="Validé au niveau central">Central</th>
               <th *ngIf="showNiveauAlphaColumn">Niveau Alpha</th>
               <th>Période d’activité</th>
               <th *ngFor="let field of suiviFields">{{ field.label }}</th>
@@ -121,6 +125,10 @@
                 <span [class]="validationIndicatorClass(row)" [title]="workflowDecisionTooltip(row)">{{ validationIndicator(row) }}</span>
               </td>
               <td>{{ alphaLabel(row) }}</td>
+              <td *ngIf="showConseillerAuteur">{{ conseillerLabel(row) }}</td>
+              <td *ngIf="showCoordonnateurAuteur">{{ coordonnateurLabel(row) }}</td>
+              <td *ngIf="showSuperviseurValidateur">{{ superviseurLabel(row) }}</td>
+              <td *ngIf="showCentralValidateur">{{ centralLabel(row) }}</td>
               <td *ngIf="showNiveauAlphaColumn">{{ niveauAlphaLabel(row) }}</td>
               <td>{{ periodeLabel(row) }}</td>
               <td *ngFor="let field of suiviFields">{{ fieldValue(row, field.key) }}</td>

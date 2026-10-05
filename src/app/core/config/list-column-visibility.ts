@@ -9,6 +9,14 @@ export function isCodeListColumn(key: string): boolean {
   return false;
 }
 
+const HIDDEN_AUTEUR_KEYS = new Set([
+  'enregistrePar',
+  'idIep',
+  'workflowValideCoordPar',
+  'workflowValideSupPar',
+  'workflowValideCentralPar',
+]);
+
 export function filterVisibleListColumns(keys: readonly string[]): string[] {
-  return keys.filter((k) => !isCodeListColumn(k));
+  return keys.filter((k) => !isCodeListColumn(k) && !HIDDEN_AUTEUR_KEYS.has(k));
 }

@@ -117,13 +117,11 @@ export function workflowDecisionTooltip(
 }
 
 export function resolveRowConseillerLogin(row: Record<string, unknown>): string | null {
-  const prop = row['workflowProprietaire'];
-  const soum = row['workflowSoumisPar'];
-  if (typeof prop === 'string' && prop.trim()) {
-    return prop.trim();
-  }
-  if (typeof soum === 'string' && soum.trim()) {
-    return soum.trim();
+  for (const key of ['enregistrePar', 'workflowProprietaire', 'workflowSoumisPar']) {
+    const value = row[key];
+    if (typeof value === 'string' && value.trim()) {
+      return value.trim();
+    }
   }
   return null;
 }
@@ -131,14 +129,19 @@ export function resolveRowConseillerLogin(row: Record<string, unknown>): string 
 export function collectConseillerFilterOptions(
   rows: Record<string, unknown>[],
 ): Array<{ value: string; label: string }> {
-  const logins = new Set<string>();
+  const labels = new Map<string, string>();
   for (const row of rows) {
     const login = resolveRowConseillerLogin(row);
-    if (login) {
-      logins.add(login);
+    if (!login) {
+      continue;
+    }
+    const nom = typeof row['conseillerNom'] === 'string' ? row['conseillerNom'].trim() : '';
+    const previous = labels.get(login);
+    if (!previous || previous === login) {
+      labels.set(login, nom || login);
     }
   }
-  return [...logins]
-    .sort((a, b) => a.localeCompare(b, 'fr'))
-    .map((value) => ({ value, label: value }));
+  return [...labels.entries()]
+    .sort((a, b) => a[1].localeCompare(b[1], 'fr'))
+    .map(([value, label]) => ({ value, label }));
 }

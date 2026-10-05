@@ -812,7 +812,8 @@
           <thead class="thead-light">
             <tr>
               <th>Centre</th>
-              <th>Conseiller</th>
+              <th *ngIf="showConseillerAuteur">Conseiller</th>
+              <th *ngIf="showCoordonnateurAuteur">Coordonnateur IEP</th>
               <th>Promoteur</th>
               <th>Localité</th>
               <th>IEPP</th>
@@ -828,7 +829,8 @@
           <tbody>
             <tr *ngFor="let r of rows" [class.text-muted]="r.actif === false">
               <td class="font-weight-bold">{{ r.libelle ?? '—' }}</td>
-              <td>{{ conseillerLabel(r) }}</td>
+              <td *ngIf="showConseillerAuteur">{{ conseillerLabel(r) }}</td>
+              <td *ngIf="showCoordonnateurAuteur">{{ coordonnateurLabel(r) }}</td>
               <td>{{ promoteurSummary(r) }}</td>
               <td>{{ localiteLabel(r.idLocalite ?? null) }}</td>
               <td>{{ iepLabel(r.idIep ?? null) }}</td>
@@ -884,7 +886,7 @@
               </td>
             </tr>
             <tr *ngIf="rows.length === 0">
-              <td colspan="12" class="text-center text-muted py-4">Aucun enregistrement.</td>
+              <td [attr.colspan]="listTableColspan" class="text-center text-muted py-4">Aucun enregistrement.</td>
             </tr>
           </tbody>
         </table>
@@ -963,9 +965,13 @@
                 <th>Libellé</th>
                 <td>{{ d.libelle ?? '—' }}</td>
               </tr>
-              <tr>
+              <tr *ngIf="showConseillerAuteur">
                 <th>Conseiller</th>
                 <td>{{ conseillerLabel(d) }}</td>
+              </tr>
+              <tr *ngIf="showCoordonnateurAuteur">
+                <th>Coordonnateur</th>
+                <td>{{ coordonnateurLabel(d) }}</td>
               </tr>
               <tr *ngIf="isCecWizard()">
                 <th>École tutrice</th>

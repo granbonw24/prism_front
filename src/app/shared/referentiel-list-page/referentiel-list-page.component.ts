@@ -15,6 +15,12 @@ import { finalize } from 'rxjs/operators';
 import type { ReferentielFormField } from '@core/config/referentiel-form.types';
 import { filterVisibleListColumns } from '@core/config/list-column-visibility';
 import { resolveColumnHeaderLabel } from '@core/config/referentiel-column-labels';
+import {
+  canSeeConseillerAuteur,
+  canSeeCentralValidateur,
+  canSeeCoordonnateurAuteur,
+  canSeeSuperviseurValidateur,
+} from '@core/saisie/saisie-auteur-visibility.util';
 import { API_BASE_URL } from '@core/tokens/api-base-url.token';
 import { formatHttpError } from '@core/utils/http-error.util';
 import { ConfirmDeleteComponent } from '@shared/confirm-delete/confirm-delete.component';
@@ -44,13 +50,25 @@ import {
   type WorkflowQueueTab,
 } from '@core/workflow/workflow-queue.util';
 import {
+  actsAsWorkflowValidator,
+  canShowWorkflowMutatingActions,
+  isSubordinateWorkflowEditable,
+} from '@core/workflow/workflow-row-actions.util';
+import {
+  workflowStatusBadgeClass,
+  workflowStatusLabel as sharedWorkflowStatusLabel,
+} from '@core/workflow/workflow-status-display.util';
+import {
   groupEffectifNumericParts,
   type EffectifFieldGroup,
 } from '@features/apprenant/effectif/effectif-field-groups.util';
 import {
+  effectifCoherenceViolations,
   effectifFieldGender,
   effectifSubsetViolations,
   isEffectifGenderPartitionPart,
+  isIvoirienKey,
+  isNonIvoirienKey,
 } from '@features/apprenant/effectif/effectif-field-gender.util';
 
 /**
@@ -202,7 +220,6 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
 
   private dataSub?: Subscription;
   private loadSub?: Subscription;
-  private effectifTotalsSub?: Subscription;
   private optionSubs: Subscription[] = [];
   /** Clés utilisées pour le filtre texte (toutes les colonnes « métier », pas seulement l’affichage). */
   private filterableKeys: string[] = [];
@@ -262,7 +279,6 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
       if (this.formModalOpen && this.hasCreateForm) {
         const preserved = this.recordForm?.getRawValue() as Record<string, unknown> | undefined;
         this.recordForm = this.buildRecordForm(preserved);
-        this.bindEffectifAutoTotals(this.recordForm);
         this.loadFieldOptions();
         this.ensureAutoSelectedFields();
       }
@@ -357,7 +373,6 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
   ngOnDestroy(): void {
     this.dataSub?.unsubscribe();
     this.loadSub?.unsubscribe();
-    this.effectifTotalsSub?.unsubscribe();
     for (const s of this.optionSubs) s.unsubscribe();
   }
 
@@ -419,24 +434,45 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
     return this.inputEffectifDenseForm && this.formFieldsNumericTotals.length > 0 && this.formFieldsNumeric.length > 0;
   }
 
-  /** Rubriques détaillées (tranches d’âge, ivoirien/handicap, etc.) — saisissables à la création comme à l’édition. */
+  /** Champs figés (référentiels auto, jamais les totaux H/F). */
   isFieldReadOnly(field: ReferentielFormField): boolean {
-    if (field.readOnly === true) {
-      return true;
-    }
-    return this.inputEffectifDenseForm && this.hasAutoEffectifTotals && this.isEffectifTotalField(field);
-  }
-
-  /** Totaux H/F recalculés depuis les tranches (ou la nationalité si pas de tranche). */
-  get hasAutoEffectifTotals(): boolean {
-    return this.hasEffectifGenderTotals && (this.formFieldsNumericPartsH.length > 0 || this.formFieldsNumericPartsF.length > 0);
+    return field.readOnly === true;
   }
 
   get effectifSubmitBlockedBySum(): boolean {
-    if (!this.hasEffectifTotalControl) {
+    if (!this.inputEffectifDenseForm) {
       return false;
     }
-    return !this.effectifSumMatches;
+    if (this.hasEffectifTotalControl && !this.effectifSumMatches) {
+      return true;
+    }
+    return this.effectifCoherenceMessages.length > 0;
+  }
+
+  /** Contrôles ivoirien / non-ivoirien / handicap (live, mêmes règles que l’API). */
+  get effectifCoherenceMessages(): string[] {
+    if (!this.inputEffectifDenseForm || !this.recordForm) {
+      return [];
+    }
+    return effectifCoherenceViolations(
+      this.recordForm.getRawValue() as Record<string, unknown>,
+      this.fieldsForForm,
+    );
+  }
+
+  get effectifChecksOk(): boolean {
+    if (!this.hasEffectifTotalControl) {
+      return this.effectifCoherenceMessages.length === 0;
+    }
+    return this.effectifSumMatches && this.effectifCoherenceMessages.length === 0;
+  }
+
+  get effectifPartitionLabel(): string {
+    const parts = [...this.formFieldsNumericPartsH, ...this.formFieldsNumericPartsF];
+    if (parts.some((f) => isIvoirienKey(f.key) || isNonIvoirienKey(f.key))) {
+      return 'Ivoirien + non-ivoirien';
+    }
+    return 'Tranches d’âge';
   }
 
   /** Somme live des rubriques saisies. */
@@ -736,28 +772,17 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
   }
 
   workflowStatusLabel(row: Record<string, unknown>): string {
-    const genericStatus = this.workflowStatus(row);
-    if (genericStatus) {
-      return this.workflowStatusText(genericStatus);
-    }
-    if (this.bool(row['valideeCentrale'])) return 'Validé central';
-    if (this.bool(row['valideeSuperviseur'])) return 'Validé superviseur';
-    if (this.bool(row['valideeCoordonnateur'])) return 'Validé coordonnateur';
-    return 'Brouillon';
+    return sharedWorkflowStatusLabel(row, {
+      username: this.auth.currentSession?.username,
+      validatorView: actsAsWorkflowValidator(this.auth.currentSession),
+    });
   }
 
   workflowStatusClass(row: Record<string, unknown>): string {
-    const genericStatus = this.workflowStatus(row);
-    if (genericStatus === 'VALIDEE_CENTRALE') return 'badge badge-success';
-    if (genericStatus === 'VALIDEE_SUPERVISEUR') return 'badge badge-primary';
-    if (genericStatus === 'VALIDEE_COORDONNATEUR') return 'badge badge-info';
-    if (genericStatus === 'SOUMIS') return 'badge badge-warning';
-    if (genericStatus === 'REJETE') return 'badge badge-danger';
-    if (genericStatus === 'RETOURNE') return 'badge badge-secondary';
-    if (this.bool(row['valideeCentrale'])) return 'badge badge-success';
-    if (this.bool(row['valideeSuperviseur'])) return 'badge badge-primary';
-    if (this.bool(row['valideeCoordonnateur'])) return 'badge badge-info';
-    return 'badge badge-secondary';
+    return `badge ${workflowStatusBadgeClass(row, {
+      username: this.auth.currentSession?.username,
+      validatorView: actsAsWorkflowValidator(this.auth.currentSession),
+    })}`;
   }
 
   workflowTooltip(row: Record<string, unknown>): string {
@@ -776,6 +801,9 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
     if (!this.hasWorkflow || !this.canUpdateRecord || this.workflowSubmittingId !== null) {
       return false;
     }
+    if (!canShowWorkflowMutatingActions(row)) {
+      return false;
+    }
     const id = this.resolveRowId(row);
     if (id == null) {
       return false;
@@ -785,11 +813,19 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
   }
 
   canValidateWorkflow(row: Record<string, unknown>): boolean {
-    return this.nextWorkflowStatus(row) !== null && this.workflowSubmittingId === null;
+    return (
+      canShowWorkflowMutatingActions(row) &&
+      this.nextWorkflowStatus(row) !== null &&
+      this.workflowSubmittingId === null
+    );
   }
 
   canRejectOrReturnWorkflow(row: Record<string, unknown>): boolean {
-    return this.nextWorkflowStatus(row) !== null && this.workflowSubmittingId === null;
+    return (
+      canShowWorkflowMutatingActions(row) &&
+      this.nextWorkflowStatus(row) !== null &&
+      this.workflowSubmittingId === null
+    );
   }
 
   submitWorkflowRow(row: Record<string, unknown>): void {
@@ -988,15 +1024,10 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
     if (!this.hasWorkflow) {
       return true;
     }
-    const editable = row['workflowEditable'];
-    if (typeof editable === 'boolean') {
-      return editable;
+    if (!canShowWorkflowMutatingActions(row)) {
+      return false;
     }
-    const status = this.workflowStatus(row);
-    if (status === null) {
-      return !this.bool(row['valideeCoordonnateur']);
-    }
-    return status === 'BROUILLON' || status === 'RETOURNE';
+    return isSubordinateWorkflowEditable(row);
   }
 
   resetListPage(): void {
@@ -1051,7 +1082,6 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
     // (évite la course : options déjà en cache appliquées alors que recordForm est encore null).
     this.refreshEffectifFormLayout();
     this.recordForm = this.buildRecordForm();
-    this.bindEffectifAutoTotals(this.recordForm);
     this.loadFieldOptions();
     this.ensureAutoSelectedFields();
     this.formModalOpen = true;
@@ -1193,11 +1223,20 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
     }
 
     if (groups.length) {
-      pushSection('Effectifs par tranche');
+      pushSection('Effectifs');
       for (const g of groups) {
         pushSection(g.title);
-        for (const f of g.fields) {
-          pushField(f);
+        if (g.children?.length) {
+          for (const child of g.children) {
+            pushSection(child.title);
+            for (const f of child.fields) {
+              pushField(f);
+            }
+          }
+        } else {
+          for (const f of g.fields) {
+            pushField(f);
+          }
         }
       }
     }
@@ -1266,7 +1305,6 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
     this.refreshEffectifFormLayout();
     this.loadFieldOptions();
     this.recordForm = this.buildRecordForm(this.rowToFormValues(row));
-    this.bindEffectifAutoTotals(this.recordForm);
     this.formModalOpen = true;
   }
 
@@ -1295,14 +1333,6 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
           : 'Formulaire incomplet : vérifiez les champs obligatoires.';
       return;
     }
-    if (this.recordForm) {
-      this.syncEffectifAutoTotals(this.recordForm);
-    }
-    if (this.hasEffectifTotalControl && !this.effectifSumMatches) {
-      this.formError =
-        `La somme des effectifs saisis (${this.effectifPartsSum}) doit être égale à l’effectif total (${this.effectifTotalTarget}).`;
-      return;
-    }
     if (this.inputEffectifDenseForm && this.recordForm) {
       const subsetErrors = effectifSubsetViolations(
         this.recordForm.getRawValue() as Record<string, unknown>,
@@ -1312,6 +1342,11 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
         this.formError = subsetErrors[0];
         return;
       }
+    }
+    if (this.hasEffectifTotalControl && !this.effectifSumMatches) {
+      this.formError =
+        `La somme des effectifs saisis (${this.effectifPartsSum}) doit être égale à l’effectif total (${this.effectifTotalTarget}).`;
+      return;
     }
     const payload = this.buildPayload(this.recordForm.getRawValue());
     this.formSubmitting = true;
@@ -1551,14 +1586,25 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
     }
     this.effectifFormLayoutKey = key;
     this.cachedFormFieldsNonNumeric = this.fieldsForForm.filter((f) => f.type !== 'number' && !f.hidden);
-    this.cachedFormFieldsNumericTotals = this.fieldsForForm.filter(
-      (f) => f.type === 'number' && !f.hidden && this.isEffectifTotalField(f),
-    );
+    this.cachedFormFieldsNumericTotals = this.fieldsForForm
+      .filter((f) => f.type === 'number' && !f.hidden && this.isEffectifTotalField(f))
+      .sort((a, b) => this.effectifGenderSortKey(a.key) - this.effectifGenderSortKey(b.key));
     this.cachedFormFieldsNumericGroups = this.inputEffectifDenseForm
       ? groupEffectifNumericParts(
           this.fieldsForForm.filter((f) => f.type === 'number' && !f.hidden && !this.isEffectifTotalField(f)),
         )
       : [];
+  }
+
+  private effectifGenderSortKey(key: string): number {
+    const gender = effectifFieldGender(key);
+    if (gender === 'H') {
+      return 0;
+    }
+    if (gender === 'F') {
+      return 1;
+    }
+    return 2;
   }
 
   /**
@@ -1607,45 +1653,6 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
       }
     }
     return this.fb.group(controls);
-  }
-
-  private bindEffectifAutoTotals(form: FormGroup): void {
-    this.effectifTotalsSub?.unsubscribe();
-    if (!this.inputEffectifDenseForm) {
-      return;
-    }
-    this.syncEffectifAutoTotals(form);
-    this.effectifTotalsSub = form.valueChanges.subscribe(() => this.syncEffectifAutoTotals(form));
-  }
-
-  private syncEffectifAutoTotals(form: FormGroup): void {
-    if (!this.hasAutoEffectifTotals) {
-      return;
-    }
-    const sumH = this.sumFormNumberFields(this.formFieldsNumericPartsH);
-    const sumF = this.sumFormNumberFields(this.formFieldsNumericPartsF);
-    for (const field of this.formFieldsNumericTotalsH) {
-      const ctrl = form.get(field.key);
-      if (ctrl && Number(ctrl.value || 0) !== sumH) {
-        ctrl.setValue(sumH, { emitEvent: false });
-      }
-    }
-    for (const field of this.formFieldsNumericTotalsF) {
-      const ctrl = form.get(field.key);
-      if (ctrl && Number(ctrl.value || 0) !== sumF) {
-        ctrl.setValue(sumF, { emitEvent: false });
-      }
-    }
-    for (const field of this.formFieldsNumericTotals) {
-      if (effectifFieldGender(field.key) != null) {
-        continue;
-      }
-      const ctrl = form.get(field.key);
-      const total = sumH + sumF;
-      if (ctrl && Number(ctrl.value || 0) !== total) {
-        ctrl.setValue(total, { emitEvent: false });
-      }
-    }
   }
 
   /**
@@ -1949,6 +1956,9 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
       'workflowSoumisPar',
       'workflowProprietaire',
       'workflowDecidePar',
+      'workflowValideCoordPar',
+      'workflowValideSupPar',
+      'workflowValideCentralPar',
       'workflowDateSoumission',
       'workflowDateDecision',
       'resourcePath',
@@ -1962,12 +1972,51 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
 
     const preferred = this.inputListColumnKeys ?? this.routeListColumnKeys;
     if (preferred != null && preferred.length > 0) {
-      this.columns = filterVisibleListColumns(
-        preferred.filter((k) => k in first && !hiddenIds.has(k) && !workflowKeys.has(k)),
+      this.columns = this.pinAuteurColumns(
+        filterVisibleListColumns(
+          preferred.filter((k) => k in first && !hiddenIds.has(k) && !workflowKeys.has(k)),
+        ),
+        first,
       );
       return;
     }
-    this.columns = businessVisibleKeys.slice(0, 18);
+    this.columns = this.pinAuteurColumns(businessVisibleKeys.slice(0, 18), first);
+  }
+
+  private pinAuteurColumns(keys: string[], first: Record<string, unknown>): string[] {
+    const withoutAuteur = keys.filter(
+      (k) =>
+        k !== 'conseillerNom'
+        && k !== 'coordonnateurNom'
+        && k !== 'valideCoordNom'
+        && k !== 'valideSupNom'
+        && k !== 'valideCentralNom',
+    );
+    const roles = this.auth.currentSession?.roles;
+    const pinned: string[] = [];
+    if (canSeeConseillerAuteur(roles) && ('conseillerNom' in first || 'enregistrePar' in first)) {
+      pinned.push('conseillerNom');
+    }
+    if (canSeeCoordonnateurAuteur(roles)) {
+      if ('valideCoordNom' in first || 'workflowValideCoordPar' in first) {
+        pinned.push('valideCoordNom');
+      } else if ('coordonnateurNom' in first || 'idIep' in first) {
+        pinned.push('coordonnateurNom');
+      }
+    }
+    if (
+      canSeeSuperviseurValidateur(roles)
+      && ('valideSupNom' in first || 'workflowValideSupPar' in first)
+    ) {
+      pinned.push('valideSupNom');
+    }
+    if (
+      canSeeCentralValidateur(roles)
+      && ('valideCentralNom' in first || 'workflowValideCentralPar' in first)
+    ) {
+      pinned.push('valideCentralNom');
+    }
+    return [...pinned, ...withoutAuteur];
   }
 
   private loadWorkflowStatuses(): void {

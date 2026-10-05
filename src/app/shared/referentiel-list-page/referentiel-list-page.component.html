@@ -546,7 +546,7 @@
                   </ng-container>
                   <div class="form-group mb-2 col-md-6" *ngIf="hasEffectifTotalControl">
                     <label class="small font-weight-bold text-secondary mena-field-label mb-1 d-block">
-                      Somme des saisies
+                      {{ effectifPartitionLabel }}
                     </label>
                     <ng-container *ngIf="hasEffectifGenderTotals; else effectifSumCombined">
                       <div
@@ -579,20 +579,18 @@
                       </div>
                       <div
                         class="small mt-1"
-                        [class.text-success]="effectifSumMatches"
-                        [class.text-danger]="!effectifSumMatches"
+                        [class.text-success]="effectifChecksOk"
+                        [class.text-danger]="!effectifChecksOk"
                       >
-                        <ng-container *ngIf="hasAutoEffectifTotals">
-                          Totaux H/F calculés automatiquement (tranches d’âge ; ivoirien / handicap = sous-ensembles).
+                        <ng-container *ngIf="effectifChecksOk">
+                          Tranches d’âge, ivoiriens et handicap sont cohérents avec les totaux H/F.
                         </ng-container>
-                        <ng-container *ngIf="!hasAutoEffectifTotals && effectifSumMatches; else mismatchHintHf">
-                          Les rubriques H et F correspondent aux effectifs totaux.
+                        <ng-container *ngIf="!effectifSumMatches">
+                          La somme des tranches d’âge H et F doit égaler chaque effectif total saisi.
                         </ng-container>
-                        <ng-template #mismatchHintHf>
-                          <ng-container *ngIf="!hasAutoEffectifTotals">
-                            La somme des rubriques H et F doit égaler chaque effectif total.
-                          </ng-container>
-                        </ng-template>
+                        <ul class="mb-0 pl-3 mt-1" *ngIf="effectifCoherenceMessages.length">
+                          <li *ngFor="let msg of effectifCoherenceMessages">{{ msg }}</li>
+                        </ul>
                       </div>
                     </ng-container>
                     <ng-template #effectifSumCombined>
@@ -610,13 +608,16 @@
                           </ng-container>
                         </span>
                       </div>
-                      <div class="small mt-1" [class.text-success]="effectifSumMatches" [class.text-danger]="!effectifSumMatches">
-                        <ng-container *ngIf="effectifSumMatches; else mismatchHint">
-                          Les rubriques correspondent à l’effectif total.
+                      <div class="small mt-1" [class.text-success]="effectifChecksOk" [class.text-danger]="!effectifChecksOk">
+                        <ng-container *ngIf="effectifChecksOk">
+                          Les rubriques (tranches, ivoiriens, handicap) correspondent à l’effectif total.
                         </ng-container>
-                        <ng-template #mismatchHint>
+                        <ng-container *ngIf="!effectifSumMatches">
                           La somme des rubriques doit être égale à l’effectif total.
-                        </ng-template>
+                        </ng-container>
+                        <ul class="mb-0 pl-3 mt-1" *ngIf="effectifCoherenceMessages.length">
+                          <li *ngFor="let msg of effectifCoherenceMessages">{{ msg }}</li>
+                        </ul>
                       </div>
                     </ng-template>
                   </div>
@@ -627,11 +628,29 @@
                 class="mena-effectif-numeric-scroll rounded-lg"
                 *ngIf="cachedFormFieldsNumericGroups.length"
                 role="region"
-                aria-label="Effectifs par tranche"
+                aria-label="Effectifs par groupe"
               >
                 <div *ngFor="let group of cachedFormFieldsNumericGroups; trackBy: trackByEffectifGroupId" class="mena-effectif-group">
                   <div class="mena-effectif-group__title">{{ group.title }}</div>
-                  <div class="form-row">
+                  <ng-container *ngIf="group.children?.length">
+                    <div
+                      *ngFor="let child of group.children; trackBy: trackByEffectifGroupId"
+                      class="mena-effectif-group mena-effectif-group--nested"
+                    >
+                      <div class="mena-effectif-group__title">{{ child.title }}</div>
+                      <div class="form-row">
+                        <ng-container *ngFor="let field of child.fields; trackBy: trackByFieldKey">
+                          <ng-container
+                            *ngTemplateOutlet="
+                              refField;
+                              context: { field: field, colClass: 'col-md-4', numberCompact: true }
+                            "
+                          ></ng-container>
+                        </ng-container>
+                      </div>
+                    </div>
+                  </ng-container>
+                  <div class="form-row" *ngIf="!group.children?.length">
                     <ng-container *ngFor="let field of group.fields; trackBy: trackByFieldKey">
                       <ng-container
                         *ngTemplateOutlet="

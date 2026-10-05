@@ -2,9 +2,9 @@
   <div class="d-sm-flex align-items-center justify-content-between mb-3">
     <div>
       <h1 class="h4 mb-1 text-gray-800">ACTIVITES CENTRE — Évaluation périodique</h1>
-      <p class="small text-muted mb-0">
-        Choisir le type d’évaluation puis saisir le taux de chaque thème compatible avec le niveau.
-      </p>
+      <!-- <p class="small text-muted mb-0">
+        Les thèmes d’une même famille sont groupés : on saisit le total et « sait … », « ne sait pas … » est calculé.
+      </p> -->
     </div>
     <div class="d-flex flex-wrap gap-1 mt-2 mt-sm-0 mena-toolbar">
       <app-mena-toolbar-btn
@@ -43,6 +43,10 @@
               <th>ID</th>
               <th>Validation</th>
               <th>Centre Alpha</th>
+              <th *ngIf="showConseillerAuteur">Conseiller</th>
+              <th *ngIf="showCoordonnateurAuteur" title="Validé par le coordonnateur">Coordonnateur</th>
+              <th *ngIf="showSuperviseurValidateur" title="Validé par le superviseur">Superviseur</th>
+              <th *ngIf="showCentralValidateur" title="Validé au niveau central">Central</th>
               <th>Période d’activité</th>
               <th>Niveau</th>
               <th>Type d’évaluation</th>
@@ -57,6 +61,10 @@
                 <span class="badge" [ngClass]="validationClass(row)" [title]="workflowDecisionTooltip(row)">{{ validationLabel(row) }}</span>
               </td>
               <td>{{ refLabel(row.alpha) }}</td>
+              <td *ngIf="showConseillerAuteur">{{ conseillerLabel(row) }}</td>
+              <td *ngIf="showCoordonnateurAuteur">{{ coordonnateurLabel(row) }}</td>
+              <td *ngIf="showSuperviseurValidateur">{{ superviseurLabel(row) }}</td>
+              <td *ngIf="showCentralValidateur">{{ centralLabel(row) }}</td>
               <td>{{ refLabel(row.periodeActivite) }}</td>
               <td>{{ refLabel(row.niveauEvaluation) }}</td>
               <td>{{ typeLabel(row.typeEvaluation) }}</td>
@@ -94,6 +102,22 @@
                     (clicked)="validateRow(row)"
                   />
                   <app-mena-row-action
+                    *ngIf="canRejectOrReturnWorkflow(row)"
+                    variant="refuse"
+                    title="Rejeter avec motif"
+                    ariaLabel="Rejeter avec motif"
+                    [disabled]="workflowSubmittingId === row.id"
+                    (clicked)="openWorkflowDecision(row, 'rejeter')"
+                  />
+                  <app-mena-row-action
+                    *ngIf="canRejectOrReturnWorkflow(row)"
+                    variant="return"
+                    title="Retourner pour correction"
+                    ariaLabel="Retourner pour correction"
+                    [disabled]="workflowSubmittingId === row.id"
+                    (clicked)="openWorkflowDecision(row, 'retourner')"
+                  />
+                  <app-mena-row-action
                     *ngIf="canEdit"
                     variant="delete"
                     title="Supprimer"
@@ -105,7 +129,7 @@
               </td>
             </tr>
             <tr *ngIf="filteredRows.length === 0">
-              <td colspan="8" class="text-center text-muted py-4">Aucune évaluation trouvée.</td>
+              <td [attr.colspan]="listTableColspan" class="text-center text-muted py-4">Aucune évaluation trouvée.</td>
             </tr>
           </tbody>
         </table>
@@ -162,7 +186,7 @@
         </div>
         <div class="theme-taux-box">
           <div class="d-flex justify-content-between align-items-center mb-2">
-            <h6 class="mb-0 text-primary">Taux par thème</h6>
+            <h6 class="mb-0 text-primary">Taux par famille de thèmes</h6>
             <span class="small text-muted">{{ form.themesTaux.length }} thème(s)</span>
           </div>
           <div *ngIf="!form.idNiveauEvaluation || !form.typeEvaluation" class="small text-muted py-2">
@@ -171,38 +195,86 @@
           <div *ngIf="form.idNiveauEvaluation && form.typeEvaluation && form.themesTaux.length === 0" class="alert alert-warning py-2 mb-0">
             Aucun thème compatible trouvé pour cette combinaison.
           </div>
-          <div *ngFor="let item of form.themesTaux" class="form-row align-items-end" [class.d-none]="!form.idNiveauEvaluation || !form.typeEvaluation">
-            <div class="form-group col-md-4 mb-2">
-              <label class="small text-muted mb-1">Thème</label>
-              <div class="form-control-plaintext py-1">{{ themeOptionLabel(themeForForm(item)) }}</div>
-            </div>
-            <div class="form-group col-md-2 mb-2">
-              <label class="small text-muted mb-1">Total évalué</label>
-              <input
-                class="form-control"
-                type="number"
-                min="0"
-                [(ngModel)]="item.nombreTotalEvalue"
-                (ngModelChange)="recalculateThemeTaux(item)"
-                placeholder="0"
-              />
-            </div>
-            <div class="form-group col-md-3 mb-2">
-              <label class="small text-muted mb-1">Résultat obtenu</label>
-              <input
-                class="form-control"
-                type="number"
-                min="0"
-                [max]="item.nombreTotalEvalue ?? null"
-                [(ngModel)]="item.nombreResultatObtenu"
-                (ngModelChange)="recalculateThemeTaux(item)"
-                placeholder="0"
-              />
-            </div>
-            <div class="form-group col-md-3 mb-2">
-              <label class="small text-muted mb-1">Taux calculé (%)</label>
-              <input class="form-control" type="number" [ngModel]="item.taux" readonly placeholder="—" />
-            </div>
+          <div *ngFor="let family of themeFamilies; trackBy: trackThemeFamily" class="theme-family" [class.d-none]="!form.idNiveauEvaluation || !form.typeEvaluation">
+            <div class="theme-family-title">{{ family.title }}</div>
+            <ng-container *ngIf="family.paired && family.positive && family.negative; else unpairedTheme">
+              <div class="form-row align-items-end">
+                <div class="form-group col-md-4 mb-2">
+                  <label class="small text-muted mb-1">Total évalué</label>
+                  <input
+                    class="form-control"
+                    type="number"
+                    min="0"
+                    [(ngModel)]="family.positive.nombreTotalEvalue"
+                    (ngModelChange)="onFamilyCountsChange(family)"
+                    placeholder="0"
+                  />
+                </div>
+              </div>
+              <div class="form-row align-items-end">
+                <div class="form-group col-md-4 mb-2">
+                  <label class="small text-muted mb-1">{{ themeOptionLabel(themeForForm(family.positive)) }}</label>
+                  <input
+                    class="form-control"
+                    type="number"
+                    min="0"
+                    [max]="family.positive.nombreTotalEvalue ?? null"
+                    [(ngModel)]="family.positive.nombreResultatObtenu"
+                    (ngModelChange)="onFamilyCountsChange(family)"
+                    placeholder="0"
+                  />
+                </div>
+                <div class="form-group col-md-3 mb-2">
+                  <label class="small text-muted mb-1">Taux calculé (%)</label>
+                  <input class="form-control" type="number" [ngModel]="family.positive.taux" readonly placeholder="—" />
+                </div>
+              </div>
+              <div class="form-row align-items-end">
+                <div class="form-group col-md-4 mb-2">
+                  <label class="small text-muted mb-1">{{ themeOptionLabel(themeForForm(family.negative)) }}</label>
+                  <input class="form-control" type="number" [ngModel]="family.negative.nombreResultatObtenu" readonly placeholder="—" />
+                </div>
+                <div class="form-group col-md-3 mb-2">
+                  <label class="small text-muted mb-1">Taux calculé (%)</label>
+                  <input class="form-control" type="number" [ngModel]="family.negative.taux" readonly placeholder="—" />
+                </div>
+              </div>
+            </ng-container>
+            <ng-template #unpairedTheme>
+              <div *ngFor="let item of familyItems(family)" class="form-row align-items-end">
+                <div class="form-group col-md-4 mb-2">
+                  <label class="small text-muted mb-1">Thème</label>
+                  <div class="form-control-plaintext py-1">{{ themeOptionLabel(themeForForm(item)) }}</div>
+                </div>
+                <div class="form-group col-md-2 mb-2">
+                  <label class="small text-muted mb-1">Total évalué</label>
+                  <input
+                    class="form-control"
+                    type="number"
+                    min="0"
+                    [(ngModel)]="item.nombreTotalEvalue"
+                    (ngModelChange)="recalculateThemeTaux(item)"
+                    placeholder="0"
+                  />
+                </div>
+                <div class="form-group col-md-3 mb-2">
+                  <label class="small text-muted mb-1">Résultat obtenu</label>
+                  <input
+                    class="form-control"
+                    type="number"
+                    min="0"
+                    [max]="item.nombreTotalEvalue ?? null"
+                    [(ngModel)]="item.nombreResultatObtenu"
+                    (ngModelChange)="recalculateThemeTaux(item)"
+                    placeholder="0"
+                  />
+                </div>
+                <div class="form-group col-md-3 mb-2">
+                  <label class="small text-muted mb-1">Taux calculé (%)</label>
+                  <input class="form-control" type="number" [ngModel]="item.taux" readonly placeholder="—" />
+                </div>
+              </div>
+            </ng-template>
           </div>
         </div>
       </div>
@@ -243,16 +315,31 @@
             <thead class="thead-light">
               <tr>
                 <th>Thème</th>
+                <th class="text-right">Total</th>
+                <th class="text-right">Obtenu</th>
                 <th class="text-right">Taux</th>
               </tr>
             </thead>
             <tbody>
-              <tr *ngFor="let item of detailRow.themesTaux ?? []">
-                <td>{{ refLabel(item.themeEvaluation) }}</td>
-                <td class="text-right">{{ item.taux ?? '-' }}%</td>
-              </tr>
-              <tr *ngIf="(detailRow.themesTaux ?? []).length === 0">
-                <td colspan="2" class="text-center text-muted">Aucun thème renseigné.</td>
+              <ng-container *ngFor="let family of detailThemeFamilies; trackBy: trackThemeFamily">
+                <tr class="theme-family-detail">
+                  <th colspan="4">{{ family.title }}</th>
+                </tr>
+                <tr *ngIf="family.positive as positive">
+                  <td>{{ refLabel(positive.themeEvaluation) }}</td>
+                  <td class="text-right">{{ positive.nombreTotalEvalue ?? '-' }}</td>
+                  <td class="text-right">{{ positive.nombreResultatObtenu ?? '-' }}</td>
+                  <td class="text-right">{{ positive.taux ?? '-' }}%</td>
+                </tr>
+                <tr *ngIf="family.negative as negative">
+                  <td>{{ refLabel(negative.themeEvaluation) }}</td>
+                  <td class="text-right">{{ negative.nombreTotalEvalue ?? '-' }}</td>
+                  <td class="text-right">{{ negative.nombreResultatObtenu ?? '-' }}</td>
+                  <td class="text-right">{{ negative.taux ?? '-' }}%</td>
+                </tr>
+              </ng-container>
+              <tr *ngIf="detailThemeFamilies.length === 0">
+                <td colspan="4" class="text-center text-muted">Aucun thème renseigné.</td>
               </tr>
             </tbody>
           </table>
@@ -276,3 +363,54 @@
   title="Historique de validation — Évaluation"
   (closed)="closeHistory()"
 />
+
+<div *ngIf="workflowDecisionOpen" class="modal fade show d-block" tabindex="-1" role="dialog" aria-modal="true">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content mena-modal">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          {{ workflowDecisionAction === 'rejeter' ? 'Rejeter la donnée' : 'Retourner pour correction' }}
+        </h5>
+        <button type="button" class="close" aria-label="Fermer" (click)="closeWorkflowDecision()">
+          <span aria-hidden="true">×</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div *ngIf="workflowDecisionError" class="alert alert-danger small">{{ workflowDecisionError }}</div>
+        <label class="small font-weight-bold">
+          {{
+            workflowDecisionAction === 'rejeter'
+              ? 'Motif du rejet (obligatoire)'
+              : 'Commentaire de retour (facultatif)'
+          }}
+        </label>
+        <textarea
+          class="form-control"
+          rows="4"
+          maxlength="500"
+          [(ngModel)]="workflowDecisionText"
+          [disabled]="workflowSubmittingId != null"
+        ></textarea>
+      </div>
+      <div class="modal-footer">
+        <button
+          type="button"
+          class="btn btn-outline-secondary"
+          (click)="closeWorkflowDecision()"
+          [disabled]="workflowSubmittingId != null"
+        >
+          Annuler
+        </button>
+        <button
+          type="button"
+          class="btn btn-primary"
+          (click)="confirmWorkflowDecision()"
+          [disabled]="workflowSubmittingId != null"
+        >
+          Confirmer
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+<div *ngIf="workflowDecisionOpen" class="modal-backdrop fade show"></div>

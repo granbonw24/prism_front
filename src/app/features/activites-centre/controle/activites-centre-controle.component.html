@@ -85,6 +85,10 @@
               <th style="width: 4rem">ID</th>
               <th>Validation</th>
               <th>Centre Alpha</th>
+              <th *ngIf="showConseillerAuteur">Conseiller</th>
+              <th *ngIf="showCoordonnateurAuteur" title="Validé par le coordonnateur">Coordonnateur</th>
+              <th *ngIf="showSuperviseurValidateur" title="Validé par le superviseur">Superviseur</th>
+              <th *ngIf="showCentralValidateur" title="Validé au niveau central">Central</th>
               <th>Période d’activité</th>
               <th>Date démarrage</th>
               <th>Jours et heures de formation</th>
@@ -102,6 +106,10 @@
                 <span class="badge" [ngClass]="validationClass(row)" [title]="workflowDecisionTooltip(row)">{{ validationLabel(row) }}</span>
               </td>
               <td>{{ alphaLabel(row) }}</td>
+              <td *ngIf="showConseillerAuteur">{{ conseillerLabel(row) }}</td>
+              <td *ngIf="showCoordonnateurAuteur">{{ coordonnateurLabel(row) }}</td>
+              <td *ngIf="showSuperviseurValidateur">{{ superviseurLabel(row) }}</td>
+              <td *ngIf="showCentralValidateur">{{ centralLabel(row) }}</td>
               <td>{{ refLabel(row.periodeActivite) }}</td>
               <td>{{ row.dateDemarrageAppren || '-' }}</td>
               <td>{{ horairesLabel(row) }}</td>
@@ -146,6 +154,22 @@
                     (clicked)="validateRow(row)"
                   />
                   <app-mena-row-action
+                    *ngIf="canRejectOrReturnWorkflow(row)"
+                    variant="refuse"
+                    title="Rejeter avec motif"
+                    ariaLabel="Rejeter avec motif"
+                    [disabled]="workflowSubmittingId === row.id"
+                    (clicked)="openWorkflowDecision(row, 'rejeter')"
+                  />
+                  <app-mena-row-action
+                    *ngIf="canRejectOrReturnWorkflow(row)"
+                    variant="return"
+                    title="Retourner pour correction"
+                    ariaLabel="Retourner pour correction"
+                    [disabled]="workflowSubmittingId === row.id"
+                    (clicked)="openWorkflowDecision(row, 'retourner')"
+                  />
+                  <app-mena-row-action
                     *ngIf="canEdit"
                     variant="delete"
                     title="Supprimer"
@@ -157,7 +181,7 @@
               </td>
             </tr>
             <tr *ngIf="filteredRows.length === 0">
-              <td colspan="11" class="text-center text-muted py-4">Aucun contrôle trouvé.</td>
+              <td [attr.colspan]="listTableColspan" class="text-center text-muted py-4">Aucun contrôle trouvé.</td>
             </tr>
           </tbody>
         </table>
@@ -308,3 +332,54 @@
   title="Historique de validation — Contrôle"
   (closed)="closeHistory()"
 />
+
+<div *ngIf="workflowDecisionOpen" class="modal fade show d-block" tabindex="-1" role="dialog" aria-modal="true">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content mena-modal">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          {{ workflowDecisionAction === 'rejeter' ? 'Rejeter la donnée' : 'Retourner pour correction' }}
+        </h5>
+        <button type="button" class="close" aria-label="Fermer" (click)="closeWorkflowDecision()">
+          <span aria-hidden="true">×</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div *ngIf="workflowDecisionError" class="alert alert-danger small">{{ workflowDecisionError }}</div>
+        <label class="small font-weight-bold">
+          {{
+            workflowDecisionAction === 'rejeter'
+              ? 'Motif du rejet (obligatoire)'
+              : 'Commentaire de retour (facultatif)'
+          }}
+        </label>
+        <textarea
+          class="form-control"
+          rows="4"
+          maxlength="500"
+          [(ngModel)]="workflowDecisionText"
+          [disabled]="workflowSubmittingId != null"
+        ></textarea>
+      </div>
+      <div class="modal-footer">
+        <button
+          type="button"
+          class="btn btn-outline-secondary"
+          (click)="closeWorkflowDecision()"
+          [disabled]="workflowSubmittingId != null"
+        >
+          Annuler
+        </button>
+        <button
+          type="button"
+          class="btn btn-primary"
+          (click)="confirmWorkflowDecision()"
+          [disabled]="workflowSubmittingId != null"
+        >
+          Confirmer
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+<div *ngIf="workflowDecisionOpen" class="modal-backdrop fade show"></div>

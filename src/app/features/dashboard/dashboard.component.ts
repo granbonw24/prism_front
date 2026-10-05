@@ -9,7 +9,9 @@ import { API_BASE_URL } from '@core/tokens/api-base-url.token';
 import { AuthSession } from '@core/models/auth.models';
 import { AuthPresentationService } from '@services/auth-presentation.service';
 import { AuthService } from '@services/auth.service';
-import { Observable, catchError, of, shareReplay, timeout } from 'rxjs';
+import { Observable, catchError, map, of, shareReplay, timeout } from 'rxjs';
+import type { WorkflowReturnAlert } from '@core/workflow/workflow-return-alert.util';
+import { MenaWorkflowReturnsAlertComponent } from '@shared/mena-workflow-returns-alert/mena-workflow-returns-alert.component';
 
 export type DashboardSummary = {
   scopeMode: string;
@@ -26,6 +28,7 @@ export type DashboardSummary = {
   evaluationsTotal: number;
   usersTotal: number | null;
   rolesTotal: number | null;
+  workflowReturns?: WorkflowReturnAlert;
 };
 
 type QuickLink = {
@@ -41,7 +44,7 @@ type QuickLink = {
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, MenaWorkflowReturnsAlertComponent],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.css',
 })
@@ -76,8 +79,13 @@ export class DashboardComponent {
           evaluationsTotal: 0,
           usersTotal: null,
           rolesTotal: null,
+          workflowReturns: { total: 0, items: [] },
         } satisfies DashboardSummary),
       ),
+      map((summary) => ({
+        ...summary,
+        workflowReturns: summary.workflowReturns ?? { total: 0, items: [] },
+      })),
       shareReplay({ bufferSize: 1, refCount: true }),
     );
 

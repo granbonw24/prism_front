@@ -1,0 +1,100 @@
+<div *ngIf="hasReturns" class="alert alert-warning border-0 shadow-sm mb-4 mena-returns-alert" role="alert">
+  <div class="d-flex align-items-start flex-wrap">
+    <i class="fas fa-exclamation-triangle mt-1 mr-2" aria-hidden="true"></i>
+    <div class="flex-grow-1 min-w-0">
+      <div class="d-flex flex-wrap align-items-center">
+        <strong>Saisies renvoyées pour correction</strong>
+        <span class="badge badge-warning ml-2">{{ total }}</span>
+      </div>
+      <p class="small mb-2 mt-1 mb-0">
+        Corrigez puis resoumettez les fiches concernées. L'alerte disparaît après resoumission.
+      </p>
+
+      <div class="mena-returns-alert__chips mb-2">
+        <span *ngFor="let group of groups" class="badge badge-light border mr-1 mb-1">
+          {{ group.moduleLabel }} · {{ group.items.length }}
+        </span>
+      </div>
+
+      <ul class="list-unstyled mb-2 mena-returns-alert__preview">
+        <li *ngFor="let item of previewItems" class="mena-returns-alert__preview-item">
+          <span class="font-weight-bold">{{ item.resourceLabel || 'Saisie' }}</span>
+          <span class="text-muted"> #{{ item.recordId }}</span>
+          <span *ngIf="item.commentaire?.trim()" class="small d-block text-muted mt-1">
+            « {{ item.commentaire }} »
+          </span>
+        </li>
+      </ul>
+
+      <button
+        *ngIf="total > previewLimit"
+        type="button"
+        class="btn btn-sm btn-outline-warning"
+        (click)="openModal()"
+      >
+        Voir les {{ total }} retours…
+      </button>
+      <button
+        *ngIf="total <= previewLimit && total > 0"
+        type="button"
+        class="btn btn-sm btn-outline-warning"
+        (click)="openModal()"
+      >
+        Voir le détail
+      </button>
+    </div>
+  </div>
+</div>
+
+<div *ngIf="modalOpen" class="modal fade show d-block" tabindex="-1" role="dialog" aria-modal="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable" role="document">
+    <div class="modal-content mena-modal border-0 shadow">
+      <div class="modal-header border-0">
+        <div>
+          <h5 class="modal-title mb-0">Saisies à corriger</h5>
+          <p class="small text-muted mb-0 mt-1">{{ total }} fiche(s) renvoyée(s) par un validateur</p>
+        </div>
+        <button type="button" class="close" aria-label="Fermer" (click)="closeModal()">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body pt-0">
+        <section *ngFor="let group of groups" class="mena-returns-alert__group mb-4">
+          <div class="d-flex align-items-center justify-content-between mb-2">
+            <h6 class="mb-0 font-weight-bold">{{ group.moduleLabel }}</h6>
+            <a class="btn btn-sm btn-outline-primary" [routerLink]="group.listPath" (click)="closeModal()">
+              Ouvrir le module
+            </a>
+          </div>
+          <div class="list-group list-group-flush mena-returns-alert__group-list">
+            <div *ngFor="let item of group.items" class="list-group-item px-0 py-2">
+              <div class="d-flex justify-content-between align-items-start">
+                <div>
+                  <span class="font-weight-bold">#{{ item.recordId }}</span>
+                  <span class="text-muted small d-block">
+                    {{ formatReturnAlertDate(item.dateDecision) }}
+                    <span *ngIf="item.decidePar"> · {{ item.decidePar }}</span>
+                  </span>
+                </div>
+                <a
+                  class="btn btn-sm btn-link"
+                  [routerLink]="group.listPath"
+                  (click)="closeModal()"
+                >
+                  Corriger
+                </a>
+              </div>
+              <p *ngIf="item.commentaire?.trim()" class="small mb-0 mt-1 mena-returns-alert__comment">
+                {{ item.commentaire }}
+              </p>
+            </div>
+          </div>
+        </section>
+      </div>
+      <div class="modal-footer border-0 pt-0">
+        <button type="button" class="btn btn-outline-secondary btn-sm" (click)="closeModal()">Fermer</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div *ngIf="modalOpen" class="modal-backdrop fade show" (click)="closeModal()"></div>
