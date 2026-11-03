@@ -1,0 +1,60 @@
+# Déploiement front PRISM → /var/www/dcspa (staging :91).
+# Secrets : VPS_HOST, VPS_USER, VPS_SSH_PRIVATE_KEY (port SSH 90).
+name: Deploy PRISM frontend (VPS)
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-prism-frontend-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Build staging
+        run: |
+          npm ci
+          npm run build -- --configuration=staging
+
+      - name: Stage static files
+        run: |
+          FRONT=dist/prism_front/browser
+          if [ ! -d "$FRONT" ]; then FRONT=dist/prism_front; fi
+          mkdir -p upload
+          cp -a "$FRONT"/. upload/
+
+      - name: Upload to VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          port: 90
+          key: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+          source: upload/*
+          target: /tmp/prism-front
+          strip_components: 1
+
+      - name: Install under /var/www/dcspa
+        uses: appleboy/ssh-action@v1.2.5
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          port: 90
+          key: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+          script: |
+            set -euo pipefail
+            sudo mkdir -p /var/www/dcspa
+            sudo rsync -a --delete /tmp/prism-front/ /var/www/dcspa/
+            rm -rf /tmp/prism-front
+            echo "PRISM front deploy OK"
