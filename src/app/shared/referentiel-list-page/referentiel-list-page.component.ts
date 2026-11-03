@@ -266,9 +266,6 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
     if (!this.dataSub) {
       return;
     }
-    if (changes['inputApiPath']) {
-      this.clearListFilter();
-    }
     if (changes['inputCreateFields'] || changes['inputEffectifDenseForm']) {
       if (changes['inputCreateFields']) {
         this.fieldOptions = {};
@@ -283,7 +280,12 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
         this.ensureAutoSelectedFields();
       }
     }
-    this.fetch();
+    // Recharger la liste seulement si l’API change (ex. Alpha → CP), pas à chaque
+    // bascule d’input annexe — évite de verrouiller le sélecteur « Type de centre ».
+    if (changes['inputApiPath']) {
+      this.clearListFilter();
+      this.fetch();
+    }
   }
 
   /** Aligne titre, apiPath et champs formulaire sur les @Input du parent (composant imbriqué). */
@@ -1028,6 +1030,14 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
       return false;
     }
     return isSubordinateWorkflowEditable(row);
+  }
+
+  /** Libellé / info-bulle du bouton supprimer (explique le verrou workflow). */
+  deleteActionTitle(row: Record<string, unknown>): string {
+    if (this.isWorkflowEditable(row)) {
+      return 'Supprimer';
+    }
+    return 'Suppression impossible : fiche soumise ou déjà validée (brouillon ou retourné uniquement)';
   }
 
   resetListPage(): void {

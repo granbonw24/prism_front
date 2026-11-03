@@ -19,8 +19,8 @@
           (ngModelChange)="onAddFormContextValueChange($event)"
           [options]="menaContextOptions()"
           [allowNull]="false"
+          [searchable]="false"
           inputClass="form-control form-control-sm"
-          [loading]="loading"
         />
       </div>
     </div>
@@ -282,8 +282,8 @@
                   <app-mena-row-action
                     *ngIf="canDeleteRecord && resolveRowId(row) != null"
                     variant="delete"
-                    title="Supprimer"
-                    ariaLabel="Supprimer"
+                    [title]="deleteActionTitle(row)"
+                    [ariaLabel]="deleteActionTitle(row)"
                     [disabled]="!isWorkflowEditable(row)"
                     (clicked)="openDeleteModal(row)"
                   />
@@ -418,8 +418,8 @@
               (ngModelChange)="onAddFormContextValueChange($event)"
               [options]="menaContextOptions()"
               [allowNull]="false"
+              [searchable]="false"
               inputClass="form-control form-control-sm"
-              [loading]="loading"
             />
           </div>
           <div *ngIf="formError" class="alert alert-danger small">
