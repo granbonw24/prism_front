@@ -22,10 +22,11 @@ export const unauthorizedInterceptor: HttpInterceptorFn = (req, next) => {
   return next(req).pipe(
     catchError((err: HttpErrorResponse) => {
       const isLoginAttempt = req.url.includes('/api/auth/login');
-      if (
-        sessionExpiry.isSessionExpiredStatus(err.status) &&
-        !isLoginAttempt
-      ) {
+      const isAuthMe = req.url.includes('/api/auth/me');
+      const sessionRejected =
+        sessionExpiry.isSessionExpiredStatus(err.status) ||
+        (err.status === 403 && isAuthMe);
+      if (sessionRejected && !isLoginAttempt) {
         if (auth.isLoginInFlight) {
           return throwError(() => err);
         }

@@ -19,6 +19,9 @@ export const apiErrorFeedbackInterceptor: HttpInterceptorFn = (req, next) => {
       if (err.status === 401) {
         return throwError(() => err);
       }
+      if (err.status === 403 && req.url.includes('/api/auth/me')) {
+        return throwError(() => err);
+      }
       const showGlobal =
         err.status === 0 || err.status === 403 || err.status >= 500;
       if (showGlobal) {

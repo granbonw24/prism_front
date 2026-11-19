@@ -29,7 +29,10 @@ export const authGuard: CanActivateFn = async () => {
     if (!auth.isLoginInFlight) {
       const status =
         err instanceof HttpErrorResponse ? err.status : undefined;
-      if (status != null && sessionExpiry.isSessionExpiredStatus(status)) {
+      if (
+        status === 401 ||
+        status === 403
+      ) {
         sessionExpiry.handleSessionExpired();
       } else {
         auth.clearLocalSession();
