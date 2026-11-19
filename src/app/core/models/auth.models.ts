@@ -51,6 +51,7 @@ export interface LoginResponse {
   nationalView?: boolean;
   scopeMode?: string;
   scopeLabel?: string;
+  mustChangePassword?: boolean;
 }
 
 export interface AuthMeResponse {
@@ -80,6 +81,7 @@ export interface AuthMeResponse {
   nationalView?: boolean;
   scopeMode?: string;
   scopeLabel?: string;
+  mustChangePassword?: boolean;
 }
 
 export interface AuthSession {
@@ -110,4 +112,6 @@ export interface AuthSession {
   nationalView?: boolean;
   scopeMode?: string;
   scopeLabel?: string;
+  /** Compte créé / réinitialisé par un admin : changement de mot de passe requis. */
+  mustChangePassword?: boolean;
 }

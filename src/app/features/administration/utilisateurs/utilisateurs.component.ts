@@ -94,6 +94,9 @@ export class UtilisateursComponent implements OnInit, OnDestroy {
   detailsUser: AppUserAdmin | null = null;
   editUserId: number | null = null;
   createOpen = false;
+  /** Affiche les erreurs de validation sur la modale création après tentative. */
+  createShowValidation = false;
+  editShowValidation = false;
   createForm: AppUserAdminUpsertRequest = {
     username: '',
     email: '',
@@ -356,10 +359,12 @@ export class UtilisateursComponent implements OnInit, OnDestroy {
       idLocalite: null,
     };
     this.createSelectedRoleId = null;
+    this.createShowValidation = false;
   }
 
   closeCreate(): void {
     this.createOpen = false;
+    this.createShowValidation = false;
   }
 
   createFormIsValid(): boolean {
@@ -369,6 +374,77 @@ export class UtilisateursComponent implements OnInit, OnDestroy {
       String(this.createForm.password ?? '').trim().length >= PASSWORD_MIN_LENGTH &&
       this.scopeSelectionsAreConsistent(this.createForm) &&
       this.scopeIsValid(this.createSelectedRoleId, this.createForm)
+    );
+  }
+
+  attemptCreateUser(): void {
+    this.createShowValidation = true;
+    void this.createUser();
+  }
+
+  attemptSaveEdit(): void {
+    this.editShowValidation = true;
+    void this.saveEdit();
+  }
+
+  showCreateFieldErrors(): boolean {
+    return this.createShowValidation;
+  }
+
+  showEditFieldErrors(): boolean {
+    return this.editShowValidation;
+  }
+
+  createUsernameInvalid(): boolean {
+    return (
+      this.showCreateFieldErrors() &&
+      String(this.createForm.username ?? '').trim().length === 0
+    );
+  }
+
+  createPasswordInvalid(): boolean {
+    return (
+      this.showCreateFieldErrors() &&
+      String(this.createForm.password ?? '').trim().length < PASSWORD_MIN_LENGTH
+    );
+  }
+
+  editUsernameInvalid(): boolean {
+    return (
+      this.showEditFieldErrors() &&
+      String(this.editForm.username ?? '').trim().length === 0
+    );
+  }
+
+  editPasswordInvalid(): boolean {
+    const pwd = String(this.editForm.password ?? '').trim();
+    return (
+      this.showEditFieldErrors() && pwd.length > 0 && pwd.length < PASSWORD_MIN_LENGTH
+    );
+  }
+
+  scopeFieldInvalid(form: AppUserAdminUpsertRequest, key: ScopeKey, show: boolean): boolean {
+    if (!show) {
+      return false;
+    }
+    const value = form[key];
+    if (value == null) {
+      return false;
+    }
+    return !this.filteredScopeOptions(key, form).some((option) => option.id === value);
+  }
+
+  createScopeRuleInvalid(): boolean {
+    return (
+      this.showCreateFieldErrors() &&
+      !this.scopeIsValid(this.createSelectedRoleId, this.createForm)
+    );
+  }
+
+  editScopeRuleInvalid(): boolean {
+    return (
+      this.showEditFieldErrors() &&
+      !this.scopeIsValid(this.editSelectedRoleId, this.editForm)
     );
   }
 
@@ -435,10 +511,12 @@ export class UtilisateursComponent implements OnInit, OnDestroy {
       idLocalite: u.idLocalite ?? null,
     };
     this.editSelectedRoleId = (u.roleIds ?? [])[0] ?? null;
+    this.editShowValidation = false;
   }
 
   closeEdit(): void {
     this.editUserId = null;
+    this.editShowValidation = false;
   }
 
   openResetPassword(u: AppUserAdmin): void {

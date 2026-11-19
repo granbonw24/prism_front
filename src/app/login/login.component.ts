@@ -51,9 +51,12 @@ export class LoginComponent {
     this.auth.prepareForLogin();
     try {
       await firstValueFrom(this.auth.login({ username, password }).pipe(timeout(30_000)));
+      const mustChange = this.auth.mustChangePassword();
+      const target = mustChange
+        ? new URL('changer-mot-de-passe', appHomeHref()).href
+        : appHomeHref();
       // Rechargement complet : évite un Router figé après un 200 (session déjà en localStorage).
-      // base href (ex. /dcspa/) — jamais '/' : Apache 301 / → /dismas/ sur le VPS.
-      window.location.replace(appHomeHref());
+      window.location.replace(target);
     } catch (err: unknown) {
       this.submitting = false;
       if (err instanceof TimeoutError) {

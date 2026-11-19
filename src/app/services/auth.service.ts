@@ -44,6 +44,10 @@ export class AuthService {
     return this.loginInFlight;
   }
 
+  mustChangePassword(): boolean {
+    return !!this.currentSession?.mustChangePassword;
+  }
+
   isAuthenticated(): boolean {
     return !!this.tokens.getAccessToken();
   }
@@ -190,6 +194,10 @@ export class AuthService {
       nationalView: me.nationalView ?? prev?.nationalView ?? false,
       scopeMode: me.scopeMode ?? prev?.scopeMode,
       scopeLabel: me.scopeLabel ?? prev?.scopeLabel,
+      mustChangePassword:
+        me.mustChangePassword !== undefined
+          ? !!me.mustChangePassword
+          : (prev?.mustChangePassword ?? false),
     });
   }
 

@@ -1,3 +1,27 @@
+.mena-record-detail-modal__header {
+  align-items: flex-start;
+}
+
+.mena-record-detail-modal__titles {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding-right: 0.75rem;
+}
+
+.mena-record-detail-modal__header-actions {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 0.5rem;
+  margin: -0.25rem -0.5rem 0 0;
+}
+
+.mena-record-detail-modal__history {
+  font-weight: 600;
+  white-space: nowrap;
+  box-shadow: 0 1px 3px rgba(181, 78, 16, 0.12);
+}
+
 .mena-detail-table th {
   vertical-align: top;
 }

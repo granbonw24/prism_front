@@ -251,8 +251,16 @@
       <div class="modal-body">
         <div class="form-row">
           <div class="form-group col-md-4">
-            <label class="small text-muted">Matricule</label>
-            <input class="form-control" [(ngModel)]="createForm.username" [disabled]="saving" />
+            <label class="small text-muted">Matricule <span class="text-danger">*</span></label>
+            <input
+              class="form-control"
+              [class.is-invalid]="createUsernameInvalid()"
+              [(ngModel)]="createForm.username"
+              [disabled]="saving"
+            />
+            <div class="invalid-feedback d-block" *ngIf="createUsernameInvalid()">
+              Le matricule est obligatoire.
+            </div>
           </div>
           <div class="form-group col-md-5">
             <label class="small text-muted">Email (optionnel)</label>
@@ -287,24 +295,28 @@
             <input class="form-control" [(ngModel)]="createForm.lieuNaissance" [disabled]="saving" />
           </div>
           <div class="form-group col-md-4">
-            <label class="small text-muted">Date prise de service</label>
+            <label class="small text-muted">Date prise de service (optionnel)</label>
             <input type="date" class="form-control" [(ngModel)]="createForm.datePriseService" [disabled]="saving" />
           </div>
           <div class="form-group col-md-4">
-            <label class="small text-muted">Date départ retraite</label>
+            <label class="small text-muted">Date départ retraite (optionnel)</label>
             <input type="date" class="form-control" [(ngModel)]="createForm.dateDepartRetraite" [disabled]="saving" />
           </div>
         </div>
 
         <div class="form-row">
           <div class="form-group col-md-6">
-            <label class="small text-muted">Mot de passe</label>
+            <label class="small text-muted">Mot de passe <span class="text-danger">*</span></label>
             <app-mena-password-field
               [(ngModel)]="createForm.password"
+              [inputClass]="'form-control' + (createPasswordInvalid() ? ' is-invalid' : '')"
               [disabled]="saving"
               autocomplete="new-password"
               placeholder="Au moins {{ passwordMinLength }} caractères"
             />
+            <div class="invalid-feedback d-block" *ngIf="createPasswordInvalid()">
+              Mot de passe requis (minimum {{ passwordMinLength }} caractères).
+            </div>
           </div>
         </div>
 
@@ -337,20 +349,40 @@
                 [ngModel]="createForm[scope.key]"
                 (ngModelChange)="onScopeChanged(createForm, scope.key, $event)"
                 [options]="menaScopeOptions(scope.key, createForm)"
+                [inputClass]="scopeFieldInvalid(createForm, scope.key, showCreateFieldErrors()) ? 'form-control is-invalid' : 'form-control'"
                 nullLabel="— Non rattaché —"
                 [disabled]="saving || loading"
                 [loading]="loading"
               />
+              <div
+                class="invalid-feedback d-block"
+                *ngIf="scopeFieldInvalid(createForm, scope.key, showCreateFieldErrors())"
+              >
+                Cette valeur n’est pas compatible avec les autres sélections.
+              </div>
             </div>
           </div>
-          <div class="text-danger small" *ngIf="!scopeIsValid(createSelectedRoleId, createForm)">
+          <div class="text-danger small" *ngIf="createScopeRuleInvalid()">
             {{ scopeValidationMessage(createSelectedRoleId) }}
           </div>
+        </div>
+        <div
+          class="alert alert-warning py-2 small mb-0 mt-3"
+          *ngIf="createShowValidation && !createFormIsValid()"
+          role="alert"
+        >
+          Corrigez les champs signalés ci-dessus pour pouvoir créer l’utilisateur.
         </div>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-outline-secondary" (click)="closeCreate()" [disabled]="saving">Annuler</button>
-        <button type="button" class="btn btn-primary" (click)="createUser()" [disabled]="!createFormIsValid()">
+        <button
+          type="button"
+          class="btn btn-primary"
+          (click)="attemptCreateUser()"
+          [disabled]="saving"
+          [class.disabled]="!createFormIsValid()"
+        >
           <span *ngIf="saving">Enregistrement…</span>
           <span *ngIf="!saving">Créer</span>
         </button>
@@ -433,8 +465,16 @@
       <div class="modal-body">
         <div class="form-row">
           <div class="form-group col-md-4">
-            <label class="small text-muted">Username</label>
-            <input class="form-control" [(ngModel)]="editForm.username" [disabled]="saving" />
+            <label class="small text-muted">Username <span class="text-danger">*</span></label>
+            <input
+              class="form-control"
+              [class.is-invalid]="editUsernameInvalid()"
+              [(ngModel)]="editForm.username"
+              [disabled]="saving"
+            />
+            <div class="invalid-feedback d-block" *ngIf="editUsernameInvalid()">
+              Le matricule est obligatoire.
+            </div>
           </div>
           <div class="form-group col-md-5">
             <label class="small text-muted">Email</label>
@@ -469,11 +509,11 @@
             <input class="form-control" [(ngModel)]="editForm.lieuNaissance" [disabled]="saving" />
           </div>
           <div class="form-group col-md-4">
-            <label class="small text-muted">Date prise de service</label>
+            <label class="small text-muted">Date prise de service (optionnel)</label>
             <input type="date" class="form-control" [(ngModel)]="editForm.datePriseService" [disabled]="saving" />
           </div>
           <div class="form-group col-md-4">
-            <label class="small text-muted">Date départ retraite</label>
+            <label class="small text-muted">Date départ retraite (optionnel)</label>
             <input type="date" class="form-control" [(ngModel)]="editForm.dateDepartRetraite" [disabled]="saving" />
           </div>
         </div>
@@ -483,10 +523,14 @@
             <label class="small text-muted">Nouveau mot de passe (optionnel)</label>
             <app-mena-password-field
               [(ngModel)]="editForm.password"
+              [inputClass]="'form-control' + (editPasswordInvalid() ? ' is-invalid' : '')"
               [disabled]="saving"
               autocomplete="new-password"
               placeholder="Nouveau mot de passe"
             />
+            <div class="invalid-feedback d-block" *ngIf="editPasswordInvalid()">
+              Le mot de passe doit contenir au moins {{ passwordMinLength }} caractères.
+            </div>
             <div class="small text-muted mt-1">Laisser vide pour conserver le mot de passe actuel (min. {{ passwordMinLength }} caractères si renseigné). Ou utiliser l’icône clé dans la liste.</div>
           </div>
         </div>
@@ -519,19 +563,39 @@
                 [ngModel]="editForm[scope.key]"
                 (ngModelChange)="onScopeChanged(editForm, scope.key, $event)"
                 [options]="menaScopeOptions(scope.key, editForm)"
+                [inputClass]="scopeFieldInvalid(editForm, scope.key, showEditFieldErrors()) ? 'form-control is-invalid' : 'form-control'"
                 nullLabel="— Non rattaché —"
                 [disabled]="saving"
               />
+              <div
+                class="invalid-feedback d-block"
+                *ngIf="scopeFieldInvalid(editForm, scope.key, showEditFieldErrors())"
+              >
+                Cette valeur n’est pas compatible avec les autres sélections.
+              </div>
             </div>
           </div>
-          <div class="text-danger small" *ngIf="!scopeIsValid(editSelectedRoleId, editForm)">
+          <div class="text-danger small" *ngIf="editScopeRuleInvalid()">
             {{ scopeValidationMessage(editSelectedRoleId) }}
           </div>
+        </div>
+        <div
+          class="alert alert-warning py-2 small mb-0 mt-3"
+          *ngIf="editShowValidation && !canSaveEdit()"
+          role="alert"
+        >
+          Corrigez les champs signalés ci-dessus pour pouvoir enregistrer.
         </div>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-outline-secondary" (click)="closeEdit()" [disabled]="saving">Annuler</button>
-        <button type="button" class="btn btn-primary" (click)="saveEdit()" [disabled]="!canSaveEdit()">
+        <button
+          type="button"
+          class="btn btn-primary"
+          (click)="attemptSaveEdit()"
+          [disabled]="saving"
+          [class.disabled]="!canSaveEdit()"
+        >
           <span *ngIf="saving">Enregistrement…</span>
           <span *ngIf="!saving">Enregistrer</span>
         </button>
