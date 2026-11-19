@@ -9,8 +9,10 @@ import { API_BASE_URL } from '@core/tokens/api-base-url.token';
 import { AuthSession } from '@core/models/auth.models';
 import { AuthPresentationService } from '@services/auth-presentation.service';
 import { AuthService } from '@services/auth.service';
-import { Observable, catchError, map, of, shareReplay, timeout } from 'rxjs';
+import { WorkflowNotificationCenterService } from '@core/workflow/workflow-notification-center.service';
+import { Observable, catchError, map, of, shareReplay, tap, timeout } from 'rxjs';
 import type { WorkflowReturnAlert } from '@core/workflow/workflow-return-alert.util';
+import { MenaWorkflowPendingAlertComponent } from '@shared/mena-workflow-pending-alert/mena-workflow-pending-alert.component';
 import { MenaWorkflowReturnsAlertComponent } from '@shared/mena-workflow-returns-alert/mena-workflow-returns-alert.component';
 
 export type DashboardSummary = {
@@ -29,6 +31,7 @@ export type DashboardSummary = {
   usersTotal: number | null;
   rolesTotal: number | null;
   workflowReturns?: WorkflowReturnAlert;
+  workflowPending?: WorkflowReturnAlert;
 };
 
 type QuickLink = {
@@ -44,7 +47,7 @@ type QuickLink = {
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterLink, MenaWorkflowReturnsAlertComponent],
+  imports: [CommonModule, RouterLink, MenaWorkflowReturnsAlertComponent, MenaWorkflowPendingAlertComponent],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.css',
 })
@@ -54,6 +57,7 @@ export class DashboardComponent {
     private readonly http: HttpClient,
     readonly presentation: AuthPresentationService,
     @Inject(API_BASE_URL) private readonly apiBaseUrl: string,
+    private readonly workflowNotifications: WorkflowNotificationCenterService,
   ) {}
 
   readonly platformBrandLabel = `${BRAND_CONFIG.platformName} · MENA Côte d’Ivoire`;
@@ -80,12 +84,20 @@ export class DashboardComponent {
           usersTotal: null,
           rolesTotal: null,
           workflowReturns: { total: 0, items: [] },
+          workflowPending: { total: 0, items: [] },
         } satisfies DashboardSummary),
       ),
       map((summary) => ({
         ...summary,
         workflowReturns: summary.workflowReturns ?? { total: 0, items: [] },
+        workflowPending: summary.workflowPending ?? { total: 0, items: [] },
       })),
+      tap((summary) =>
+        this.workflowNotifications.applyFromDashboard({
+          workflowReturns: summary.workflowReturns,
+          workflowPending: summary.workflowPending,
+        }),
+      ),
       shareReplay({ bufferSize: 1, refCount: true }),
     );
 

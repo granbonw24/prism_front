@@ -3,7 +3,13 @@ import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { unwrapListBody } from '@core/http/unwrap-spring-page';
 import { API_BASE_URL } from '@core/tokens/api-base-url.token';
 import { formatHttpError } from '@core/utils/http-error.util';
+import { ActivatedRoute, Router } from '@angular/router';
 import { Component, Inject, OnInit } from '@angular/core';
+import {
+  clearWorkflowDeepLinkQueryParams,
+  readWorkflowDeepLinkRecordId,
+  readWorkflowDeepLinkTab,
+} from '@core/workflow/workflow-deep-link.util';
 import { FormsModule } from '@angular/forms';
 import { forkJoin } from 'rxjs';
 import { AuthService } from '@services/auth.service';
@@ -201,10 +207,13 @@ export class ActivitesCentreControleComponent implements OnInit {
   historyOpen = false;
   historyRecordId: number | null = null;
   form: ControleForm = this.emptyForm();
+  private workflowDeepLinkPending = true;
 
   constructor(
     private readonly http: HttpClient,
     readonly auth: AuthService,
+    private readonly route: ActivatedRoute,
+    private readonly router: Router,
     @Inject(API_BASE_URL) private readonly apiBaseUrl: string,
   ) {}
 
@@ -847,7 +856,10 @@ export class ActivitesCentreControleComponent implements OnInit {
       .map((r) => r.id)
       .filter((id): id is number => id != null && Number.isFinite(Number(id)))
       .map((id) => String(id));
-    if (!ids.length) return;
+    if (!ids.length) {
+      this.tryOpenWorkflowDeepLink();
+      return;
+    }
     this.http
       .get<Record<string, Record<string, unknown>>>(`${this.apiBaseUrl}/api/saisie-workflows/statuses`, {
         params: {
@@ -862,11 +874,29 @@ export class ActivitesCentreControleComponent implements OnInit {
             const st = id == null ? null : statuses[String(id)];
             return st ? { ...row, ...st } : row;
           });
+          this.tryOpenWorkflowDeepLink();
         },
         error: () => {
-          /* liste utilisable sans enrichissement workflow */
+          this.tryOpenWorkflowDeepLink();
         },
       });
+  }
+
+  private tryOpenWorkflowDeepLink(): void {
+    if (!this.workflowDeepLinkPending) {
+      return;
+    }
+    const recordId = readWorkflowDeepLinkRecordId(this.route);
+    if (recordId == null) {
+      return;
+    }
+    this.workflowDeepLinkPending = false;
+    this.workflowQueueTab = readWorkflowDeepLinkTab(this.route);
+    const row = this.rows.find((candidate) => candidate.id === recordId);
+    if (row) {
+      this.openEdit(row);
+    }
+    clearWorkflowDeepLinkQueryParams(this.route, this.router);
   }
 
   private claimWorkflowThenReload(recordId: number): void {

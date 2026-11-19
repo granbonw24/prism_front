@@ -1,5 +1,10 @@
 import { CommonModule } from '@angular/common';
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
+import {
+  WORKFLOW_DEEP_LINK_RESOURCE_PARAM,
+  effectifCentreTypeFromResource,
+} from '@core/workflow/workflow-deep-link.util';
 import type { ReferentielFormField } from '@core/config/referentiel-form.types';
 import { ReferentielListPageComponent } from '@shared/referentiel-list-page/referentiel-list-page.component';
 
@@ -74,8 +79,18 @@ const EFFECTIF_LIST_SUMMARY_COLUMNS: Record<CentreType, string[]> = {
     ></app-referentiel-list-page>
   `,
 })
-export class EffectifCentreUnifieComponent {
+export class EffectifCentreUnifieComponent implements OnInit {
+  constructor(private readonly route: ActivatedRoute) {}
+
   selectedType: CentreType = 'alpha';
+
+  ngOnInit(): void {
+    const resource = this.route.snapshot.queryParamMap.get(WORKFLOW_DEEP_LINK_RESOURCE_PARAM);
+    const mapped = effectifCentreTypeFromResource(resource);
+    if (mapped) {
+      this.selectedType = mapped;
+    }
+  }
   readonly centreTypeOptions = [
     { value: 'alpha', label: 'Alpha' },
     { value: 'cec', label: 'CEC' },

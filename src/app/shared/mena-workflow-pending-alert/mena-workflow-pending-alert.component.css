@@ -1,0 +1,7 @@
+.mena-pending-alert {
+  background: linear-gradient(90deg, rgba(227, 242, 253, 0.95) 0%, rgba(255, 255, 255, 0.98) 100%);
+}
+
+.mena-pending-alert__summary {
+  line-height: 1.45;
+}

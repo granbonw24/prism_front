@@ -14,3 +14,9 @@
 :host .modal-backdrop {
   z-index: 1050;
 }
+
+.mena-topbar-alerts-menu {
+  width: min(22rem, 92vw);
+  max-height: 24rem;
+  overflow-y: auto;
+}

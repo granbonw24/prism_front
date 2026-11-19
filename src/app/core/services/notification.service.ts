@@ -3,7 +3,7 @@ import { BehaviorSubject } from 'rxjs';
 
 export interface UiToast {
   message: string;
-  variant: 'danger' | 'warning' | 'info';
+  variant: 'danger' | 'warning' | 'info' | 'success';
 }
 
 @Injectable({ providedIn: 'root' })

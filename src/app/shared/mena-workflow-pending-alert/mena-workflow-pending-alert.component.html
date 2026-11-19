@@ -1,0 +1,74 @@
+<div *ngIf="hasPending" class="alert alert-primary border-0 shadow-sm mb-4 mena-pending-alert" role="alert">
+  <div class="d-flex align-items-start flex-wrap">
+    <i class="fas fa-clipboard-check mt-1 mr-2" aria-hidden="true"></i>
+    <div class="flex-grow-1 min-w-0">
+      <div class="d-flex flex-wrap align-items-center">
+        <strong>Saisies à valider</strong>
+        <span class="badge badge-primary ml-2">{{ total }}</span>
+      </div>
+      <p class="small mb-2 mt-1">Des fiches attendent votre validation à votre palier.</p>
+      <p class="small mb-2 mena-pending-alert__summary" *ngIf="summaryEntries.length">
+        <strong>{{ total }}</strong>
+        {{ total === 1 ? 'saisie' : 'saisies' }} :
+        <ng-container *ngFor="let entry of summaryEntries; let last = last">
+          {{ entry.count }} {{ entry.label }}<span *ngIf="!last">, </span>
+        </ng-container>
+        .
+      </p>
+      <button type="button" class="btn btn-sm btn-outline-primary" (click)="openModal()">Voir le détail</button>
+    </div>
+  </div>
+</div>
+
+<div *ngIf="modalOpen" class="modal fade show d-block" tabindex="-1" role="dialog" aria-modal="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable" role="document">
+    <div class="modal-content mena-modal border-0 shadow">
+      <div class="modal-header border-0">
+        <div>
+          <h5 class="modal-title mb-0">Saisies à valider</h5>
+          <p class="small text-muted mb-0 mt-1">{{ total }} fiche(s) à votre palier</p>
+        </div>
+        <button type="button" class="close" aria-label="Fermer" (click)="closeModal()">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body pt-0">
+        <section *ngFor="let group of groups" class="mena-pending-alert__group mb-4">
+          <div class="d-flex align-items-center justify-content-between mb-2">
+            <h6 class="mb-0 font-weight-bold text-primary">{{ group.moduleLabel }}</h6>
+            <a class="btn btn-sm btn-outline-primary" [routerLink]="group.listPath" (click)="closeModal()">
+              Ouvrir le module
+            </a>
+          </div>
+          <div class="list-group list-group-flush">
+            <div *ngFor="let item of group.items" class="list-group-item px-0 py-2">
+              <div class="d-flex justify-content-between align-items-center">
+                <div class="min-w-0 pr-2">
+                  <strong class="d-block small mb-1">{{ itemTitle(item) }}</strong>
+                <span class="text-muted small" *ngIf="item.soumisPar as sp">
+                  Soumis par {{ sp }}
+                  <span *ngIf="item.dateDecision || item.dateSoumission">
+                    · {{ formatReturnAlertDate(item.dateDecision ?? item.dateSoumission) }}
+                  </span>
+                </span>
+                </div>
+                <a
+                  class="btn btn-sm btn-primary"
+                  [routerLink]="group.listPath"
+                  [queryParams]="correctQueryParams(item)"
+                  (click)="closeModal()"
+                >
+                  Valider
+                </a>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+      <div class="modal-footer border-0 pt-0">
+        <button type="button" class="btn btn-outline-secondary btn-sm" (click)="closeModal()">Fermer</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div *ngIf="modalOpen" class="modal-backdrop fade show" (click)="closeModal()"></div>

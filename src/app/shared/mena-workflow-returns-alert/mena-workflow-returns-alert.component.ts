@@ -1,10 +1,12 @@
 import { CommonModule } from '@angular/common';
 import { Component, Input } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { workflowReturnCorrectQueryParams } from '@core/workflow/workflow-deep-link.util';
 import {
   formatReturnAlertDate,
   groupReturnAlertsByModule,
   summarizeReturnAlertsByLabel,
+  workflowReturnItemTitle,
   type WorkflowReturnAlert,
 } from '@core/workflow/workflow-return-alert.util';
 
@@ -21,6 +23,8 @@ export class MenaWorkflowReturnsAlertComponent {
   modalOpen = false;
 
   readonly formatReturnAlertDate = formatReturnAlertDate;
+  readonly itemTitle = workflowReturnItemTitle;
+  readonly correctQueryParams = workflowReturnCorrectQueryParams;
 
   get total(): number {
     return this.alert?.total ?? 0;

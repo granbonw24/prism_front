@@ -42,7 +42,12 @@
         <section *ngFor="let group of groups" class="mena-returns-alert__group mb-4">
           <div class="d-flex align-items-center justify-content-between mb-2">
             <h6 class="mb-0 font-weight-bold text-primary">{{ group.moduleLabel }}</h6>
-            <a class="btn btn-sm btn-outline-primary" [routerLink]="group.listPath" (click)="closeModal()">
+            <a
+              class="btn btn-sm btn-outline-primary"
+              [routerLink]="group.listPath"
+              [queryParams]="{ workflowTab: 'RENVOYE' }"
+              (click)="closeModal()"
+            >
               Ouvrir le module
             </a>
           </div>
@@ -50,6 +55,7 @@
             <div *ngFor="let item of group.items" class="list-group-item px-0 py-2">
               <div class="d-flex justify-content-between align-items-start">
                 <div class="min-w-0 pr-2">
+                  <strong class="d-block small mb-1">{{ itemTitle(item) }}</strong>
                   <span class="text-muted small d-block">
                     {{ formatReturnAlertDate(item.dateDecision) }}
                     <span *ngIf="item.decidePar"> · Retour par {{ item.decidePar }}</span>
@@ -58,6 +64,7 @@
                 <a
                   class="btn btn-sm btn-primary flex-shrink-0"
                   [routerLink]="group.listPath"
+                  [queryParams]="correctQueryParams(item)"
                   (click)="closeModal()"
                 >
                   Corriger

@@ -9,7 +9,12 @@ import {
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
+import {
+  clearWorkflowDeepLinkQueryParams,
+  readWorkflowDeepLinkRecordId,
+  readWorkflowDeepLinkTab,
+} from '@core/workflow/workflow-deep-link.util';
 import { Subscription } from 'rxjs';
 import { finalize } from 'rxjs/operators';
 import type { ReferentielFormField } from '@core/config/referentiel-form.types';
@@ -224,9 +229,11 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
   /** Clés utilisées pour le filtre texte (toutes les colonnes « métier », pas seulement l’affichage). */
   private filterableKeys: string[] = [];
   private routeListColumnKeys?: string[];
+  private workflowDeepLinkPending = true;
 
   constructor(
     private readonly route: ActivatedRoute,
+    private readonly router: Router,
     private readonly http: HttpClient,
     private readonly fb: FormBuilder,
     readonly auth: AuthService,
@@ -2035,6 +2042,7 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
     }
     if (this.rows.every((row) => typeof row['workflowStatut'] === 'string')) {
       this.applyCommissionSaisieListFilter();
+      this.maybeOpenWorkflowDeepLink();
       return;
     }
     const ids = this.rows
@@ -2042,6 +2050,7 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
       .filter((id): id is string | number => id != null)
       .map((id) => String(id));
     if (!ids.length) {
+      this.maybeOpenWorkflowDeepLink();
       return;
     }
     this.http.get<Record<string, Record<string, unknown>>>(
@@ -2061,11 +2070,35 @@ export class ReferentielListPageComponent implements OnInit, OnDestroy, OnChange
         });
         this.applyCommissionSaisieListFilter();
         this.buildColumns();
+        this.maybeOpenWorkflowDeepLink();
       },
       error: () => {
-        /* silencieux : la liste reste disponible, sans statut transversal */
+        this.maybeOpenWorkflowDeepLink();
       },
     });
+  }
+
+  private maybeOpenWorkflowDeepLink(): void {
+    if (!this.workflowDeepLinkPending) {
+      return;
+    }
+    const recordId = readWorkflowDeepLinkRecordId(this.route);
+    if (recordId == null) {
+      return;
+    }
+    this.workflowDeepLinkPending = false;
+    this.workflowQueueTab = readWorkflowDeepLinkTab(this.route);
+    const row = this.rows.find((candidate) => Number(this.resolveRowId(candidate)) === recordId);
+    if (!row) {
+      clearWorkflowDeepLinkQueryParams(this.route, this.router);
+      return;
+    }
+    if (this.hasCreateForm && this.canUpdateRecord && this.isWorkflowEditable(row)) {
+      this.openEditModal(row);
+    } else {
+      this.openDetails(row);
+    }
+    clearWorkflowDeepLinkQueryParams(this.route, this.router);
   }
 
   /**

@@ -13,6 +13,7 @@ import {
 import { PASSWORD_MIN_LENGTH } from '@core/auth/password-policy';
 import { MENU_FEATURES } from '@core/config/menu-rbac.config';
 import { canViewMenuFeature } from '@core/rbac/menu-rbac.util';
+import { NotificationService } from '@core/services/notification.service';
 import { AdministrationService, type AppUsersListQuery } from '@services/administration.service';
 import { AuthService } from '@services/auth.service';
 import { MenaPasswordFieldComponent } from '@shared/mena-password-field/mena-password-field.component';
@@ -156,6 +157,7 @@ export class UtilisateursComponent implements OnInit, OnDestroy {
   constructor(
     private readonly admin: AdministrationService,
     private readonly auth: AuthService,
+    private readonly notification: NotificationService,
   ) {}
 
   get canCreate(): boolean {
@@ -472,6 +474,7 @@ export class UtilisateursComponent implements OnInit, OnDestroy {
       this.closeCreate();
       this.pageIndex = 0;
       await this.reload();
+      this.notification.show('Utilisateur créé avec succès.', 'success');
     } catch (e) {
       this.errorMessage = this.formatError(e);
     } finally {
@@ -552,8 +555,15 @@ export class UtilisateursComponent implements OnInit, OnDestroy {
     this.resetError = null;
     this.errorMessage = null;
     try {
+      const username = this.resetUser.username;
       await firstValueFrom(this.admin.resetUserPassword(this.resetUser.id, this.resetPassword.trim()));
       this.closeResetPassword();
+      await this.reload();
+      this.notification.show(
+        `Mot de passe réinitialisé pour « ${username} ». L’utilisateur devra le changer à la première connexion.`,
+        'success',
+        10_000,
+      );
     } catch (e) {
       this.resetError = this.formatError(e);
     } finally {
@@ -578,6 +588,7 @@ export class UtilisateursComponent implements OnInit, OnDestroy {
   async saveEdit(): Promise<void> {
     if (!this.canModify || !this.canSaveEdit()) return;
     const id = this.editUserId!;
+    const passwordChanged = String(this.editForm.password ?? '').trim().length > 0;
     this.saving = true;
     this.errorMessage = null;
     try {
@@ -599,6 +610,13 @@ export class UtilisateursComponent implements OnInit, OnDestroy {
       );
       this.closeEdit();
       await this.reload();
+      this.notification.show(
+        passwordChanged
+          ? 'Utilisateur mis à jour. Nouveau mot de passe imposé : première connexion avec changement obligatoire.'
+          : 'Utilisateur mis à jour avec succès.',
+        'success',
+        passwordChanged ? 10_000 : 8000,
+      );
     } catch (e) {
       this.errorMessage = this.formatError(e);
     } finally {
@@ -614,6 +632,7 @@ export class UtilisateursComponent implements OnInit, OnDestroy {
     try {
       await firstValueFrom(this.admin.deleteUser(u.id));
       await this.reload();
+      this.notification.show(`Utilisateur « ${u.username} » supprimé.`, 'success');
     } catch (e) {
       this.errorMessage = this.formatError(e);
     } finally {

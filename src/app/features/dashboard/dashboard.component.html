@@ -25,6 +25,10 @@
   </div>
 
   <ng-container *ngIf="summary$ | async as sum">
+    <app-mena-workflow-pending-alert
+      *ngIf="sum.workflowPending as pending"
+      [alert]="pending"
+    />
     <app-mena-workflow-returns-alert
       *ngIf="sum.workflowReturns as returns"
       [alert]="returns"

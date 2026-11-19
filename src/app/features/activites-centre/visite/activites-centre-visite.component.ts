@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
 import { Component, Inject, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import {
   menaActivitesRefOptions,
   menaActivitesRefOptionsWithAll,
@@ -19,6 +19,11 @@ import { API_BASE_URL } from '@core/tokens/api-base-url.token';
 import type { SpringPage } from '@models/centre';
 import type { VisitePayload, VisiteRef, VisiteRow, VisiteSuiviMode } from '@models/visite';
 import { AuthService } from '@services/auth.service';
+import {
+  clearWorkflowDeepLinkQueryParams,
+  readWorkflowDeepLinkRecordId,
+  readWorkflowDeepLinkTab,
+} from '@core/workflow/workflow-deep-link.util';
 import {
   auteurColumnCount,
   canSeeCentralValidateur,
@@ -212,9 +217,12 @@ export class ActivitesCentreVisiteComponent implements OnInit {
   form: VisitePayload = this.emptyForm();
   formMode: VisiteFormMode = 'suivi';
 
+  private workflowDeepLinkPending = true;
+
   constructor(
     private readonly http: HttpClient,
     private readonly route: ActivatedRoute,
+    private readonly router: Router,
     @Inject(API_BASE_URL) private readonly apiBaseUrl: string,
     readonly auth: AuthService,
   ) {}
@@ -1126,6 +1134,7 @@ export class ActivitesCentreVisiteComponent implements OnInit {
       .filter((id): id is number => id != null && Number.isFinite(Number(id)))
       .map((id) => String(id));
     if (!ids.length) {
+      this.tryOpenWorkflowDeepLink();
       return;
     }
     this.http
@@ -1142,11 +1151,29 @@ export class ActivitesCentreVisiteComponent implements OnInit {
             const st = id == null ? null : statuses[String(id)];
             return st ? { ...row, ...st, id: row.id } : row;
           });
+          this.tryOpenWorkflowDeepLink();
         },
         error: () => {
-          /* liste utilisable sans statut workflow */
+          this.tryOpenWorkflowDeepLink();
         },
       });
+  }
+
+  private tryOpenWorkflowDeepLink(): void {
+    if (!this.workflowDeepLinkPending) {
+      return;
+    }
+    const recordId = readWorkflowDeepLinkRecordId(this.route);
+    if (recordId == null) {
+      return;
+    }
+    this.workflowDeepLinkPending = false;
+    this.workflowQueueTab = readWorkflowDeepLinkTab(this.route);
+    const row = this.rows.find((candidate) => candidate.id === recordId);
+    if (row) {
+      this.openEdit(row, 'suivi');
+    }
+    clearWorkflowDeepLinkQueryParams(this.route, this.router);
   }
 
   private claimVisiteWorkflowThenReload(recordId: number): void {

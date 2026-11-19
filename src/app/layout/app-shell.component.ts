@@ -33,6 +33,7 @@ import { MenuComponent } from '../menu/menu.component';
               'alert-danger': t.variant === 'danger',
               'alert-warning': t.variant === 'warning',
               'alert-info': t.variant === 'info',
+              'alert-success': t.variant === 'success',
             }"
             role="alert"
           >

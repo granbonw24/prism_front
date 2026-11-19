@@ -1,10 +1,13 @@
 export type WorkflowReturnAlertItem = {
   resourcePath?: string | null;
   resourceLabel?: string | null;
+  recordCaption?: string | null;
   recordId?: number | null;
   commentaire?: string | null;
   decidePar?: string | null;
   dateDecision?: string | null;
+  dateSoumission?: string | null;
+  soumisPar?: string | null;
   proprietaire?: string | null;
 };
 
@@ -31,6 +34,19 @@ export function workflowReturnResourceLabel(resourcePath: string | null | undefi
 
 export function workflowReturnItemLabel(item: WorkflowReturnAlertItem): string {
   return item.resourceLabel?.trim() || workflowReturnResourceLabel(item.resourcePath);
+}
+
+/** Titre d’une ligne dans la modale alerte (centre / période / code). */
+export function workflowReturnItemTitle(item: WorkflowReturnAlertItem): string {
+  const caption = item.recordCaption?.trim();
+  if (caption) {
+    return caption;
+  }
+  const module = workflowReturnItemLabel(item);
+  if (item.recordId != null) {
+    return `${module} — n° ${item.recordId}`;
+  }
+  return module;
 }
 
 export function listPathForWorkflowReturn(resourcePath: string | null | undefined): string {
@@ -112,7 +128,7 @@ export function groupReturnAlertsByModule(items: WorkflowReturnAlertItem[]): Wor
   const groups = new Map<string, WorkflowReturnGroup>();
   for (const item of items) {
     const resourcePath = item.resourcePath?.trim() || '/';
-    const moduleLabel = workflowReturnItemLabel(item);
+    const moduleLabel = workflowReturnResourceLabel(resourcePath);
     const key = resourcePath;
     const existing = groups.get(key);
     if (existing) {
