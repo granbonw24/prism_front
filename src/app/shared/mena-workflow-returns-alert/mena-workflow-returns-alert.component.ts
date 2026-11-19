@@ -2,11 +2,10 @@ import { CommonModule } from '@angular/common';
 import { Component, Input } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import {
-  WORKFLOW_RETURN_DASHBOARD_PREVIEW,
   formatReturnAlertDate,
   groupReturnAlertsByModule,
+  summarizeReturnAlertsByLabel,
   type WorkflowReturnAlert,
-  type WorkflowReturnAlertItem,
 } from '@core/workflow/workflow-return-alert.util';
 
 @Component({
@@ -21,7 +20,6 @@ export class MenaWorkflowReturnsAlertComponent {
 
   modalOpen = false;
 
-  readonly previewLimit = WORKFLOW_RETURN_DASHBOARD_PREVIEW;
   readonly formatReturnAlertDate = formatReturnAlertDate;
 
   get total(): number {
@@ -36,12 +34,8 @@ export class MenaWorkflowReturnsAlertComponent {
     return groupReturnAlertsByModule(this.alert?.items ?? []);
   }
 
-  get previewItems(): WorkflowReturnAlertItem[] {
-    return (this.alert?.items ?? []).slice(0, this.previewLimit);
-  }
-
-  get hiddenCount(): number {
-    return Math.max(0, this.total - this.previewItems.length);
+  get summaryEntries() {
+    return summarizeReturnAlertsByLabel(this.alert?.items ?? []);
   }
 
   openModal(): void {

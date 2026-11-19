@@ -3,10 +3,8 @@
   color: #5c4a00;
 }
 
-.mena-returns-alert__preview-item + .mena-returns-alert__preview-item {
-  margin-top: 0.5rem;
-  padding-top: 0.5rem;
-  border-top: 1px solid rgba(133, 100, 4, 0.12);
+.mena-returns-alert__summary {
+  line-height: 1.45;
 }
 
 .mena-returns-alert__comment {

@@ -6,40 +6,20 @@
         <strong>Saisies renvoyées pour correction</strong>
         <span class="badge badge-warning ml-2">{{ total }}</span>
       </div>
-      <p class="small mb-2 mt-1 mb-0">
+      <p class="small mb-2 mt-1">
         Corrigez puis resoumettez les fiches concernées. L'alerte disparaît après resoumission.
       </p>
 
-      <div class="mena-returns-alert__chips mb-2">
-        <span *ngFor="let group of groups" class="badge badge-light border mr-1 mb-1">
-          {{ group.moduleLabel }} · {{ group.items.length }}
-        </span>
-      </div>
+      <p class="small mb-2 mena-returns-alert__summary" *ngIf="summaryEntries.length">
+        <strong>{{ total }}</strong>
+        {{ total === 1 ? 'saisie' : 'saisies' }} :
+        <ng-container *ngFor="let entry of summaryEntries; let last = last">
+          {{ entry.count }} {{ entry.label }}<span *ngIf="!last">, </span>
+        </ng-container>
+        .
+      </p>
 
-      <ul class="list-unstyled mb-2 mena-returns-alert__preview">
-        <li *ngFor="let item of previewItems" class="mena-returns-alert__preview-item">
-          <span class="font-weight-bold">{{ item.resourceLabel || 'Saisie' }}</span>
-          <span class="text-muted"> #{{ item.recordId }}</span>
-          <span *ngIf="item.commentaire?.trim()" class="small d-block text-muted mt-1">
-            « {{ item.commentaire }} »
-          </span>
-        </li>
-      </ul>
-
-      <button
-        *ngIf="total > previewLimit"
-        type="button"
-        class="btn btn-sm btn-outline-warning"
-        (click)="openModal()"
-      >
-        Voir les {{ total }} retours…
-      </button>
-      <button
-        *ngIf="total <= previewLimit && total > 0"
-        type="button"
-        class="btn btn-sm btn-outline-warning"
-        (click)="openModal()"
-      >
+      <button type="button" class="btn btn-sm btn-outline-warning" (click)="openModal()">
         Voir le détail
       </button>
     </div>
@@ -61,7 +41,7 @@
       <div class="modal-body pt-0">
         <section *ngFor="let group of groups" class="mena-returns-alert__group mb-4">
           <div class="d-flex align-items-center justify-content-between mb-2">
-            <h6 class="mb-0 font-weight-bold">{{ group.moduleLabel }}</h6>
+            <h6 class="mb-0 font-weight-bold text-primary">{{ group.moduleLabel }}</h6>
             <a class="btn btn-sm btn-outline-primary" [routerLink]="group.listPath" (click)="closeModal()">
               Ouvrir le module
             </a>
@@ -69,23 +49,22 @@
           <div class="list-group list-group-flush mena-returns-alert__group-list">
             <div *ngFor="let item of group.items" class="list-group-item px-0 py-2">
               <div class="d-flex justify-content-between align-items-start">
-                <div>
-                  <span class="font-weight-bold">#{{ item.recordId }}</span>
+                <div class="min-w-0 pr-2">
                   <span class="text-muted small d-block">
                     {{ formatReturnAlertDate(item.dateDecision) }}
-                    <span *ngIf="item.decidePar"> · {{ item.decidePar }}</span>
+                    <span *ngIf="item.decidePar"> · Retour par {{ item.decidePar }}</span>
                   </span>
                 </div>
                 <a
-                  class="btn btn-sm btn-link"
+                  class="btn btn-sm btn-primary flex-shrink-0"
                   [routerLink]="group.listPath"
                   (click)="closeModal()"
                 >
                   Corriger
                 </a>
               </div>
-              <p *ngIf="item.commentaire?.trim()" class="small mb-0 mt-1 mena-returns-alert__comment">
-                {{ item.commentaire }}
+              <p *ngIf="item.commentaire?.trim()" class="small mb-0 mt-2 mena-returns-alert__comment">
+                <span class="text-muted">Motif :</span> {{ item.commentaire }}
               </p>
             </div>
           </div>
